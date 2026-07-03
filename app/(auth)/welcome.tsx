@@ -1,0 +1,269 @@
+import React, { useRef, useState } from 'react';
+import { View, StyleSheet, Dimensions, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
+import Animated, { 
+  useSharedValue, 
+  useAnimatedScrollHandler, 
+  useAnimatedStyle, 
+  interpolate, 
+  Extrapolation,
+  withSpring,
+  withTiming
+} from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+
+import { Screen } from '@components/layout/Screen';
+import { StickyFooter } from '@components/layout/StickyFooter';
+import { Text } from '@components/ui/Text';
+import { Button } from '@components/ui/Button';
+import { colors, fontFamily, layout, radius } from '@design/index';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const SLIDES = [
+  {
+    id: '1',
+    title: 'Verified Workers You Can Trust',
+    subtitle: 'Every worker is background-checked, ID-verified, and reviewed by real customers near you.',
+    // placeholder color instead of lottie for day 3
+    color: '#F0FDF4', 
+  },
+  {
+    id: '2',
+    title: 'Book in Under 60 Seconds',
+    subtitle: 'Find nearby electricians, plumbers, and cleaners. Schedule instantly or get help right now.',
+    color: '#FEF3C7',
+  },
+  {
+    id: '3',
+    title: 'Track Every Step, Live',
+    subtitle: 'Watch your worker travel to you in real-time. Chat, call, or reschedule — all in one place.',
+    color: '#E0E7FF',
+  }
+];
+
+export default function WelcomeScreen() {
+  const router = useRouter();
+  const scrollX = useSharedValue(0);
+  const flatListRef = useRef<Animated.FlatList<any>>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+
+  const scrollHandler = useAnimatedScrollHandler({
+    onScroll: (event) => {
+      scrollX.value = event.contentOffset.x;
+    },
+  });
+
+  const handleSkip = () => {
+    Haptics.selectionAsync();
+    flatListRef.current?.scrollToIndex({ index: 2, animated: true });
+  };
+
+  const handleGetStarted = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push('/(auth)/phone');
+  };
+
+  const handleLogin = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push('/(auth)/phone');
+  };
+
+  const viewabilityConfig = { itemVisiblePercentThreshold: 50 };
+  const onViewableItemsChanged = useRef(({ viewableItems }: any) => {
+    if (viewableItems[0]) {
+      setCurrentIndex(viewableItems[0].index);
+    }
+  }).current;
+
+  // Footer animation: slide up on slide 3
+  const footerAnimatedStyle = useAnimatedStyle(() => {
+    const isLastSlide = scrollX.value >= SCREEN_WIDTH * 1.5;
+    return {
+      opacity: withTiming(isLastSlide ? 1 : 0, { duration: 250 }),
+      transform: [
+        { translateY: withSpring(isLastSlide ? 0 : 20, { damping: 15, stiffness: 100 }) }
+      ]
+    };
+  });
+
+  const renderItem = ({ item, index }: { item: typeof SLIDES[0], index: number }) => {
+    return (
+      <View style={styles.slide}>
+        <View style={[styles.illustration, { backgroundColor: item.color }]} />
+        <View style={styles.textContainer}>
+          <Text variant="h1" color="primary" style={styles.title} accessibilityRole="header">
+            {item.title}
+          </Text>
+          <Text variant="body1" color="muted" style={styles.subtitle}>
+            {item.subtitle}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <Screen bg={colors.bgCard} statusBarStyle="dark-content">
+      {/* Skip Button */}
+      {currentIndex < 2 && (
+        <Pressable 
+          style={styles.skipButton} 
+          onPress={handleSkip}
+          hitSlop={12}
+          accessibilityLabel="Skip onboarding"
+        >
+          <Text style={styles.skipText}>Skip</Text>
+        </Pressable>
+      )}
+
+      {/* Slider */}
+      <Animated.FlatList
+        ref={flatListRef as any}
+        data={SLIDES}
+        renderItem={renderItem}
+        keyExtractor={item => item.id}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        bounces={false}
+        onScroll={scrollHandler}
+        scrollEventThrottle={16}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        accessibilityRole="none"
+      />
+
+      {/* Dots Indicator */}
+      <View style={styles.paginationContainer}>
+        {SLIDES.map((_, index) => {
+          const dotStyle = useAnimatedStyle(() => {
+            const inputRange = [
+              (index - 1) * SCREEN_WIDTH,
+              index * SCREEN_WIDTH,
+              (index + 1) * SCREEN_WIDTH,
+            ];
+            
+            const dotWidth = interpolate(
+              scrollX.value,
+              inputRange,
+              [6, 20, 6],
+              Extrapolation.CLAMP
+            );
+            
+            const opacity = interpolate(
+              scrollX.value,
+              inputRange,
+              [0.3, 1, 0.3],
+              Extrapolation.CLAMP
+            );
+
+            return { width: dotWidth, opacity };
+          });
+
+          return (
+            <Animated.View 
+              key={index} 
+              style={[styles.dot, dotStyle]} 
+              accessibilityLabel={`Slide ${index + 1} of 3`}
+            />
+          );
+        })}
+      </View>
+
+      {/* CTA Footer */}
+      <View style={styles.footerPlaceholder}>
+        <Animated.View style={[StyleSheet.absoluteFill, footerAnimatedStyle]}>
+          <StickyFooter noBorder bg="transparent" style={styles.footer}>
+            <Button 
+              variant="primary" 
+              size="lg" 
+              fullWidth 
+              onPress={handleGetStarted}
+              label="Get Started"
+            />
+            <View style={styles.loginContainer}>
+              <Text style={styles.loginText}>Already have an account? </Text>
+              <Pressable onPress={handleLogin} hitSlop={12} accessibilityLabel="Already have an account, log in">
+                <Text style={styles.loginLink}>Log In</Text>
+              </Pressable>
+            </View>
+          </StickyFooter>
+        </Animated.View>
+      </View>
+    </Screen>
+  );
+}
+
+const styles = StyleSheet.create({
+  skipButton: {
+    position: 'absolute',
+    top: 16,
+    right: 20,
+    zIndex: 10,
+  },
+  skipText: {
+    fontFamily: fontFamily.jakarta.medium,
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  slide: {
+    width: SCREEN_WIDTH,
+    alignItems: 'center',
+    paddingTop: 80,
+    paddingHorizontal: 32,
+  },
+  illustration: {
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    marginBottom: 48,
+  },
+  textContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  title: {
+    textAlign: 'center',
+    marginBottom: 16,
+    // ensure max 2 lines visually
+  },
+  subtitle: {
+    textAlign: 'center',
+    lineHeight: 26,
+  },
+  paginationContainer: {
+    flexDirection: 'row',
+    alignSelf: 'center',
+    gap: 6,
+    marginBottom: 16,
+  },
+  dot: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primary,
+  },
+  footerPlaceholder: {
+    height: layout.primaryButtonH + 40 + 20, // button + text + padding
+    width: '100%',
+  },
+  footer: {
+    paddingBottom: 0, // Insets handled by Screen
+  },
+  loginContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 16,
+    paddingBottom: 8,
+  },
+  loginText: {
+    fontFamily: fontFamily.jakarta.regular,
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  loginLink: {
+    fontFamily: fontFamily.jakarta.semiBold,
+    fontSize: 14,
+    color: colors.primary,
+  },
+});

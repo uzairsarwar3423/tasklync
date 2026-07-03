@@ -1,0 +1,72 @@
+app.config.ts(12,3): error TS2353: Object literal may only specify known properties, and 'splash' does not exist in type 'ExpoConfig'.
+app/(auth)/location-permission.tsx(1,1): error TS6133: 'React' is declared but its value is never read.
+app/(auth)/location-permission.tsx(10,22): error TS2307: Cannot find module '@components/Text' or its corresponding type declarations.
+app/(auth)/location-permission.tsx(12,44): error TS2307: Cannot find module '@design/tokens' or its corresponding type declarations.
+app/(auth)/location-permission.tsx(13,60): error TS2307: Cannot find module '@store' or its corresponding type declarations.
+app/(auth)/location-permission.tsx(23,48): error TS7006: Parameter 'state' implicitly has an 'any' type.
+app/(auth)/location-permission.tsx(24,32): error TS7006: Parameter 'state' implicitly has an 'any' type.
+app/(auth)/location-permission.tsx(25,29): error TS7006: Parameter 'state' implicitly has an 'any' type.
+app/(auth)/location-permission.tsx(39,22): error TS2345: Argument of type '"/(tabs)/"' is not assignable to parameter of type 'RelativePathString | ExternalPathString | "/" | `/?${string}` | `/#${string}` | "/_sitemap" | `/_sitemap?${string}` | `/_sitemap#${string}` | "/(auth)" | `/(auth)?${string}` | `/(auth)#${string}` | ... 43 more ... | { ...; }'.
+app/(auth)/location-permission.tsx(47,22): error TS2345: Argument of type '"/(tabs)/"' is not assignable to parameter of type 'RelativePathString | ExternalPathString | "/" | `/?${string}` | `/#${string}` | "/_sitemap" | `/_sitemap?${string}` | `/_sitemap#${string}` | "/(auth)" | `/(auth)?${string}` | `/(auth)#${string}` | ... 43 more ... | { ...; }'.
+app/(auth)/location-permission.tsx(54,20): error TS2345: Argument of type '"/(tabs)/"' is not assignable to parameter of type 'RelativePathString | ExternalPathString | "/" | `/?${string}` | `/#${string}` | "/_sitemap" | `/_sitemap?${string}` | `/_sitemap#${string}` | "/(auth)" | `/(auth)?${string}` | `/(auth)#${string}` | ... 43 more ... | { ...; }'.
+app/(auth)/location-permission.tsx(58,26): error TS2322: Type '{ children: Element[]; bg: string; statusBar: string; }' is not assignable to type 'IntrinsicAttributes & ScreenProps'.
+  Property 'statusBar' does not exist on type 'IntrinsicAttributes & ScreenProps'.
+app/(auth)/location-permission.tsx(83,10): error TS2322: Type '{ children: string; variant: "primary"; size: "lg"; fullWidth: true; onPress: () => Promise<void>; accessibilityLabel: string; style: { marginBottom: number; }; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & ButtonProps'.
+app/(auth)/name.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+app/(auth)/name.tsx(13,22): error TS2307: Cannot find module '@components/Text' or its corresponding type declarations.
+app/(auth)/name.tsx(16,36): error TS2307: Cannot find module '@design/tokens' or its corresponding type declarations.
+app/(auth)/name.tsx(55,32): error TS2322: Type '{ children: Element[]; bg: any; statusBar: string; }' is not assignable to type 'IntrinsicAttributes & ScreenProps'.
+  Property 'statusBar' does not exist on type 'IntrinsicAttributes & ScreenProps'.
+app/(auth)/name.tsx(68,12): error TS2375: Type '{ label: string; placeholder: string; value: string; onChangeText: Dispatch<SetStateAction<string>>; autoFocus: true; returnKeyType: "done"; autoCapitalize: "words"; ... 4 more ...; accessibilityHint: string; }' is not assignable to type 'TextInputProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'error' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+app/(auth)/name.tsx(92,12): error TS2322: Type '{ children: string; variant: "primary"; size: "lg"; fullWidth: true; disabled: boolean; loading: boolean; onPress: () => void; style: { backgroundColor: any; }; accessibilityLabel: string; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & ButtonProps'.
+app/(auth)/otp.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+app/(auth)/otp.tsx(9,22): error TS2307: Cannot find module '@components/Text' or its corresponding type declarations.
+app/(auth)/otp.tsx(12,36): error TS2307: Cannot find module '@design/tokens' or its corresponding type declarations.
+app/(auth)/otp.tsx(78,32): error TS2322: Type '{ children: Element[]; bg: any; statusBar: string; }' is not assignable to type 'IntrinsicAttributes & ScreenProps'.
+  Property 'statusBar' does not exist on type 'IntrinsicAttributes & ScreenProps'.
+app/(auth)/otp.tsx(81,11): error TS2322: Type 'Element' is not assignable to type 'ElementType<any, keyof IntrinsicElements>'.
+app/(auth)/phone.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+app/(auth)/phone.tsx(2,28): error TS6133: 'Pressable' is declared but its value is never read.
+app/(auth)/phone.tsx(14,22): error TS2307: Cannot find module '@components/Text' or its corresponding type declarations.
+app/(auth)/phone.tsx(18,36): error TS2307: Cannot find module '@design/tokens' or its corresponding type declarations.
+app/(auth)/phone.tsx(56,32): error TS2322: Type '{ children: Element[]; bg: any; statusBar: string; }' is not assignable to type 'IntrinsicAttributes & ScreenProps'.
+  Property 'statusBar' does not exist on type 'IntrinsicAttributes & ScreenProps'.
+app/(auth)/phone.tsx(59,11): error TS2322: Type 'Element' is not assignable to type 'ElementType<any, keyof IntrinsicElements>'.
+app/(auth)/phone.tsx(81,12): error TS2375: Type '{ value: string; onChangeText: Dispatch<SetStateAction<string>>; error: string | undefined; onSubmitEditing: () => void; }' is not assignable to type 'PhoneInputProps' with 'exactOptionalPropertyTypes: true'. Consider adding 'undefined' to the types of the target's properties.
+  Types of property 'error' are incompatible.
+    Type 'string | undefined' is not assignable to type 'string'.
+      Type 'undefined' is not assignable to type 'string'.
+app/(auth)/phone.tsx(99,12): error TS2322: Type '{ children: string; variant: "primary"; size: "lg"; fullWidth: true; disabled: boolean; loading: boolean; onPress: () => void; style: { backgroundColor: any; }; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & ButtonProps'.
+app/(auth)/welcome.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+app/(auth)/welcome.tsx(17,22): error TS2307: Cannot find module '@components/Text' or its corresponding type declarations.
+app/(auth)/welcome.tsx(19,38): error TS6133: 'radius' is declared but its value is never read.
+app/(auth)/welcome.tsx(19,52): error TS2307: Cannot find module '@design/tokens' or its corresponding type declarations.
+app/(auth)/welcome.tsx(107,32): error TS2322: Type '{ children: (false | Element)[]; bg: any; statusBar: string; }' is not assignable to type 'IntrinsicAttributes & ScreenProps'.
+  Property 'statusBar' does not exist on type 'IntrinsicAttributes & ScreenProps'.
+app/(auth)/welcome.tsx(178,14): error TS2322: Type '{ children: string; variant: "primary"; size: "lg"; fullWidth: true; onPress: () => void; accessibilityLabel: string; }' is not assignable to type 'IntrinsicAttributes & ButtonProps'.
+  Property 'children' does not exist on type 'IntrinsicAttributes & ButtonProps'.
+src/components/app-tabs.tsx(4,24): error TS2307: Cannot find module '@/constants/theme' or its corresponding type declarations.
+src/components/app-tabs.web.tsx(16,50): error TS2307: Cannot find module '@/constants/theme' or its corresponding type declarations.
+src/components/app-tabs.web.tsx(27,38): error TS2322: Type '"/explore"' is not assignable to type 'RelativePathString | ExternalPathString | "/" | `/?${string}` | `/#${string}` | "/_sitemap" | `/_sitemap?${string}` | `/_sitemap#${string}` | "/(auth)" | `/(auth)?${string}` | `/(auth)#${string}` | ... 43 more ... | { ...; }'.
+src/components/hint-row.tsx(7,25): error TS2307: Cannot find module '@/constants/theme' or its corresponding type declarations.
+src/components/themed-text.tsx(3,35): error TS2307: Cannot find module '@/constants/theme' or its corresponding type declarations.
+src/components/themed-view.tsx(3,28): error TS2307: Cannot find module '@/constants/theme' or its corresponding type declarations.
+src/components/ui/Input/PhoneInput.tsx(1,8): error TS6133: 'React' is declared but its value is never read.
+src/components/ui/Input/PhoneInput.tsx(3,22): error TS2307: Cannot find module '@components/Text' or its corresponding type declarations.
+src/components/ui/Input/PhoneInput.tsx(4,32): error TS2307: Cannot find module '@design/tokens' or its corresponding type declarations.
+src/components/ui/collapsible.tsx(8,25): error TS2307: Cannot find module '@/constants/theme' or its corresponding type declarations.
+src/components/web-badge.tsx(8,25): error TS2307: Cannot find module '@/constants/theme' or its corresponding type declarations.
+src/hooks/use-theme.ts(6,24): error TS2307: Cannot find module '@/constants/theme' or its corresponding type declarations.
+src/hooks/useAuth.ts(21,31): error TS2339: Property 'errors' does not exist on type 'ZodError<string>'.
+src/hooks/useAuth.ts(75,26): error TS2345: Argument of type '"/(tabs)/"' is not assignable to parameter of type 'RelativePathString | ExternalPathString | "/" | `/?${string}` | `/#${string}` | "/_sitemap" | `/_sitemap?${string}` | `/_sitemap#${string}` | "/(auth)" | `/(auth)?${string}` | `/(auth)#${string}` | ... 43 more ... | { ...; }'.
+src/hooks/useAuth.ts(116,31): error TS2339: Property 'errors' does not exist on type 'ZodError<string>'.
+src/providers/AuthProvider.tsx(25,22): error TS2345: Argument of type '"/(tabs)/"' is not assignable to parameter of type 'RelativePathString | ExternalPathString | "/" | `/?${string}` | `/#${string}` | "/_sitemap" | `/_sitemap?${string}` | `/_sitemap#${string}` | "/(auth)" | `/(auth)?${string}` | `/(auth)#${string}` | ... 43 more ... | { ...; }'.
+src/store/auth.store.ts(89,13): error TS2339: Property 'delete' does not exist on type 'MMKV'.
+src/store/auth.store.ts(90,13): error TS2339: Property 'delete' does not exist on type 'MMKV'.
+src/store/auth.store.ts(91,13): error TS2339: Property 'delete' does not exist on type 'MMKV'.
