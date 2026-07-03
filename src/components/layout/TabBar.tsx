@@ -47,8 +47,8 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
     };
   });
 
-  // Calculate bottom position based on safe area (handles iPhone Home Indicator)
-  const bottomPosition = Platform.OS === 'ios' ? Math.max(insets.bottom, 24) : 24;
+  // Calculate bottom position based on safe area (handles iOS Home Indicator & Android gesture nav)
+  const bottomPosition = insets.bottom > 0 ? insets.bottom + 12 : 24;
 
   return (
     <View style={[styles.wrapper, { bottom: bottomPosition }]}>

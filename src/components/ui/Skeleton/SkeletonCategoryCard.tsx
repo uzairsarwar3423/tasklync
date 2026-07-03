@@ -1,13 +1,18 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Skeleton } from './Skeleton';
 import { colors } from '../../../design/colors';
 import { radius } from '../../../design/radius';
 import { shadows } from '../../../design/shadows';
+import { layout } from '../../../design/spacing';
 
 export const SkeletonCategoryCard = () => {
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const numColumns = SCREEN_WIDTH > 700 ? 6 : 3;
+  const CARD_WIDTH = Math.floor((SCREEN_WIDTH - (layout.screenPaddingH * 2) - (layout.categoryGap * (numColumns - 1))) / numColumns);
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { width: CARD_WIDTH }]}>
       <Skeleton width={40} height={40} borderRadius={20} />
       <View style={styles.labelContainer}>
         <Skeleton width={60} height={12} borderRadius={4} />
@@ -18,7 +23,6 @@ export const SkeletonCategoryCard = () => {
 
 const styles = StyleSheet.create({
   container: {
-    width: 106,
     height: 100,
     backgroundColor: colors.bgCard,
     borderRadius: radius.xl,

@@ -59,7 +59,7 @@ export const PhoneInput = ({
           onSubmitEditing={onSubmitEditing}
         />
       </View>
-      {error && (
+      {!!error && (
         <Text variant="caption" style={styles.errorText}>
           {error}
         </Text>

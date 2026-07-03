@@ -20,7 +20,6 @@
       "android": {
         "buildType": "apk"
       },
-      "node": "20.x",
       "env": {
         "EAS_BUILD_NPM_CONFIG_LEGACY_PEER_DEPS": "true"
       }

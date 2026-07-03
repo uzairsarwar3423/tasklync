@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Animated, {
@@ -16,6 +16,7 @@ import { colors } from '../../design/colors';
 import { radius } from '../../design/radius';
 import { shadows } from '../../design/shadows';
 import { fontFamily } from '../../design/typography';
+import { layout } from '../../design/spacing';
 
 interface ServiceCategoryCardProps {
   category: Category;
@@ -35,6 +36,9 @@ const DEFAULT_STYLE = { bg: colors.bgInput, iconSource: require('../../../assets
 
 export const ServiceCategoryCard: React.FC<ServiceCategoryCardProps> = ({ category, index }) => {
   const router = useRouter();
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  const numColumns = SCREEN_WIDTH > 700 ? 6 : 3;
+  const CARD_WIDTH = Math.floor((SCREEN_WIDTH - (layout.screenPaddingH * 2) - (layout.categoryGap * (numColumns - 1))) / numColumns);
   const scale = useSharedValue(0.93);
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(12);
@@ -79,7 +83,7 @@ export const ServiceCategoryCard: React.FC<ServiceCategoryCardProps> = ({ catego
   const styleConfig = CATEGORY_STYLES[category.id] || DEFAULT_STYLE;
 
   return (
-    <Animated.View style={[styles.container, animatedStyle]}>
+    <Animated.View style={[styles.container, animatedStyle, { width: CARD_WIDTH }]}>
       <Pressable
         style={styles.pressable}
         onPressIn={handlePressIn}
@@ -106,7 +110,6 @@ export const ServiceCategoryCard: React.FC<ServiceCategoryCardProps> = ({ catego
 
 const styles = StyleSheet.create({
   container: {
-    width: 106,
     height: 100,
     backgroundColor: colors.bgCard,
     borderRadius: radius.xl,

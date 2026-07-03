@@ -1,0 +1,84 @@
+import React from 'react';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { colors } from '../../design/colors';
+import { textStyles } from '../../design/typography';
+import { layout } from '../../design/spacing';
+
+interface SectionProps {
+  title: string;
+  actionLabel?: string;
+  onAction?: () => void;
+  children: React.ReactNode;
+  paddingTop?: number;
+  showDivider?: boolean;
+}
+
+export const Section: React.FC<SectionProps> = ({
+  title,
+  actionLabel,
+  onAction,
+  children,
+  paddingTop = 24,
+  showDivider = false,
+}) => {
+  return (
+    <View style={styles.container}>
+      {showDivider && <View style={styles.divider} />}
+      
+      <View style={[styles.header, { paddingTop }]}>
+        <Text style={styles.title}>{title}</Text>
+        
+        {actionLabel && (
+          <Pressable 
+            onPress={onAction} 
+            hitSlop={12}
+            style={({ pressed }) => [
+              styles.actionButton,
+              pressed && { opacity: 0.7 }
+            ]}
+          >
+            <Text style={styles.actionLabel}>{actionLabel}</Text>
+          </Pressable>
+        )}
+      </View>
+      
+      <View style={styles.content}>
+        {children}
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    width: '100%',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    width: '100%',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: layout.screenPaddingH,
+    paddingBottom: 12,
+  },
+  title: {
+    ...textStyles.h4,
+    color: colors.textPrimary,
+  },
+  actionButton: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionLabel: {
+    fontFamily: 'PlusJakartaSans-Medium',
+    fontSize: 13,
+    color: colors.primary,
+  },
+  content: {
+    width: '100%',
+  },
+});

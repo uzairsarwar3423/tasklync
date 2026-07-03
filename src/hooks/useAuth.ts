@@ -111,6 +111,7 @@ export const useUpdateName = () => {
   const showToast = useUIStore((state) => state.showToast);
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
+  const setIsNewUser = useAuthStore((state) => state.setIsNewUser);
 
   const updateName = async (name: string) => {
     setIsLoading(true);
@@ -128,6 +129,9 @@ export const useUpdateName = () => {
       if (user) {
         setUser({ ...user, name: parsed.data });
       }
+      
+      // Crucial fix: Clear isNewUser flag so AuthProvider doesn't force a redirect back to name screen
+      setIsNewUser(false);
       
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       router.replace('/(auth)/location-permission');

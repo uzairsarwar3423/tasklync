@@ -24,9 +24,10 @@ export const StickyFooter = ({
         styles.container,
         {
           backgroundColor: bg,
-          paddingBottom: Math.max(insets.bottom, 16),
+          paddingBottom: insets.bottom + 24,
+          marginBottom: -insets.bottom, // Counteracts Screen's SafeAreaView padding
           borderTopWidth: noBorder ? 0 : 1,
-          borderTopColor: colors.border,
+          borderTopColor: 'rgba(0,0,0,0.02)',
         },
         style
       ]}
@@ -38,20 +39,16 @@ export const StickyFooter = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    // Top-only shadow for iOS
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    // Subtle top shadow
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
     // Elevation for Android
-    elevation: 10,
-    // This is often needed on Android to show shadow on top only
-    ...Platform.select({
-      android: {
-        borderTopWidth: 1,
-      }
-    })
+    elevation: 8,
   }
 });

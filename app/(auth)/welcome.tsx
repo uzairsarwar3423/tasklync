@@ -13,8 +13,8 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 
 import { Screen } from '@components/layout/Screen';
-import { StickyFooter } from '@components/layout/StickyFooter';
 import { Text } from '@components/ui/Text';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@components/ui/Button';
 import { colors, fontFamily, layout, radius } from '@design/index';
 
@@ -44,6 +44,7 @@ const SLIDES = [
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const scrollX = useSharedValue(0);
   const flatListRef = useRef<Animated.FlatList<any>>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -89,7 +90,7 @@ export default function WelcomeScreen() {
 
   const renderItem = ({ item, index }: { item: typeof SLIDES[0], index: number }) => {
     return (
-      <View style={styles.slide}>
+      <View style={[styles.slide, { paddingTop: Math.max(insets.top, 24) + 64 }]}>
         <View style={[styles.illustration, { backgroundColor: item.color }]} />
         <View style={styles.textContainer}>
           <Text variant="h1" color="primary" style={styles.title} accessibilityRole="header">
@@ -104,11 +105,11 @@ export default function WelcomeScreen() {
   };
 
   return (
-    <Screen bg={colors.bgCard} statusBarStyle="dark-content">
+    <Screen bg={colors.bgCard} statusBarStyle="dark-content" edges={['left', 'right']}>
       {/* Skip Button */}
       {currentIndex < 2 && (
         <Pressable 
-          style={styles.skipButton} 
+          style={[styles.skipButton, { top: Math.max(insets.top, 24) + 16 }]} 
           onPress={handleSkip}
           hitSlop={12}
           accessibilityLabel="Skip onboarding"
@@ -117,8 +118,9 @@ export default function WelcomeScreen() {
         </Pressable>
       )}
 
-      {/* Slider */}
-      <Animated.FlatList
+      <View style={styles.mainContent}>
+        {/* Slider */}
+        <Animated.FlatList
         ref={flatListRef as any}
         data={SLIDES}
         renderItem={renderItem}
@@ -171,24 +173,25 @@ export default function WelcomeScreen() {
         })}
       </View>
 
+      </View>
+
       {/* CTA Footer */}
-      <View style={styles.footerPlaceholder}>
-        <Animated.View style={[StyleSheet.absoluteFill, footerAnimatedStyle]}>
-          <StickyFooter noBorder bg="transparent" style={styles.footer}>
-            <Button 
-              variant="primary" 
-              size="lg" 
-              fullWidth 
-              onPress={handleGetStarted}
-              label="Get Started"
-            />
-            <View style={styles.loginContainer}>
-              <Text style={styles.loginText}>Already have an account? </Text>
-              <Pressable onPress={handleLogin} hitSlop={12} accessibilityLabel="Already have an account, log in">
-                <Text style={styles.loginLink}>Log In</Text>
-              </Pressable>
-            </View>
-          </StickyFooter>
+      <View style={[styles.footerPlaceholder, { height: layout.primaryButtonH + 84 + insets.bottom }]}>
+        <Animated.View style={[styles.footerContainer, footerAnimatedStyle, { paddingBottom: insets.bottom + 24 }]}>
+          <Button 
+            variant="primary" 
+            size="lg" 
+            fullWidth 
+            onPress={handleGetStarted}
+            label="Get Started"
+            style={styles.buttonShadow}
+          />
+          <View style={styles.loginContainer}>
+            <Text style={styles.loginText}>Already have an account? </Text>
+            <Pressable onPress={handleLogin} hitSlop={12} accessibilityLabel="Already have an account, log in">
+              <Text style={styles.loginLink}>Log In</Text>
+            </Pressable>
+          </View>
         </Animated.View>
       </View>
     </Screen>
@@ -196,9 +199,11 @@ export default function WelcomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  mainContent: {
+    flex: 1,
+  },
   skipButton: {
     position: 'absolute',
-    top: 16,
     right: 20,
     zIndex: 10,
   },
@@ -210,7 +215,6 @@ const styles = StyleSheet.create({
   slide: {
     width: SCREEN_WIDTH,
     alignItems: 'center',
-    paddingTop: 80,
     paddingHorizontal: 32,
   },
   illustration: {
@@ -244,17 +248,36 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   footerPlaceholder: {
-    height: layout.primaryButtonH + 40 + 20, // button + text + padding
     width: '100%',
   },
-  footer: {
-    paddingBottom: 0, // Insets handled by Screen
+  footerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.bgCard,
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.02)',
+  },
+  buttonShadow: {
+    shadowOpacity: 0.02,
+    shadowRadius: 3,
+    elevation: 1,
   },
   loginContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 16,
-    paddingBottom: 8,
   },
   loginText: {
     fontFamily: fontFamily.jakarta.regular,

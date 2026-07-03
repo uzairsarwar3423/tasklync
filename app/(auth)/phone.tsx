@@ -106,7 +106,7 @@ export default function PhoneScreen() {
         </Text>
       </View>
 
-      <StickyFooter noBorder bg="transparent">
+      <StickyFooter>
         <Animated.View style={animatedButtonStyle}>
           <Button
             variant="primary"

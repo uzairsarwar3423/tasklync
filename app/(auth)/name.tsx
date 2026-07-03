@@ -11,6 +11,7 @@ import * as Haptics from 'expo-haptics';
 import { Screen } from '@components/layout/Screen';
 import { StickyFooter } from '@components/layout/StickyFooter';
 import { Text } from '@components/ui/Text';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TextInput } from '@components/ui/Input/TextInput';
 import { Button } from '@components/ui/Button';
 import { colors, fontFamily } from '@design/index';
@@ -20,6 +21,7 @@ import { useUpdateName } from '@hooks/useAuth';
 export default function NameScreen() {
   const [name, setName] = useState('');
   const { updateName, isLoading, error } = useUpdateName();
+  const insets = useSafeAreaInsets();
 
   const trimmedName = name.trim();
   const isValid = trimmedName.length >= 2;
@@ -55,8 +57,8 @@ export default function NameScreen() {
   };
 
   return (
-    <Screen bg={colors.bgCard} statusBarStyle="dark-content">
-      <View style={styles.content}>
+    <Screen bg={colors.bgCard} statusBarStyle="dark-content" edges={['bottom', 'left', 'right']}>
+      <View style={[styles.content, { paddingTop: Math.max(insets.top, 24) + 16 }]}>
         <Text style={styles.emoji}>👋</Text>
 
         <Text variant="h1" color="primary" style={styles.title}>
@@ -90,7 +92,7 @@ export default function NameScreen() {
         </View>
       </View>
 
-      <StickyFooter noBorder bg="transparent">
+      <StickyFooter>
         <Animated.View style={animatedButtonStyle}>
           <Button
             variant="primary"
@@ -111,8 +113,7 @@ export default function NameScreen() {
 const styles = StyleSheet.create({
   content: {
     flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingHorizontal: 24,
   },
   emoji: {
     fontSize: 48,
@@ -122,10 +123,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   subtitle: {
-    marginBottom: 28,
+    marginBottom: 32,
   },
   inputContainer: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   charCount: {
     fontFamily: fontFamily.inter.regular,

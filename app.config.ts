@@ -11,7 +11,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   userInterfaceStyle: 'automatic',
   // @ts-ignore
   splash: {
-    image: './assets/images/splash.png',
+    image: './assets/images/splash-icon.png',
     resizeMode: 'contain',
     backgroundColor: '#16A34A',
   },
@@ -30,7 +30,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     package: 'com.tasklync.user',
     versionCode: 1,
     adaptiveIcon: {
-      foregroundImage: './assets/images/adaptive-icon.png',
+      foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundColor: '#16A34A',
     },
     permissions: [

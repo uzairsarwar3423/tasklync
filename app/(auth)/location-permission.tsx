@@ -36,7 +36,7 @@ export default function LocationPermissionScreen() {
         // Optionally get position and reverse geocode here...
       }
 
-      router.replace('/(tabs)' as any);
+      router.replace('/(tabs)/' as any);
       
       if (status === 'granted') {
         showToast({ type: 'success', title: `Welcome, ${user?.name || 'there'}! 👋` });
@@ -44,14 +44,14 @@ export default function LocationPermissionScreen() {
     } catch (e) {
       // If error occurs, still proceed, don't block
       setPermissionStatus('undetermined');
-      router.replace('/(tabs)' as any);
+      router.replace('/(tabs)/' as any);
     }
   };
 
   const handleNotNow = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setPermissionStatus('denied');
-    router.replace('/(tabs)' as any);
+    router.replace('/(tabs)/' as any);
   };
 
   return (
@@ -79,7 +79,7 @@ export default function LocationPermissionScreen() {
         </View>
       </View>
 
-      <StickyFooter noBorder bg="transparent">
+      <StickyFooter>
         <Button
           variant="primary"
           size="lg"
