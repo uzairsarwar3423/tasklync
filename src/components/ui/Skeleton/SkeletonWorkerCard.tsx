@@ -1,5 +1,4 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Skeleton } from './Skeleton';
 import { colors } from '../../../design/colors';
 import { radius } from '../../../design/radius';
@@ -7,19 +6,26 @@ import { shadows } from '../../../design/shadows';
 import { layout } from '../../../design/spacing';
 
 export const SkeletonWorkerCard = () => {
+  const { width: W } = useWindowDimensions();
+  const nameW = Math.floor(W * 0.35);
+  const subW = Math.floor(W * 0.22);
+  const descW = Math.floor(W * 0.28);
+  const priceW = Math.floor(W * 0.16);
+  const ratingW = Math.floor(W * 0.14);
+
   return (
     <View style={styles.container}>
       <Skeleton width={56} height={56} borderRadius={28} />
-      
+
       <View style={styles.content}>
-        <Skeleton width={120} height={15} style={styles.name} />
-        <Skeleton width={80} height={13} style={styles.sub} />
-        <Skeleton width={100} height={13} />
+        <Skeleton width={nameW} height={15} style={styles.name} />
+        <Skeleton width={subW} height={13} style={styles.sub} />
+        <Skeleton width={descW} height={13} />
       </View>
-      
+
       <View style={styles.rightContent}>
-        <Skeleton width={60} height={14} style={styles.price} />
-        <Skeleton width={50} height={11} />
+        <Skeleton width={priceW} height={14} style={styles.price} />
+        <Skeleton width={ratingW} height={11} />
       </View>
     </View>
   );

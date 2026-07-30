@@ -65,20 +65,25 @@ export const userApi = {
     await apiClient.delete(`/users/me/blocks/${workerId}`);
   },
 
-  // 2.6 User Addresses
+  // 2.6 User Addresses & Location Persistence
   getAddresses: async (): Promise<UserAddress[]> => {
-    const response = await apiClient.get<UserAddress[]>('/users/me/addresses');
-    return response.data;
+    const response = await apiClient.get<any>('/users/me/addresses');
+    return response.data?.data || response.data || [];
   },
 
   createAddress: async (payload: CreateAddressPayload): Promise<UserAddress> => {
-    const response = await apiClient.post<UserAddress>('/users/me/addresses', payload);
-    return response.data;
+    const response = await apiClient.post<any>('/users/me/addresses', payload);
+    return response.data?.data || response.data;
+  },
+
+  syncCurrentLocation: async (payload: CreateAddressPayload): Promise<UserAddress> => {
+    const response = await apiClient.post<any>('/users/me/addresses', payload);
+    return response.data?.data || response.data;
   },
 
   updateAddress: async (id: string, payload: UpdateAddressPayload): Promise<UserAddress> => {
-    const response = await apiClient.patch<UserAddress>(`/users/me/addresses/${id}`, payload);
-    return response.data;
+    const response = await apiClient.patch<any>(`/users/me/addresses/${id}`, payload);
+    return response.data?.data || response.data;
   },
 
   deleteAddress: async (id: string): Promise<void> => {
@@ -86,7 +91,7 @@ export const userApi = {
   },
 
   setDefaultAddress: async (id: string): Promise<UserAddress> => {
-    const response = await apiClient.patch<UserAddress>(`/users/me/addresses/${id}/default`);
-    return response.data;
+    const response = await apiClient.patch<any>(`/users/me/addresses/${id}/default`);
+    return response.data?.data || response.data;
   },
 };

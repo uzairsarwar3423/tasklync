@@ -1,16 +1,18 @@
 import React, { useEffect } from 'react';
 import { useRouter, useSegments } from 'expo-router';
-import { useAuthStore } from '../store';
+import { useAuthStore, useLocationStore } from '../store';
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const router = useRouter();
   const segments = useSegments();
   const authState = useAuthStore(state => state.authState);
-  const hydrate = useAuthStore(state => state.hydrate);
+  const hydrateAuth = useAuthStore(state => state.hydrate);
+  const hydrateLocation = useLocationStore(state => state.hydrate);
 
   useEffect(() => {
-    hydrate();
-  }, [hydrate]);
+    hydrateAuth();
+    hydrateLocation();
+  }, [hydrateAuth, hydrateLocation]);
 
   useEffect(() => {
     if (authState === 'idle' || authState === 'loading') return;

@@ -25,17 +25,16 @@ export const PopularServicesSection = () => {
           <Text style={styles.errorText}>Services unavailable</Text>
         ) : isLoading ? (
           <>
-            <SkeletonServiceListItem />
-            <SkeletonServiceListItem />
-            <SkeletonServiceListItem />
-            <SkeletonServiceListItem />
+            <View style={styles.gridItem}><SkeletonServiceListItem /></View>
+            <View style={styles.gridItem}><SkeletonServiceListItem /></View>
+            <View style={styles.gridItem}><SkeletonServiceListItem /></View>
+            <View style={styles.gridItem}><SkeletonServiceListItem /></View>
           </>
         ) : (
           services?.map(service => (
-            <ServiceListItem
-              key={service.id}
-              {...service}
-            />
+            <View key={service.id} style={styles.gridItem}>
+              <ServiceListItem {...service} />
+            </View>
           ))
         )}
       </View>
@@ -45,10 +44,13 @@ export const PopularServicesSection = () => {
 
 const styles = StyleSheet.create({
   container: {
-    paddingHorizontal: 16,
+    paddingHorizontal: 10,
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
+  },
+  gridItem: {
+    width: '50%',
   },
   errorText: {
     fontFamily: 'PlusJakartaSans-Regular',

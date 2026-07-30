@@ -31,14 +31,23 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <AppProviders>
-            <Stack screenOptions={{ headerShown: false }}>
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FFFFFF' } }}>
               <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
               <Stack.Screen name="(tabs)" options={{ animation: 'fade', gestureEnabled: false }} />
               <Stack.Screen name="(map)/live-map" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
-              <Stack.Screen name="worker/[id]" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen
+                name="worker/[id]"
+                options={{
+                  animation: 'slide_from_right',
+                  presentation: 'card',
+                  contentStyle: { backgroundColor: '#FFFFFF' },
+                  fullScreenGestureEnabled: true,
+                }}
+              />
               <Stack.Screen name="booking/[id]/chat" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="booking/success" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
               <Stack.Screen name="booking/[id]/track" options={{ animation: 'slide_from_bottom' }} />
+              <Stack.Screen name="search/filters" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
             </Stack>
           </AppProviders>
         </QueryClientProvider>

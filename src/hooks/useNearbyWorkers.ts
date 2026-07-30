@@ -1,101 +1,57 @@
 import { useQuery } from '@tanstack/react-query';
-import { workerApi } from '../services/api/worker.api';
 import { NearbyWorkersParams } from '../types';
 import { useLocationStore } from '../store/location.store';
-
-const MOCK_WORKERS = [
-  {
-    id: 'w1',
-    name: 'Ahmed Khan',
-    avatarUrl: 'https://png.pngtree.com/png-clipart/20231020/original/pngtree-power-lineman-electrician-png-image_13377739.png',
-    avgRating: 4.9,
-    totalReviews: 124,
-    currency: 'Rs',
-    distanceMeters: 1200,
-    distanceLabel: '1.2 km',
-    categories: ['Electrician'],
-    availabilityStatus: 'AVAILABLE',
-    availableUntil: '18:00',
-    isOnJob: false,
-    responseTimeMins: 5,
-    startingPrice: 500,
-  },
-  {
-    id: 'w2',
-    name: 'Sarah Ali',
-    avatarUrl: 'https://img.magnific.com/free-photo/workwoman-office-cleaning-service_1398-3766.jpg?semt=ais_hybrid&w=740&q=80',
-    avgRating: 4.7,
-    totalReviews: 89,
-    currency: 'Rs',
-    distanceMeters: 2300,
-    distanceLabel: '2.3 km',
-    categories: ['Cleaning', 'Plumber'],
-    availabilityStatus: 'BUSY',
-    availableUntil: null,
-    isOnJob: true,
-    responseTimeMins: 15,
-    startingPrice: 1200,
-  },
-  {
-    id: 'w3',
-    name: 'Bilal Malik',
-    avatarUrl: 'https://i.pravatar.cc/150?u=bilal',
-    avgRating: 4.8,
-    totalReviews: 205,
-    currency: 'Rs',
-    distanceMeters: 3100,
-    distanceLabel: '3.1 km',
-    categories: ['AC Repair'],
-    availabilityStatus: 'OFFLINE',
-    availableUntil: null,
-    isOnJob: false,
-    responseTimeMins: 30,
-    startingPrice: 800,
-  },
-  {
-    id: 'w4',
-    name: 'Zainab B.',
-    avatarUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSvpweDIYeUmAx7d5Tdr64qREp6Pjc5UmBzhht2oPa-Tw&s',
-    avgRating: 5.0,
-    totalReviews: 42,
-    currency: 'Rs',
-    distanceMeters: 800,
-    distanceLabel: '800 m',
-    categories: ['Painter'],
-    availabilityStatus: 'AVAILABLE',
-    availableUntil: '20:00',
-    isOnJob: false,
-    responseTimeMins: 2,
-    startingPrice: 1500,
-  },
-];
+import { workerApi } from '../services/api/worker.api';
+import { searchApi } from '../services/api/search.api';
 
 export const useNearbyWorkers = (params?: Partial<NearbyWorkersParams>) => {
   const { currentLocation } = useLocationStore();
 
-  // Fallback to 0 if location not yet loaded so we always get queryParams to show demo data
-  const lat = params?.lat ?? currentLocation?.lat ?? 31.5204;
-  const lng = params?.lng ?? currentLocation?.lng ?? 74.3587;
+  const lat = params?.lat ?? currentLocation?.lat;
+  const lng = params?.lng ?? currentLocation?.lng;
 
-  const queryParams: NearbyWorkersParams | null = (lat !== undefined && lng !== undefined) ? {
-    lat: lat as number,
-    lng: lng as number,
-    radius: params?.radius || 5000,
+  const queryParams: NearbyWorkersParams = {
+    lat: lat || 0,
+    lng: lng || 0,
+    radius: params?.radius || 10000,
     limit: params?.limit || 8, // home screen limit
     ...(params?.category ? { category: params.category } : {}),
-  } : null;
+  };
 
   const query = useQuery({
     queryKey: ['workers', 'nearby', queryParams],
     queryFn: async () => {
-      // Mock API delay for Day 5 demonstration
-      return new Promise<{ workers: any[] }>((resolve) => {
-        setTimeout(() => resolve({ workers: MOCK_WORKERS }), 800);
-      });
-      // Real API implementation (commented for demo):
-      // return workerApi.getNearbyWorkers(queryParams!);
+      // Tier 1: Geofenced proximity search for workers nearby
+      try {
+        const res = await workerApi.getNearbyWorkers(queryParams);
+        if (res && Array.isArray(res.workers) && res.workers.length > 0) {
+          return res;
+        }
+      } catch (error) {
+        console.warn('[useNearbyWorkers] Proximity API error:', error);
+      }
+
+      // Tier 2: Search API fallback with expanded net
+      try {
+        const searchRes = await searchApi.searchWorkers({
+          q: queryParams.category || '',
+          lat: queryParams.lat !== 0 ? queryParams.lat : undefined,
+          lng: queryParams.lng !== 0 ? queryParams.lng : undefined,
+          radius: (queryParams.radius || 10000) * 3, // wider radius search
+          limit: queryParams.limit,
+        });
+
+        if (searchRes && Array.isArray(searchRes.workers) && searchRes.workers.length > 0) {
+          return { workers: searchRes.workers, total: searchRes.total, page: 1, hasMore: searchRes.hasMore };
+        }
+      } catch (error) {
+        console.warn('[useNearbyWorkers] Search API fallback error:', error);
+      }
+
+      // Tier 3: Return real empty result if no workers found in backend
+      return { workers: [] };
     },
-    enabled: !!queryParams,
+    enabled: true,
     staleTime: 30_000, // 30 seconds
     refetchInterval: 60_000, // 60 seconds
     refetchOnWindowFocus: false,

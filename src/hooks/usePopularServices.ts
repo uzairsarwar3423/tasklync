@@ -8,13 +8,14 @@ export interface PopularService {
   startingPrice: number;
   currency: string;
   iconName?: string;
+  imageUrl?: any;
 }
 
 const mockPopularServices: PopularService[] = [
-  { id: 'ps1', name: 'Fan Installation', categoryName: 'Electrician', duration: '45-60 min', startingPrice: 500, currency: 'Rs', iconName: 'zap' },
-  { id: 'ps2', name: 'AC Deep Cleaning', categoryName: 'AC Repair', duration: '90-120 min', startingPrice: 1500, currency: 'Rs', iconName: 'wind' },
-  { id: 'ps3', name: 'Bathroom Plumbing', categoryName: 'Plumber', duration: '60 min', startingPrice: 600, currency: 'Rs', iconName: 'droplet' },
-  { id: 'ps4', name: 'Sofa Cleaning', categoryName: 'Cleaning', duration: '120 min', startingPrice: 1200, currency: 'Rs', iconName: 'sparkles' },
+  { id: 'ps1', name: 'Fan Installation', categoryName: 'Electrician', duration: '45-60 min', startingPrice: 500, currency: 'Rs', imageUrl: require('../../assets/images/fan-installtion.png') },
+  { id: 'ps2', name: 'AC Deep Cleaning', categoryName: 'AC Repair', duration: '90-120 min', startingPrice: 1500, currency: 'Rs', imageUrl: require('../../assets/images/ac-deep-cleaning.png') },
+  { id: 'ps3', name: 'Bathroom Plumbing', categoryName: 'Plumber', duration: '60 min', startingPrice: 600, currency: 'Rs', imageUrl: require('../../assets/images/bathroom-plumbering.png') },
+  { id: 'ps4', name: 'Sofa Cleaning', categoryName: 'Cleaning', duration: '120 min', startingPrice: 1200, currency: 'Rs', imageUrl: require('../../assets/images/sofa-cleaning.png') },
 ];
 
 export const usePopularServices = () => {

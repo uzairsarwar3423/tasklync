@@ -105,27 +105,27 @@ export const NearbyWorkersList = () => {
 
 const styles = StyleSheet.create({
   container: {
-    minHeight: 250,
+    minHeight: 236,
   },
   listWrapper: {
-    height: 256, // 240 (card) + 16 (padding)
+    height: 236, // 216 (card) + 20 (padding)
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingRight: 4, // Peek effect (12px visible of next card)
   },
   skeletonContainer: {
     flexDirection: 'row',
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingVertical: 10,
     overflow: 'hidden',
   },
   skeletonWrapper: {
-    marginRight: 12,
+    marginRight: 16,
   },
   emptyContainer: {
-    height: 256,
+    height: 236,
   },
   errorContainer: {
     height: 100,

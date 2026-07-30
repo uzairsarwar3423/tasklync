@@ -21,4 +21,5 @@ export interface NearbyWorkersParams {
   maxRate?: number;
   page?: number;
   limit?: number;
+  sortBy?: string;
 }

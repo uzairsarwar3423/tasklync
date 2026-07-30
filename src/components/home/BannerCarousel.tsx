@@ -107,6 +107,16 @@ export const BannerCarousel = () => {
         onTouchStart={onTouchStart}
         onTouchEnd={onTouchEnd}
         onTouchCancel={onTouchEnd}
+        getItemLayout={(_, index) => ({
+          length: screenWidth,
+          offset: screenWidth * index,
+          index,
+        })}
+        onScrollToIndexFailed={(info) => {
+          setTimeout(() => {
+            flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+          }, 100);
+        }}
       />
       
       <View style={styles.dotsContainer}>

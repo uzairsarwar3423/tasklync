@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
+import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MapPin, CheckCircle2 } from 'lucide-react-native';
 import * as Location from 'expo-location';
@@ -11,6 +11,7 @@ import { Text } from '@components/ui/Text';
 import { Button } from '@components/ui/Button';
 import { colors, fontFamily, radius } from '@design/index';
 import { useLocationStore, useUIStore, useAuthStore } from '@store/index';
+import { extractCityOrAreaName, extractFullAddressLine } from '@utils/locationUtils';
 
 const FEATURES = [
   'Find verified workers closest to you',
@@ -33,7 +34,37 @@ export default function LocationPermissionScreen() {
       
       if (status === 'granted') {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        // Optionally get position and reverse geocode here...
+        
+        // Fetch current position & trigger backend DB location persistence
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.Balanced,
+        });
+
+        const coords = {
+          lat: location.coords.latitude,
+          lng: location.coords.longitude,
+        };
+
+        useLocationStore.getState().setCurrentLocation(coords);
+
+        Location.reverseGeocodeAsync({ latitude: coords.lat, longitude: coords.lng })
+          .then((geocode) => {
+            const place = geocode && geocode.length > 0 ? geocode[0] : undefined;
+            const cityName = extractCityOrAreaName(place);
+            const addressLine = extractFullAddressLine(place);
+            const countryName = place?.country || 'Pakistan';
+
+            useLocationStore.getState().setCurrentCity(cityName);
+            useLocationStore.getState().syncLocationToBackend(coords, addressLine, cityName, countryName);
+          })
+          .catch(() => {
+            useLocationStore.getState().syncLocationToBackend(
+              coords,
+              'Current GPS Location',
+              'Current Area',
+              'Pakistan'
+            );
+          });
       }
 
       router.replace('/(tabs)/' as any);
@@ -55,8 +86,12 @@ export default function LocationPermissionScreen() {
   };
 
   return (
-    <Screen bg="#FAFAFA" statusBarStyle="dark-content">
-      <View style={styles.content}>
+    <Screen bg="#FAFAFA" statusBarStyle="dark-content" edges={['top', 'bottom', 'left', 'right']}>
+      <ScrollView 
+        style={{ flex: 1 }}
+        contentContainerStyle={[styles.content, { paddingBottom: 140 }]}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.animationPlaceholder} accessibilityLabel="Animated map showing location feature">
           <MapPin size={80} color={colors.primary} />
         </View>
@@ -77,7 +112,7 @@ export default function LocationPermissionScreen() {
             </View>
           ))}
         </View>
-      </View>
+      </ScrollView>
 
       <StickyFooter>
         <Button
@@ -103,7 +138,7 @@ export default function LocationPermissionScreen() {
 
 const styles = StyleSheet.create({
   content: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 20,
     alignItems: 'center',
     paddingTop: 40,

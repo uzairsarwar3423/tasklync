@@ -11,6 +11,7 @@ import Animated, {
   withTiming
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
 
 import { Screen } from '@components/layout/Screen';
 import { Text } from '@components/ui/Text';
@@ -25,19 +26,21 @@ const SLIDES = [
     id: '1',
     title: 'Verified Workers You Can Trust',
     subtitle: 'Every worker is background-checked, ID-verified, and reviewed by real customers near you.',
-    // placeholder color instead of lottie for day 3
+    image: require('../../assets/images/verfied-worker.png'),
     color: '#F0FDF4', 
   },
   {
     id: '2',
     title: 'Book in Under 60 Seconds',
     subtitle: 'Find nearby electricians, plumbers, and cleaners. Schedule instantly or get help right now.',
+    image: require('../../assets/images/book-in-under.png'),
     color: '#FEF3C7',
   },
   {
     id: '3',
     title: 'Track Every Step, Live',
     subtitle: 'Watch your worker travel to you in real-time. Chat, call, or reschedule — all in one place.',
+    image: require('../../assets/images/track-step.png'),
     color: '#E0E7FF',
   }
 ];
@@ -88,10 +91,19 @@ export default function WelcomeScreen() {
     };
   });
 
-  const renderItem = ({ item, index }: { item: typeof SLIDES[0], index: number }) => {
+  const renderItem = ({ item, index }: { item: typeof SLIDES[number], index: number }) => {
     return (
       <View style={[styles.slide, { paddingTop: Math.max(insets.top, 24) + 64 }]}>
-        <View style={[styles.illustration, { backgroundColor: item.color }]} />
+        <View style={[styles.illustration, { backgroundColor: item.color }]}>
+          {item.image && (
+            <Image 
+              source={item.image} 
+              style={{ width: '100%', height: '100%' }} 
+              contentFit="contain" 
+              transition={200}
+            />
+          )}
+        </View>
         <View style={styles.textContainer}>
           <Text variant="h1" color="primary" style={styles.title} accessibilityRole="header">
             {item.title}
@@ -218,10 +230,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
   },
   illustration: {
-    width: 240,
-    height: 240,
-    borderRadius: 120,
+    width: SCREEN_WIDTH * 0.7,
+    height: SCREEN_WIDTH * 0.7,
+    maxWidth: 320,
+    maxHeight: 320,
+    borderRadius: 9999,
     marginBottom: 48,
+    overflow: 'hidden',
   },
   textContainer: {
     alignItems: 'center',

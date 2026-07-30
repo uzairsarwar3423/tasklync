@@ -1,30 +1,32 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Skeleton } from './Skeleton';
 import { colors } from '../../../design/colors';
 import { radius } from '../../../design/radius';
 import { shadows } from '../../../design/shadows';
+import { layout } from '../../../design/spacing';
 
 export const SkeletonWorkerCardHorizontal = () => {
+  const { width: W } = useWindowDimensions();
+  // Horizontal scroll cards: ~44% of screen on small, capped at 200
+  const CARD_W = Math.min(Math.floor(W * 0.44), 200);
+
   return (
-    <View style={styles.container}>
-      <Skeleton width={160} height={80} borderRadius={0} />
-      
-      <View style={styles.content}>
-        <Skeleton width={100} height={13} style={styles.name} />
-        <Skeleton width={70} height={11} style={styles.category} />
-        
-        <View style={styles.ratingRow}>
-          <Skeleton width={50} height={12} />
-          <Skeleton width={50} height={12} />
-        </View>
-        
-        <Skeleton width={80} height={11} style={styles.status} />
-        <Skeleton width={60} height={13} style={styles.price} />
+    <View style={[styles.container, { width: CARD_W }]}>
+      <View style={styles.avatarSection}>
+        <Skeleton width={72} height={72} borderRadius={36} />
       </View>
-      
-      <View style={styles.buttonArea}>
-        <Skeleton width={140} height={30} borderRadius={15} />
+
+      <View style={styles.content}>
+        <Skeleton width={Math.floor(CARD_W * 0.60)} height={14} style={styles.name} />
+        <Skeleton width={Math.floor(CARD_W * 0.50)} height={12} style={styles.category} />
+
+        <View style={styles.statsRow}>
+          <Skeleton width={Math.floor(CARD_W * 0.65)} height={14} borderRadius={10} />
+        </View>
+
+        <View style={styles.priceRow}>
+          <Skeleton width={Math.floor(CARD_W * 0.55)} height={14} />
+        </View>
       </View>
     </View>
   );
@@ -32,39 +34,34 @@ export const SkeletonWorkerCardHorizontal = () => {
 
 const styles = StyleSheet.create({
   container: {
-    width: 160,
-    height: 240,
+    height: 216,
     backgroundColor: colors.bgCard,
-    borderRadius: radius.lg,
-    overflow: 'hidden',
+    borderRadius: radius.xl,
     ...shadows.sm,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.03)',
+    marginRight: layout.cardGap,
+  },
+  avatarSection: {
+    marginBottom: 12,
+    marginTop: 4,
   },
   content: {
-    paddingHorizontal: 10,
-    paddingTop: 8,
-    flex: 1,
+    alignItems: 'center',
+    width: '100%',
   },
   name: {
     marginBottom: 4,
   },
   category: {
-    marginBottom: 6,
+    marginBottom: 10,
   },
-  ratingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
+  statsRow: {
+    marginBottom: 12,
   },
-  status: {
-    marginBottom: 4,
-  },
-  price: {
-    marginTop: 'auto',
-    marginBottom: 0,
-  },
-  buttonArea: {
-    paddingHorizontal: 10,
-    paddingBottom: 10,
-    alignItems: 'center',
+  priceRow: {
+    marginTop: 4,
   },
 });

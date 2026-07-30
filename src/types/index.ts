@@ -4,3 +4,4 @@ export * from './worker.types';
 export * from './location.types';
 export * from './auth.types';
 export * from './user.types';
+export * from './review.types';

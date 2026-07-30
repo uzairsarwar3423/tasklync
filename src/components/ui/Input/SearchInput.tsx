@@ -1,67 +1,178 @@
-import React, { useEffect } from 'react';
-import { TextInput as RNTextInput } from 'react-native';
-import Animated, { 
-  useSharedValue, 
-  useAnimatedStyle, 
-  withSpring, 
-  withTiming 
+import React, { useRef, useState, useEffect } from 'react';
+import {
+  View,
+  TextInput as RNTextInput,
+  StyleSheet,
+  Pressable,
+  ViewStyle,
+} from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  interpolateColor,
 } from 'react-native-reanimated';
 import { Search, X } from 'lucide-react-native';
+import { colors } from '../../../design/colors';
+import { typography } from '../../../design/typography';
+import { springConfig, timingConfig } from '../../../design/animations';
+import * as Haptics from 'expo-haptics';
 
-import { TextInput, TextInputProps } from './TextInput';
-import { springConfig } from '@design/animations';
-
-export interface SearchInputProps extends Omit<TextInputProps, 'leftIcon' | 'rightIcon' | 'onRightIconPress'> {
-  onClear?: () => void;
+interface SearchInputProps {
+  value: string;
+  onChangeText: (text: string) => void;
+  onClear: () => void;
+  onSubmitEditing?: () => void;
+  placeholder?: string;
+  autoFocus?: boolean;
+  editable?: boolean;
+  style?: ViewStyle;
 }
 
-export const SearchInput = React.forwardRef<RNTextInput, SearchInputProps>(({
+const AnimatedView = Animated.createAnimatedComponent(View);
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+export const SearchInput: React.FC<SearchInputProps> = ({
   value,
   onChangeText,
   onClear,
-  autoFocus,
-  ...rest
-}, ref) => {
-  const isVisible = !!(value && value.length > 0);
+  onSubmitEditing,
+  placeholder = 'Search services, workers...',
+  autoFocus = true,
+  editable = true,
+  style,
+}) => {
+  const inputRef = useRef<RNTextInput>(null);
+  const [isFocused, setIsFocused] = useState(autoFocus);
   
-  const scale = useSharedValue(isVisible ? 1 : 0.5);
-  const opacity = useSharedValue(isVisible ? 1 : 0);
+  const focusProgress = useSharedValue(autoFocus ? 1 : 0);
+  const xOpacity = useSharedValue(value.length > 0 ? 1 : 0);
+  const xScale = useSharedValue(value.length > 0 ? 1 : 0);
 
   useEffect(() => {
-    scale.value = withSpring(isVisible ? 1 : 0.5, springConfig.snappy);
-    opacity.value = withTiming(isVisible ? 1 : 0, { duration: 150 });
-  }, [isVisible, scale, opacity]);
+    if (value.length > 0) {
+      xOpacity.value = withTiming(1, { duration: 150 });
+      xScale.value = withSpring(1, springConfig.bouncy);
+    } else {
+      xOpacity.value = withTiming(0, { duration: 100 });
+      xScale.value = withSpring(0, springConfig.stiff);
+    }
+  }, [value, xOpacity, xScale]);
 
-  const animatedStyle = useAnimatedStyle(() => {
+  useEffect(() => {
+    focusProgress.value = withTiming(isFocused ? 1 : 0, {
+      duration: timingConfig.fast,
+    });
+  }, [isFocused, focusProgress]);
+
+  const handleClear = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    onClear();
+    // Keep focus
+    inputRef.current?.focus();
+  };
+
+  const containerAnimatedStyle = useAnimatedStyle(() => {
     return {
-      opacity: opacity.value,
-      transform: [{ scale: scale.value }],
+      borderColor: interpolateColor(
+        focusProgress.value,
+        [0, 1],
+        ['transparent', colors.primary]
+      ),
+      borderWidth: 1.5,
     };
   });
 
-  const handleClear = () => {
-    onChangeText?.('');
-    onClear?.();
-  };
+  const iconAnimatedProps = useAnimatedStyle(() => {
+    return {
+      color: interpolateColor(
+        focusProgress.value,
+        [0, 1],
+        [colors.textMuted, colors.primary]
+      ),
+    };
+  });
 
-  const ClearIcon = ({ size, color }: { size: number, color: string }) => {
-    return (
-      <Animated.View style={animatedStyle}>
-        <X size={size} color={color} />
-      </Animated.View>
-    );
-  };
+  const clearButtonAnimatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: xOpacity.value,
+      transform: [{ scale: xScale.value }],
+    };
+  });
 
   return (
-    <TextInput
-      ref={ref}
-      value={value}
-      onChangeText={onChangeText}
-      leftIcon={Search}
-      rightIcon={ClearIcon}
-      {...(isVisible ? { onRightIconPress: handleClear } : {})}
-      autoFocus={autoFocus}
-      {...rest}
-    />
+    <AnimatedView style={[styles.container, containerAnimatedStyle, style]}>
+      <Animated.View style={[styles.iconContainer]}>
+         {/* Since Lucide icons can't be easily animated with color directly via Reanimated in this setup without worklets wrapper,
+             we'll just use state or simple style if needed.
+             For full fidelity, we'll swap color in JS thread or use a wrapper.
+             Here we'll keep it simple: */}
+        <Search
+          size={18}
+          color={isFocused ? colors.primary : colors.textMuted}
+        />
+      </Animated.View>
+
+      <RNTextInput
+        ref={inputRef}
+        value={value}
+        onChangeText={onChangeText}
+        placeholder={placeholder}
+        placeholderTextColor={colors.textMuted}
+        autoFocus={autoFocus}
+        editable={editable}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => setIsFocused(false)}
+        onSubmitEditing={onSubmitEditing}
+        style={styles.input}
+        selectionColor={colors.primary}
+        returnKeyType="search"
+        keyboardType="default"
+        autoCorrect={false}
+        autoCapitalize="none"
+        clearButtonMode="never"
+      />
+
+      <AnimatedPressable
+        style={[styles.clearButton, clearButtonAnimatedStyle]}
+        onPress={handleClear}
+        hitSlop={12}
+        pointerEvents={value.length > 0 ? 'auto' : 'none'}
+      >
+        <X size={12} color={colors.textMuted} />
+      </AnimatedPressable>
+    </AnimatedView>
   );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    height: 48,
+    flex: 1,
+    backgroundColor: colors.bgInput,
+    borderRadius: 100, // pill
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    paddingLeft: 14,
+    paddingRight: 8,
+  },
+  input: {
+    flex: 1,
+    fontFamily: typography.fontFamily.jakarta.regular,
+    fontSize: 15,
+    color: colors.textPrimary,
+    paddingVertical: 0, // fix Android vertical alignment
+  },
+  clearButton: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.bgSection,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
 });

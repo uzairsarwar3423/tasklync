@@ -57,8 +57,8 @@ export default function NameScreen() {
   };
 
   return (
-    <Screen bg={colors.bgCard} statusBarStyle="dark-content" edges={['bottom', 'left', 'right']}>
-      <View style={[styles.content, { paddingTop: Math.max(insets.top, 24) + 16 }]}>
+    <Screen bg={colors.bgCard} statusBarStyle="dark-content" edges={['top', 'bottom', 'left', 'right']}>
+      <View style={[styles.content, { paddingTop: 24 }]}>
         <Text style={styles.emoji}>👋</Text>
 
         <Text variant="h1" color="primary" style={styles.title}>

@@ -1,24 +1,33 @@
-import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, useWindowDimensions } from 'react-native';
 import { Skeleton } from './Skeleton';
 import { colors } from '../../../design/colors';
 import { radius } from '../../../design/radius';
 import { shadows } from '../../../design/shadows';
 
 export const SkeletonServiceListItem = () => {
+  const { width: W } = useWindowDimensions();
+  // Cards shown 2 per row with 16px side padding and 12px gap
+  const CARD_W = Math.floor((W - 32 - 12) / 2);
+
   return (
-    <View style={styles.container}>
-      <Skeleton width={48} height={48} borderRadius={radius.md} style={styles.icon} />
-      
-      <View style={styles.content}>
-        <Skeleton width="90%" height={14} style={styles.name} />
-        <Skeleton width="60%" height={14} style={styles.name2} />
-        <Skeleton width="70%" height={12} style={styles.sub} />
-        <Skeleton width="50%" height={12} style={styles.sub} />
+    <View style={[styles.container, { width: CARD_W }]}>
+      <View style={styles.mediaArea}>
+        <Skeleton width="100%" height="100%" borderRadius={0} />
       </View>
-      
-      <View style={styles.priceRow}>
-        <Skeleton width="80%" height={14} />
+
+      <View style={styles.detailsArea}>
+        <View style={styles.content}>
+          <Skeleton width="90%" height={14} style={styles.name} />
+          <Skeleton width="60%" height={14} style={styles.name2} />
+        </View>
+
+        <View style={styles.priceRow}>
+          <View style={styles.priceTextContainer}>
+            <Skeleton width={32} height={10} style={{ marginBottom: 4 }} />
+            <Skeleton width={56} height={14} />
+          </View>
+          <Skeleton width={80} height={32} borderRadius={100} />
+        </View>
       </View>
     </View>
   );
@@ -26,21 +35,25 @@ export const SkeletonServiceListItem = () => {
 
 const styles = StyleSheet.create({
   container: {
-    width: '48%',
-    height: 180, // Approximate height to match grid cards
-    backgroundColor: colors.bgCard,
     borderRadius: radius.lg,
-    padding: 14,
-    marginBottom: 16,
+    marginBottom: 12,
     ...shadows.sm,
     flexDirection: 'column',
+    backgroundColor: colors.bgCard,
+    overflow: 'hidden',
   },
-  icon: {
-    marginBottom: 12,
+  mediaArea: {
+    width: '100%',
+    height: 140,
+    overflow: 'hidden',
+  },
+  detailsArea: {
+    flex: 1,
+    padding: 12,
+    flexDirection: 'column',
   },
   content: {
-    flex: 1,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   name: {
     marginBottom: 4,
@@ -48,10 +61,13 @@ const styles = StyleSheet.create({
   name2: {
     marginBottom: 12,
   },
-  sub: {
-    marginBottom: 4,
-  },
   priceRow: {
-    marginTop: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  priceTextContainer: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
   },
 });

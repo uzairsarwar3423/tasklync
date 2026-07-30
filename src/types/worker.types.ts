@@ -46,19 +46,4 @@ export interface WorkerPublicProfile extends WorkerNearby {
   serviceOfferings: WorkerServiceOffering[];
 }
 
-export interface WorkerReview {
-  id: string;
-  bookingId: string;
-  reviewerId: string;
-  reviewerName: string;
-  reviewerAvatarUrl: string | null;
-  rating: number;
-  punctuality: number | null;
-  quality: number | null;
-  communication: number | null;
-  value: number | null;
-  comment: string | null;
-  reply: string | null;
-  repliedAt: string | null;
-  createdAt: string;
-}
+

@@ -140,3 +140,10 @@ export const textStyles = {
     lineHeight: 16,
   },
 };
+
+export const typography = {
+  fontFamily,
+  fontSize,
+  letterSpacing,
+  textStyles,
+};

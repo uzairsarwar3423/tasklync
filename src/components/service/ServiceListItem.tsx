@@ -9,6 +9,9 @@ import { colors } from '../../design/colors';
 import { radius } from '../../design/radius';
 import { shadows } from '../../design/shadows';
 import { springConfig } from '../../design/animations';
+import { typography } from '../../design/typography';
+import { Image } from 'expo-image';
+import { AddToCartButton } from '../cart/AddToCartButton';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -20,6 +23,9 @@ interface ServiceListItemProps {
   startingPrice: number;
   currency: string;
   iconName?: string;
+  imageUrl?: any;
+  isHeader?: boolean;
+  style?: any;
 }
 
 export const ServiceListItem: React.FC<ServiceListItemProps> = ({
@@ -30,6 +36,9 @@ export const ServiceListItem: React.FC<ServiceListItemProps> = ({
   startingPrice,
   currency,
   iconName,
+  imageUrl,
+  isHeader = false,
+  style,
 }) => {
   const router = useRouter();
   const scale = useSharedValue(1);
@@ -66,39 +75,76 @@ export const ServiceListItem: React.FC<ServiceListItemProps> = ({
   });
 
   const getIcon = () => {
+    if (imageUrl) {
+      return (
+        <Image
+          source={imageUrl}
+          style={{ width: '100%', height: '100%' }}
+          contentFit="cover"
+        />
+      );
+    }
     switch (iconName) {
-      case 'zap': return <Zap size={24} color={colors.primary} />;
-      case 'wind': return <Wind size={24} color={colors.primary} />;
-      case 'droplet': return <Droplet size={24} color={colors.primary} />;
-      case 'sparkles': return <Sparkles size={24} color={colors.primary} />;
-      default: return <Wrench size={24} color={colors.primary} />;
+      case 'zap': return <Zap size={20} color={colors.primary} />;
+      case 'wind': return <Wind size={20} color={colors.primary} />;
+      case 'droplet': return <Droplet size={20} color={colors.primary} />;
+      case 'sparkles': return <Sparkles size={20} color={colors.primary} />;
+      default: return <Wrench size={20} color={colors.primary} />;
     }
   };
+
+  const finalPrice = startingPrice && startingPrice > 0 ? startingPrice : 500;
+
+  if (isHeader) {
+    return (
+      <View style={[styles.headerContainer, style]}>
+        <View style={styles.iconAreaHeader}>
+          {getIcon()}
+        </View>
+        <View style={styles.contentHeader}>
+          <Text style={styles.nameHeader} numberOfLines={1}>
+            {name}
+          </Text>
+          <Text style={styles.durationHeader}>
+            {duration}
+          </Text>
+        </View>
+        <View style={styles.priceHeader}>
+          <Text style={styles.priceLabel}>From </Text>
+          <Text style={styles.priceValue}>{currency} {finalPrice}</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <AnimatedPressable
       onPress={handlePress}
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
-      style={[styles.container, animatedStyle]}
+      style={[styles.container, animatedStyle, style]}
     >
-      <View style={styles.iconArea}>
+      <View style={styles.mediaArea}>
         {getIcon()}
       </View>
       
-      <View style={styles.content}>
-        <Text style={styles.name} numberOfLines={2}>{name}</Text>
-        <Text style={styles.categoryRow} numberOfLines={1}>
-          {categoryName}
-        </Text>
-        <Text style={styles.duration} numberOfLines={1}>
-          {duration}
-        </Text>
-      </View>
-      
-      <View style={styles.priceRow}>
-        <Text style={styles.priceLabel}>From </Text>
-        <Text style={styles.priceValue}>{currency} {startingPrice}</Text>
+      <View style={styles.detailsArea}>
+        <View style={styles.content}>
+          <Text style={styles.name} numberOfLines={2}>{name}</Text>
+        </View>
+        
+        <View style={styles.priceRow}>
+          <View style={styles.priceTextContainer}>
+            <Text style={styles.priceLabel}>From</Text>
+            <Text style={styles.priceValue}>{currency} {finalPrice}</Text>
+          </View>
+          <AddToCartButton
+            serviceId={id}
+            serviceName={name}
+            price={finalPrice}
+            size="sm"
+          />
+        </View>
       </View>
     </AnimatedPressable>
   );
@@ -106,58 +152,93 @@ export const ServiceListItem: React.FC<ServiceListItemProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    width: '48%', // Scalable 2-column width
+    flex: 1,
+    marginHorizontal: 6,
     borderRadius: radius.lg,
-    padding: 14,
+    padding: 0,
     marginBottom: 16,
     ...shadows.sm,
     flexDirection: 'column',
   },
-  iconArea: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
+  mediaArea: {
+    width: '100%',
+    height: 170,
     backgroundColor: colors.primaryTint,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+  },
+  detailsArea: {
+    flex: 1,
+    padding: 12,
+    flexDirection: 'column',
   },
   content: {
     flex: 1,
-    marginBottom: 12,
+    marginBottom: 8,
   },
   name: {
-    fontFamily: 'PlusJakartaSans-SemiBold',
+    fontFamily: typography.fontFamily.jakarta.semiBold,
     fontSize: 14,
     color: colors.textPrimary,
-    marginBottom: 4,
     lineHeight: 20,
-    minHeight: 40, // Keeps grid cells structurally equal if text wraps
-  },
-  categoryRow: {
-    fontFamily: 'PlusJakartaSans-Regular',
-    fontSize: 12,
-    color: colors.textMuted,
-    marginBottom: 2,
-  },
-  duration: {
-    fontFamily: 'Inter-Regular',
-    fontSize: 12,
-    color: colors.textMuted,
+    minHeight: 40,
   },
   priceRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginTop: 'auto',
+    width: '100%',
+  },
+  priceTextContainer: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
   },
   priceLabel: {
-    fontFamily: 'PlusJakartaSans-Regular',
-    fontSize: 12,
+    fontFamily: typography.fontFamily.jakarta.regular,
+    fontSize: 11,
     color: colors.textMuted,
   },
   priceValue: {
-    fontFamily: 'Inter-SemiBold',
-    fontSize: 13,
+    fontFamily: typography.fontFamily.inter.bold,
+    fontSize: 14,
     color: colors.primary,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+  iconAreaHeader: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
+    backgroundColor: colors.primaryTint,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  contentHeader: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  nameHeader: {
+    fontFamily: typography.fontFamily.jakarta.semiBold,
+    fontSize: 14,
+    color: colors.textPrimary,
+    lineHeight: 18,
+  },
+  durationHeader: {
+    fontFamily: typography.fontFamily.inter.regular,
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  priceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 8,
   },
 });
