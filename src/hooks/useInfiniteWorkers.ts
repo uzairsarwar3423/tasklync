@@ -1,91 +1,9 @@
 import { useEffect } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { workerApi } from '../services/api/worker.api';
+import { searchApi } from '../services/api/search.api';
 import { NearbyWorkersParams } from '../types/location.types';
 import { WorkerNearby } from '../types/worker.types';
-
-const MOCK_WORKERS: WorkerNearby[] = [
-  {
-    id: 'w1',
-    name: 'Ahmed Khan',
-    avatarUrl: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=120&auto=format&fit=crop&q=80',
-    avgRating: 4.9,
-    totalReviews: 124,
-    currency: 'Rs',
-    distanceMeters: 1200,
-    distanceLabel: '1.2 km',
-    categories: ['Electrician', 'AC Repair'],
-    availabilityStatus: 'AVAILABLE',
-    availableUntil: '18:00',
-    isOnJob: false,
-    responseTimeMins: 5,
-    startingPrice: 500,
-  },
-  {
-    id: 'w2',
-    name: 'Sarah Ali',
-    avatarUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&auto=format&fit=crop&q=80',
-    avgRating: 4.7,
-    totalReviews: 89,
-    currency: 'Rs',
-    distanceMeters: 2300,
-    distanceLabel: '2.3 km',
-    categories: ['Cleaning', 'Plumber'],
-    availabilityStatus: 'AVAILABLE',
-    availableUntil: '19:00',
-    isOnJob: false,
-    responseTimeMins: 12,
-    startingPrice: 1200,
-  },
-  {
-    id: 'w3',
-    name: 'Bilal Malik',
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=120&auto=format&fit=crop&q=80',
-    avgRating: 4.8,
-    totalReviews: 205,
-    currency: 'Rs',
-    distanceMeters: 3100,
-    distanceLabel: '3.1 km',
-    categories: ['AC Repair', 'Electrician'],
-    availabilityStatus: 'AVAILABLE',
-    availableUntil: '19:00',
-    isOnJob: false,
-    responseTimeMins: 10,
-    startingPrice: 800,
-  },
-  {
-    id: 'w4',
-    name: 'Zainab Bibi',
-    avatarUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=120&auto=format&fit=crop&q=80',
-    avgRating: 4.5,
-    totalReviews: 42,
-    currency: 'Rs',
-    distanceMeters: 800,
-    distanceLabel: '800 m',
-    categories: ['Cleaning'],
-    availabilityStatus: 'AVAILABLE',
-    availableUntil: '20:00',
-    isOnJob: false,
-    responseTimeMins: 5,
-    startingPrice: 600,
-  },
-  {
-    id: 'w5',
-    name: 'Tariq Mahmood',
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=120&auto=format&fit=crop&q=80',
-    avgRating: 4.6,
-    totalReviews: 67,
-    currency: 'Rs',
-    distanceMeters: 1700,
-    distanceLabel: '1.7 km',
-    categories: ['Plumber', 'Electrician'],
-    availabilityStatus: 'AVAILABLE',
-    availableUntil: '17:00',
-    isOnJob: false,
-    responseTimeMins: 15,
-    startingPrice: 700,
-  }
-];
 
 export const useInfiniteWorkers = (params: Omit<NearbyWorkersParams, 'page'>) => {
   const queryClient = useQueryClient();
@@ -102,38 +20,56 @@ export const useInfiniteWorkers = (params: Omit<NearbyWorkersParams, 'page'>) =>
   } = useInfiniteQuery({
     queryKey: ['workers', 'infinite', params],
     queryFn: async ({ pageParam = 1 }) => {
+      // Tier 1: Geofenced nearby workers query
       try {
-        return await workerApi.getNearbyWorkers({
+        const res = await workerApi.getNearbyWorkers({
           ...params,
           page: pageParam,
         });
+        if (res && Array.isArray(res.workers) && res.workers.length > 0) {
+          return res;
+        }
       } catch (err) {
-        const normalizedCategory = params.category?.toLowerCase().replace('_', ' ');
-        const filtered = MOCK_WORKERS.filter((w) => {
-          if (!normalizedCategory) return true;
-          return w.categories.some((c) => c.toLowerCase().includes(normalizedCategory));
-        });
-        
-        let finalWorkers = filtered;
-        if (params.minRating && params.minRating > 0) {
-          finalWorkers = finalWorkers.filter((w) => w.avgRating >= params.minRating!);
-        }
-        if (params.maxRate && params.maxRate > 0) {
-          finalWorkers = finalWorkers.filter((w) => w.startingPrice !== null && w.startingPrice <= params.maxRate!);
-        }
-
-        return {
-          workers: finalWorkers,
-          total: finalWorkers.length,
-          page: pageParam,
-          hasMore: false,
-        };
+        console.warn('[useInfiniteWorkers] Proximity query error:', err);
       }
+
+      // Tier 2: Search API fallback (category / wider radius search)
+      try {
+        const searchRes = await searchApi.searchWorkers({
+          category: params.category,
+          lat: params.lat && params.lat !== 0 ? params.lat : undefined,
+          lng: params.lng && params.lng !== 0 ? params.lng : undefined,
+          minRating: params.minRating,
+          maxRate: params.maxRate,
+          sortBy: params.sortBy,
+          page: pageParam as number,
+          limit: params.limit || 10,
+        });
+
+        if (searchRes && Array.isArray(searchRes.workers) && searchRes.workers.length > 0) {
+          return {
+            workers: searchRes.workers,
+            total: searchRes.total,
+            page: pageParam,
+            hasMore: searchRes.hasMore,
+          };
+        }
+      } catch (searchErr) {
+        console.warn('[useInfiniteWorkers] Search fallback error:', searchErr);
+      }
+
+      // Tier 3: Return real empty response if backend has 0 matching workers
+      return {
+        workers: [],
+        total: 0,
+        page: pageParam,
+        hasMore: false,
+      };
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage) =>
       lastPage.hasMore ? lastPage.page + 1 : undefined,
-    enabled: Boolean(params.lat && params.lng),
+    enabled: true,
     staleTime: 30_000,
   });
 
