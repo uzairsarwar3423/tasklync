@@ -33,6 +33,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundColor: '#16A34A',
     },
+    config: {
+      googleMaps: {
+        apiKey: process.env.GOOGLE_MAPS_KEY || '',
+      },
+    },
     permissions: [
       'ACCESS_COARSE_LOCATION',
       'ACCESS_FINE_LOCATION',

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-
-export type BookingStatus = 'PENDING' | 'ACCEPTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+import { bookingApi } from '../services/api/booking.api';
+import { BookingStatus } from '../types/booking.types';
 
 export interface ActiveBooking {
   id: string;
@@ -16,29 +16,32 @@ export interface ActiveBooking {
 export const useActiveBooking = () => {
   return useQuery({
     queryKey: ['active-booking'],
-    queryFn: async () => {
-      // Mock for Day 5 Demo
-      return new Promise<ActiveBooking | null>((resolve) => {
-        setTimeout(() => {
-          resolve(null);
-          
-          // MOCK DEMO DATA (Uncomment to test the RecentBookingBanner UI):
-          /*
-          resolve({
-            id: 'b1',
-            status: 'IN_PROGRESS',
-            workerName: 'Ahmed Khan',
-            workerAvatarUrl: 'https://i.pravatar.cc/150?u=ahmed',
-            scheduledTime: 'Today, 2:00 PM',
-            startedAt: new Date().toISOString(),
-            distanceLabel: '1.2 km',
-            expiresAt: null
-          });
-          */
-        }, 300);
-      });
+    queryFn: async (): Promise<ActiveBooking | null> => {
+      try {
+        const response = await bookingApi.listBookings({ page: 1, limit: 10 });
+        const items = response.data || [];
+        const activeStatuses: BookingStatus[] = ['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED_BY_WORKER'];
+        const active = items.find((item) => activeStatuses.includes(item.status as BookingStatus));
+
+        if (!active) {
+          return null;
+        }
+
+        return {
+          id: active.id,
+          status: active.status,
+          workerName: active.worker_name || 'Assigned Professional',
+          workerAvatarUrl: active.worker_avatar_url || null,
+          scheduledTime: active.scheduled_at ? new Date(active.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Scheduled',
+          startedAt: active.started_at || null,
+          distanceLabel: '1.2 km',
+          expiresAt: active.expires_at || null,
+        };
+      } catch (_e) {
+        return null;
+      }
     },
-    staleTime: 10_000, // 10 seconds
-    refetchInterval: 30_000, // 30 seconds
+    staleTime: 10_000,
+    refetchInterval: 15_000,
   });
 };

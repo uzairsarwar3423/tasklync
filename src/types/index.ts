@@ -5,3 +5,5 @@ export * from './location.types';
 export * from './auth.types';
 export * from './user.types';
 export * from './review.types';
+export * from './booking.types';
+

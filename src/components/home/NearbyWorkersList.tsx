@@ -24,6 +24,9 @@ export const NearbyWorkersList = () => {
   const opacitySkeleton = useSharedValue(1);
 
   useEffect(() => {
+    if (__DEV__) {
+      console.log('[DEBUG nearby-workers] NearbyWorkersList UI component received workers count:', workers?.length || 0, 'Data:', workers);
+    }
     if (!isLoading && workers) {
       opacitySkeleton.value = withTiming(0, { duration: 200 });
       opacityList.value = withDelay(100, withTiming(1, { duration: 200 }));

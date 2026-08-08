@@ -239,7 +239,11 @@ export default function WorkerProfileScreen() {
           <WorkerServicesSection
             services={services}
             workerId={worker.id}
+            workerName={worker.name}
+            workerAvatar={worker.avatarUrl}
+            workerRating={worker.avgRating}
             workerCategory={worker.categories?.[0]}
+            workerVerified={worker.isVerified}
             startingPrice={worker.startingPrice}
             style={styles.servicesSection}
           />
@@ -343,7 +347,7 @@ const styles = StyleSheet.create({
   },
   contentCard: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: radius.xl, // 32px
+    borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     marginTop: -24,
     paddingHorizontal: 20,

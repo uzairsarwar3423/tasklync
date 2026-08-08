@@ -4,10 +4,12 @@ import { parsePriceNumber } from '../../utils/formatters';
 
 /**
  * Data Mapper / DTO Transformer for Worker Service API Spec v2.0.0
- * Converts backend snake_case JSON responses to type-safe frontend domain objects.
+ * Converts backend JSON responses to type-safe frontend domain objects.
  */
 
 const formatCategoryStringList = (rawList: any): string[] => {
+  if (!rawList) return [];
+  if (typeof rawList === 'string') return [rawList.trim()];
   if (!Array.isArray(rawList)) return [];
   return rawList
     .map((item) => {
@@ -20,10 +22,89 @@ const formatCategoryStringList = (rawList: any): string[] => {
     .filter(Boolean);
 };
 
+export const extractRawWorkerList = (resData: any): any[] => {
+  if (__DEV__) {
+    console.log('[DEBUG nearby-workers] API response payload before extraction:', JSON.stringify(resData).slice(0, 300));
+  }
+
+  if (!resData) return [];
+
+  // Direct array response
+  if (Array.isArray(resData)) return resData;
+
+  // Standard Axios envelope resData.data
+  const inner = resData.data !== undefined ? resData.data : resData;
+
+  if (Array.isArray(inner)) return inner;
+  if (Array.isArray(inner?.workers)) return inner.workers;
+  if (Array.isArray(inner?.items)) return inner.items;
+  if (Array.isArray(inner?.results)) return inner.results;
+  if (Array.isArray(inner?.rows)) return inner.rows;
+  if (Array.isArray(inner?.list)) return inner.list;
+  if (Array.isArray(inner?.profiles)) return inner.profiles;
+  if (Array.isArray(inner?.payload)) return inner.payload;
+  if (Array.isArray(inner?.data)) return inner.data;
+
+  // Fallback checks on top-level object
+  if (Array.isArray(resData.workers)) return resData.workers;
+  if (Array.isArray(resData.items)) return resData.items;
+  if (Array.isArray(resData.results)) return resData.results;
+  if (Array.isArray(resData.rows)) return resData.rows;
+  if (Array.isArray(resData.list)) return resData.list;
+  if (Array.isArray(resData.profiles)) return resData.profiles;
+  if (Array.isArray(resData.payload)) return resData.payload;
+
+  console.warn('[extractRawWorkerList] Could not extract worker array from API response:', resData);
+  return [];
+};
+
+export const extractPaginationMeta = (
+  resData: any,
+  fallbackCount: number,
+  pageParam: number = 1,
+  limitParam: number = 20
+) => {
+  const pagination =
+    resData?.pagination ||
+    resData?.data?.pagination ||
+    resData?.meta?.pagination ||
+    resData?.data?.meta?.pagination ||
+    resData?.meta;
+
+  const total =
+    typeof pagination?.total === 'number'
+      ? pagination.total
+      : typeof resData?.total === 'number'
+      ? resData.total
+      : typeof resData?.data?.total === 'number'
+      ? resData.data.total
+      : fallbackCount;
+
+  const page =
+    typeof pagination?.page === 'number'
+      ? pagination.page
+      : typeof pagination?.currentPage === 'number'
+      ? pagination.currentPage
+      : pageParam;
+
+  const totalPages =
+    typeof pagination?.totalPages === 'number'
+      ? pagination.totalPages
+      : typeof pagination?.lastPage === 'number'
+      ? pagination.lastPage
+      : Math.ceil(total / (limitParam || 20));
+
+  return {
+    total,
+    page,
+    hasMore: page < totalPages,
+  };
+};
+
 export const mapRawWorkerNearby = (raw: any): WorkerNearby => {
   if (!raw) {
     return {
-      id: '',
+      id: `w-${Math.random().toString(36).substring(2, 9)}`,
       name: 'Worker',
       avatarUrl: null,
       avgRating: 5.0,
@@ -40,7 +121,20 @@ export const mapRawWorkerNearby = (raw: any): WorkerNearby => {
     };
   }
 
-  const id = String(raw.worker_id || raw.workerId || raw.id || raw._id || '');
+  const rawId =
+    raw.id ||
+    raw._id ||
+    raw.worker_id ||
+    raw.workerId ||
+    raw.user_id ||
+    raw.userId ||
+    raw.user?.id ||
+    raw.user?.user_id;
+
+  const id = rawId !== undefined && rawId !== null && rawId !== ''
+    ? String(rawId)
+    : `w-${Math.random().toString(36).substring(2, 9)}`;
+
   const name =
     raw.name ||
     raw.full_name ||
@@ -50,14 +144,17 @@ export const mapRawWorkerNearby = (raw: any): WorkerNearby => {
     raw.user?.name ||
     raw.user?.full_name ||
     raw.user?.fullName ||
+    (raw.user?.first_name ? `${raw.user.first_name} ${raw.user.last_name || ''}`.trim() : null) ||
     'Worker';
 
   const avatarUrl =
+    raw.avatar ||
     raw.avatar_url ||
     raw.avatarUrl ||
     raw.photo_url ||
     raw.photoUrl ||
     raw.profile_picture ||
+    raw.user?.avatar ||
     raw.user?.avatar_url ||
     raw.user?.avatarUrl ||
     null;
@@ -71,6 +168,8 @@ export const mapRawWorkerNearby = (raw: any): WorkerNearby => {
       ? raw.avgRating
       : typeof raw.rating_average === 'number'
       ? raw.rating_average
+      : typeof raw.average_rating === 'number'
+      ? raw.average_rating
       : 5.0;
 
   const totalReviews =
@@ -80,6 +179,8 @@ export const mapRawWorkerNearby = (raw: any): WorkerNearby => {
       ? raw.total_reviews
       : typeof raw.totalReviews === 'number'
       ? raw.totalReviews
+      : typeof raw.reviews_count === 'number'
+      ? raw.reviews_count
       : 0;
 
   const currency = raw.currency || 'Rs';
@@ -90,6 +191,12 @@ export const mapRawWorkerNearby = (raw: any): WorkerNearby => {
       ? raw.distanceMeters
       : typeof raw.distance === 'number'
       ? raw.distance
+      : typeof raw.distance_in_km === 'number'
+      ? raw.distance_in_km * 1000
+      : typeof raw.distance_km === 'number'
+      ? raw.distance_km * 1000
+      : typeof raw.distanceKm === 'number'
+      ? raw.distanceKm * 1000
       : 0;
 
   let distanceLabel = raw.distanceLabel || raw.distance_label;
@@ -115,7 +222,11 @@ export const mapRawWorkerNearby = (raw: any): WorkerNearby => {
     raw.skills ||
     raw.skills_list ||
     raw.services ||
-    raw.category;
+    raw.category ||
+    raw.category_name ||
+    raw.categoryName ||
+    raw.skill_name ||
+    raw.skillName;
 
   const categories = formatCategoryStringList(rawCatList);
 
@@ -128,6 +239,8 @@ export const mapRawWorkerNearby = (raw: any): WorkerNearby => {
       ? raw.hourly_rate
       : typeof raw.rate === 'number'
       ? raw.rate
+      : typeof raw.base_price === 'number'
+      ? raw.base_price
       : 500;
 
   return {

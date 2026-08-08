@@ -1,0 +1,173 @@
+import React from 'react';
+import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+} from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
+import { colors, palette, fontFamily } from '../../design';
+
+export interface BookingFooterCTAProps {
+  label: string;
+  subtext?: string | null;
+  enabled: boolean;
+  loading?: boolean;
+  onPress: () => void;
+  accessibilityLabel?: string;
+}
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+export const BookingFooterCTA: React.FC<BookingFooterCTAProps> = ({
+  label,
+  subtext,
+  enabled,
+  loading = false,
+  onPress,
+  accessibilityLabel,
+}) => {
+  const isInteractive = enabled && !loading;
+  const scale = useSharedValue(1);
+
+  const handlePressIn = () => {
+    if (!isInteractive) return;
+    scale.value = withTiming(0.98, { duration: 80 });
+  };
+
+  const handlePressOut = () => {
+    if (!isInteractive) return;
+    scale.value = withTiming(1.0, { duration: 80 });
+  };
+
+  const handlePress = () => {
+    if (!isInteractive) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onPress();
+  };
+
+  const animatedButtonStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: scale.value }],
+  }));
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.innerContainer}>
+        {/* Optional Subtext / Summary info */}
+        {subtext !== undefined && (
+          <View style={styles.summaryContainer}>
+            <Text style={styles.summaryLabel}>BOOKING SUMMARY</Text>
+            <Text style={styles.summaryValue} numberOfLines={1}>
+              {subtext || 'Select details to proceed'}
+            </Text>
+          </View>
+        )}
+
+        {/* Primary Action Button */}
+        <AnimatedPressable
+          onPressIn={handlePressIn}
+          onPressOut={handlePressOut}
+          onPress={handlePress}
+          disabled={!isInteractive}
+          style={[
+            styles.button,
+            subtext === undefined && styles.fullWidthButton,
+            isInteractive ? styles.buttonEnabled : styles.buttonDisabled,
+            animatedButtonStyle,
+          ]}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: !isInteractive, busy: loading }}
+          accessibilityLabel={accessibilityLabel || label}
+        >
+          {loading ? (
+            <ActivityIndicator size="small" color={palette.white} />
+          ) : (
+            <Text
+              style={[
+                styles.buttonText,
+                isInteractive ? styles.textEnabled : styles.textDisabled,
+              ]}
+            >
+              {label}
+            </Text>
+          )}
+        </AnimatedPressable>
+      </View>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: palette.white,
+    borderTopWidth: 1,
+    borderTopColor: palette.gray200,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 24,
+    shadowColor: palette.gray900,
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 10,
+    zIndex: 100,
+  },
+  innerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  summaryContainer: {
+    flex: 1,
+    marginRight: 12,
+  },
+  summaryLabel: {
+    fontFamily: fontFamily.jakarta.semiBold,
+    fontSize: 10,
+    color: colors.textMuted,
+    letterSpacing: 0.5,
+  },
+  summaryValue: {
+    fontFamily: fontFamily.inter.semiBold,
+    fontSize: 13,
+    color: colors.textPrimary,
+    marginTop: 2,
+  },
+  button: {
+    paddingVertical: 14,
+    paddingHorizontal: 22,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 150,
+    minHeight: 48,
+  },
+  fullWidthButton: {
+    flex: 1,
+  },
+  buttonEnabled: {
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  buttonDisabled: {
+    backgroundColor: palette.gray200,
+  },
+  buttonText: {
+    fontFamily: fontFamily.poppins.bold,
+    fontSize: 15,
+  },
+  textEnabled: {
+    color: palette.white,
+  },
+  textDisabled: {
+    color: palette.gray400,
+  },
+});

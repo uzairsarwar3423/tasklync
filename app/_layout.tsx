@@ -10,6 +10,8 @@ import { fontAssets } from '@config/fonts';
 import { queryClient } from '@config/queryClient';
 import { AppProviders } from '@providers/AppProviders';
 
+import { FloatingCartBar } from '../src/components/cart/FloatingCartBar';
+
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
@@ -34,7 +36,8 @@ export default function RootLayout() {
             <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: '#FFFFFF' } }}>
               <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
               <Stack.Screen name="(tabs)" options={{ animation: 'fade', gestureEnabled: false }} />
-              <Stack.Screen name="(map)/live-map" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
+              <Stack.Screen name="(map)" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
+              <Stack.Screen name="cart/index" options={{ animation: 'slide_from_bottom', gestureEnabled: true }} />
               <Stack.Screen
                 name="worker/[id]"
                 options={{
@@ -44,11 +47,16 @@ export default function RootLayout() {
                   fullScreenGestureEnabled: true,
                 }}
               />
+              <Stack.Screen name="booking/schedule" options={{ animation: 'slide_from_right', gestureEnabled: true }} />
+              <Stack.Screen name="booking/address" options={{ animation: 'slide_from_right', gestureEnabled: true }} />
+              <Stack.Screen name="booking/summary" options={{ animation: 'slide_from_right', gestureEnabled: true }} />
+              <Stack.Screen name="booking/payment" options={{ animation: 'slide_from_right', gestureEnabled: true }} />
               <Stack.Screen name="booking/[id]/chat" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen name="booking/success" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
               <Stack.Screen name="booking/[id]/track" options={{ animation: 'slide_from_bottom' }} />
               <Stack.Screen name="search/filters" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
             </Stack>
+            <FloatingCartBar />
           </AppProviders>
         </QueryClientProvider>
       </SafeAreaProvider>

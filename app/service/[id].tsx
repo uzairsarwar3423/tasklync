@@ -107,7 +107,7 @@ export default function ServiceDetailScreen() {
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     }
-    // Simple scrolling to the workers section (approx 450px down)
+    // Simple scrolling to the workers section (approx 460px down)
     scrollRef.current?.scrollTo({ y: 460, animated: true });
   };
 
@@ -410,6 +410,10 @@ export default function ServiceDetailScreen() {
               serviceName={service.name}
               price={getServicePrice(service, 500)}
               workerId={selectedWorker.id}
+              workerName={selectedWorker.name}
+              workerAvatar={selectedWorker.avatarUrl}
+              workerRating={selectedWorker.avgRating}
+              workerCategory={selectedWorker.category || service.categoryId}
               size="md"
             />
           </View>

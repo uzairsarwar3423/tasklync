@@ -4,6 +4,7 @@ import {
   View,
   Text,
 } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { FlashList } from '@shopify/flash-list';
 import { WorkerNearby } from '../../types/worker.types';
 import { SortOption } from '../../types/search.types';
@@ -34,7 +35,6 @@ export const CategoryWorkersList: React.FC<CategoryWorkersListProps> = ({
   onSortChange,
   maxRate = 0,
   minRating = 0,
-  available = 'any',
 }) => {
   const { currentLocation } = useLocationStore();
 
@@ -92,7 +92,7 @@ export const CategoryWorkersList: React.FC<CategoryWorkersListProps> = ({
       <View style={styles.loadingContainer}>
         <StickyListHeader
           title="Workers"
-          count={0}
+          count={null}
           rightContent={
             <SortDropdown
               currentSort={sortBy}
@@ -112,7 +112,7 @@ export const CategoryWorkersList: React.FC<CategoryWorkersListProps> = ({
 
   if (isEmpty) {
     return (
-      <View style={styles.emptyContainer}>
+      <Animated.View style={styles.emptyContainer} entering={FadeIn.duration(200)}>
         <StickyListHeader
           title="Workers"
           count={0}
@@ -129,12 +129,12 @@ export const CategoryWorkersList: React.FC<CategoryWorkersListProps> = ({
           onAction={refetch}
           actionLabel="Retry"
         />
-      </View>
+      </Animated.View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={styles.container} entering={FadeIn.duration(200)}>
       <AnyFlashList
         data={workers}
         renderItem={renderItem}
@@ -144,20 +144,22 @@ export const CategoryWorkersList: React.FC<CategoryWorkersListProps> = ({
         onEndReached={loadMore}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
-          <StickyListHeader
-            title="Workers"
-            count={total}
-            rightContent={
-              <SortDropdown
-                currentSort={sortBy}
-                onSortChange={onSortChange}
-              />
-            }
-          />
+          <View style={styles.headerWrapper}>
+            <StickyListHeader
+              title="Workers"
+              count={total}
+              rightContent={
+                <SortDropdown
+                  currentSort={sortBy}
+                  onSortChange={onSortChange}
+                />
+              }
+            />
+          </View>
         }
         ListFooterComponent={renderFooter}
       />
-    </View>
+    </Animated.View>
   );
 };
 
@@ -166,11 +168,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   listContent: {
+    paddingHorizontal: 16,
     paddingBottom: 24,
+  },
+  headerWrapper: {
+    marginHorizontal: -16,
   },
   skeletons: {
     paddingHorizontal: 16,
-    gap: 4,
   },
   loadingContainer: {
     flex: 1,
@@ -179,8 +184,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   footerLoader: {
-    paddingHorizontal: 16,
-    gap: 4,
     marginVertical: 12,
   },
   footerText: {
@@ -194,3 +197,4 @@ const styles = StyleSheet.create({
     height: 16,
   },
 });
+

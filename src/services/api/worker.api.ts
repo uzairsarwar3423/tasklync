@@ -9,6 +9,8 @@ import {
   mapRawWorkerPortfolio,
   mapRawWorkerReview,
   mapRawReviewSummary,
+  extractRawWorkerList,
+  extractPaginationMeta,
 } from '../mappers/worker.mapper';
 
 /**
@@ -27,7 +29,7 @@ export const workerApi = {
       params: {
         lat: params.lat,
         lng: params.lng,
-        radius: params.radius || 5000,
+        radius: Math.min(params.radius || 20000, 20000),
         category: params.category,
         serviceId: params.serviceId,
         minRating: params.minRating,
@@ -36,27 +38,17 @@ export const workerApi = {
       },
     });
 
-    const data = response.data?.data;
-    const rawWorkers = Array.isArray(data)
-      ? data
-      : Array.isArray(data?.workers)
-      ? data.workers
-      : Array.isArray(data?.items)
-      ? data.items
-      : [];
-
-    const pagination = data?.pagination || response.data?.meta?.pagination;
-    const total = pagination?.total || rawWorkers.length;
-    const page = pagination?.page || params.page || 1;
-    const totalPages = pagination?.totalPages || Math.ceil(total / (params.limit || 20));
+    const rawWorkers = extractRawWorkerList(response.data);
+    const meta = extractPaginationMeta(response.data, rawWorkers.length, params.page || 1, params.limit || 20);
 
     return {
       workers: rawWorkers.map(mapRawWorkerNearby),
-      total,
-      page,
-      hasMore: page < totalPages,
+      total: meta.total,
+      page: meta.page,
+      hasMore: meta.hasMore,
     };
   },
+
 
   /**
    * Module 6: GET /workers/:id

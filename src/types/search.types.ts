@@ -21,7 +21,7 @@ export const DEFAULT_FILTERS: FilterState = {
 };
 
 export interface SearchParams {
-  q: string;
+  q?: string | undefined;
   category?: string | undefined;
   minRating?: number | undefined;
   maxRate?: number | undefined;

@@ -1,0 +1,85 @@
+import React from 'react';
+import { View, Text, StyleSheet } from 'react-native';
+import { Calendar, Clock } from 'lucide-react-native';
+import { SummarySectionCard } from './SummarySectionCard';
+import { UrgentPriceBadge } from '../schedule/UrgentPriceBadge';
+import { colors, fontFamily } from '../../../design';
+
+export interface SummaryScheduleRowProps {
+  selectedDate: string | null;
+  selectedTimeSlot: string | null;
+  isUrgent: boolean;
+}
+
+export const SummaryScheduleRow: React.FC<SummaryScheduleRowProps> = ({
+  selectedDate,
+  selectedTimeSlot,
+  isUrgent,
+}) => {
+  // Format date helper: "2026-08-15" -> "Saturday, Aug 15, 2026"
+  const formattedDate = React.useMemo(() => {
+    if (!selectedDate) return 'Not selected';
+    try {
+      const [yearStr, monthStr, dayStr] = selectedDate.split('-');
+      const year = parseInt(yearStr, 10);
+      const monthZero = parseInt(monthStr, 10) - 1;
+      const day = parseInt(dayStr, 10);
+      const dateObj = new Date(year, monthZero, day);
+
+      const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      return `${daysOfWeek[dateObj.getDay()]}, ${months[dateObj.getMonth()]} ${day}, ${year}`;
+    } catch (_e) {
+      return selectedDate;
+    }
+  }, [selectedDate]);
+
+  return (
+    <SummarySectionCard
+      icon={<Calendar size={16} color={colors.primaryDark} strokeWidth={2.2} />}
+      title="Schedule & Arrival"
+    >
+      <View style={styles.contentRow}>
+        <View style={styles.infoGroup}>
+          <Text style={styles.dateValue}>{formattedDate}</Text>
+          <View style={styles.timeRow}>
+            <Clock size={14} color={colors.textSecondary} />
+            <Text style={styles.timeValue}>{selectedTimeSlot || '09:00 AM'}</Text>
+          </View>
+        </View>
+
+        {isUrgent && <UrgentPriceBadge visible={true} badgeText="Urgent (+30%)" />}
+      </View>
+    </SummarySectionCard>
+  );
+};
+
+const styles = StyleSheet.create({
+  contentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  infoGroup: {
+    flex: 1,
+  },
+  dateValue: {
+    fontFamily: fontFamily.inter.bold,
+    fontSize: 14,
+    lineHeight: 18,
+    color: colors.textPrimary,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 4,
+  },
+  timeValue: {
+    fontFamily: fontFamily.inter.semiBold,
+    fontSize: 13,
+    lineHeight: 16,
+    color: colors.textSecondary,
+  },
+});

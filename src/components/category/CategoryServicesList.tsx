@@ -3,6 +3,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import { FlashList } from '@shopify/flash-list';
 import { Service } from '../../types/category.types';
 import { ServiceListItem } from '../service/ServiceListItem';
@@ -50,13 +51,17 @@ export const CategoryServicesList: React.FC<CategoryServicesListProps> = ({
       <View style={styles.container}>
         <StickyListHeader
           title="Services"
-          count={0}
+          count={null}
         />
-        <View style={styles.skeletons}>
-          <View style={styles.gridItem}><SkeletonServiceListItem /></View>
-          <View style={styles.gridItem}><SkeletonServiceListItem /></View>
-          <View style={styles.gridItem}><SkeletonServiceListItem /></View>
-          <View style={styles.gridItem}><SkeletonServiceListItem /></View>
+        <View style={styles.skeletonsContainer}>
+          <View style={styles.rowWrapper}>
+            <SkeletonServiceListItem />
+            <SkeletonServiceListItem />
+          </View>
+          <View style={styles.rowWrapper}>
+            <SkeletonServiceListItem />
+            <SkeletonServiceListItem />
+          </View>
         </View>
       </View>
     );
@@ -64,7 +69,7 @@ export const CategoryServicesList: React.FC<CategoryServicesListProps> = ({
 
   if (services.length === 0) {
     return (
-      <View style={styles.container}>
+      <Animated.View style={styles.container} entering={FadeIn.duration(200)}>
         <StickyListHeader
           title="Services"
           count={0}
@@ -73,28 +78,30 @@ export const CategoryServicesList: React.FC<CategoryServicesListProps> = ({
           title="No services listed for this category yet"
           subtitle="Please check back later or choose another category."
         />
-      </View>
+      </Animated.View>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <Animated.View style={styles.container} entering={FadeIn.duration(200)}>
       <AnyFlashList
         data={services}
         renderItem={renderItem}
         keyExtractor={(item: Service) => item.id}
-        estimatedItemSize={180}
+        estimatedItemSize={274}
         numColumns={2}
         columnWrapperStyle={styles.columnWrapper}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
-          <StickyListHeader
-            title="Services"
-            count={services.length}
-          />
+          <View style={styles.headerWrapper}>
+            <StickyListHeader
+              title="Services"
+              count={services.length}
+            />
+          </View>
         }
       />
-    </View>
+    </Animated.View>
   );
 };
 
@@ -106,15 +113,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingBottom: 24,
   },
+  headerWrapper: {
+    marginHorizontal: -10,
+  },
   columnWrapper: {
-    // Flex: 1 with marginHorizontal handles alignment
+    // Flex: 1 with marginHorizontal: 6 handles 2-column grid alignment
   },
-  skeletons: {
+  skeletonsContainer: {
     paddingHorizontal: 10,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
   },
-  gridItem: {
-    width: '50%',
+  rowWrapper: {
+    flexDirection: 'row',
   },
 });
+

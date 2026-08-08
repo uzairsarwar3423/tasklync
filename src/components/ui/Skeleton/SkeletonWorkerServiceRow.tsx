@@ -1,17 +1,20 @@
+import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Skeleton } from './Skeleton';
+import { colors } from '../../../design/colors';
 import { radius } from '../../../design/radius';
+import { shadows } from '../../../design/shadows';
 
-export const SkeletonWorkerServiceRow = () => {
+export const SkeletonWorkerServiceRow: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.left}>
-        <Skeleton width="70%" height={16} borderRadius={radius.sm} style={styles.title} />
-        <Skeleton width="40%" height={12} borderRadius={radius.sm} />
+        <Skeleton width="80%" height={16} borderRadius={radius.sm} style={styles.title} />
+        <Skeleton width="45%" height={12} borderRadius={radius.sm} />
       </View>
       <View style={styles.right}>
-        <Skeleton width={60} height={16} borderRadius={radius.sm} style={styles.price} />
-        <Skeleton width={64} height={32} borderRadius={radius.pill} />
+        <Skeleton width={56} height={14} borderRadius={radius.sm} />
+        <Skeleton width={80} height={32} borderRadius={100} />
       </View>
     </View>
   );
@@ -19,24 +22,29 @@ export const SkeletonWorkerServiceRow = () => {
 
 const styles = StyleSheet.create({
   container: {
+    width: '100%',
+    backgroundColor: colors.bgCard || '#FFFFFF',
+    borderRadius: radius.lg,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: colors.border || '#F1F5F9',
+    marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    width: '100%',
-    height: 64,
+    ...shadows.xs,
   },
   left: {
     flex: 1,
+    paddingRight: 12,
   },
   title: {
-    marginBottom: 6,
+    marginBottom: 8,
   },
   right: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  price: {
-    marginRight: 16,
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    gap: 6,
   },
 });
+

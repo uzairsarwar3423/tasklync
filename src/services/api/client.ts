@@ -16,26 +16,35 @@ export const apiClient = axios.create({
   timeout: 15000,
 });
 
-// Public GET routes that should never require auth (browsing/discovery)
-const PUBLIC_READ_PREFIXES = ['/search', '/categories', '/services', '/workers/nearby'];
-
-const isPublicReadRoute = (url?: string, method?: string): boolean => {
-  if (!url || method?.toLowerCase() !== 'get') return false;
-  return PUBLIC_READ_PREFIXES.some((prefix) => url.includes(prefix));
-};
-
-// Request interceptor: Auth token & x-request-id trace header
+// Request interceptor: Attach Bearer token & x-request-id trace header reliably
 apiClient.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
+  const authState = useAuthStore.getState().authState;
 
-  // For public browsing routes, skip Authorization to avoid 401 from expired tokens
-  if (token && config.headers && !isPublicReadRoute(config.url, config.method)) {
-    config.headers.Authorization = `Bearer ${token}`;
+  if (token && config.headers) {
+    if (typeof config.headers.set === 'function') {
+      config.headers.set('Authorization', `Bearer ${token}`);
+    } else {
+      (config.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+    }
   }
 
-  if (config.headers && !config.headers['x-request-id']) {
-    config.headers['x-request-id'] = generateRequestId();
+  if (config.headers) {
+    const requestId = generateRequestId();
+    if (typeof config.headers.set === 'function' && !config.headers.has('x-request-id')) {
+      config.headers.set('x-request-id', requestId);
+    } else if (!config.headers['x-request-id']) {
+      (config.headers as Record<string, string>)['x-request-id'] = requestId;
+    }
   }
+
+  // Non-sensitive request logging for authentication diagnostics
+  if (__DEV__) {
+    const hasAuth = Boolean(token);
+    const authSummary = hasAuth ? `Bearer [TOKEN_PRESENT: len=${token?.length}]` : '[NO_TOKEN]';
+    console.log(`[API Request] ${config.method?.toUpperCase()} ${config.url} | AuthState: ${authState} | Authorization: ${authSummary}`);
+  }
+
   return config;
 });
 
@@ -53,7 +62,7 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
-// Response interceptor: Token refresh, public route fallback & error normalization
+// Response interceptor: Token refresh & error normalization
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -64,6 +73,10 @@ apiClient.interceptors.response.use(
       originalRequest._retry = true;
       const refreshToken = useAuthStore.getState().refreshToken;
 
+      if (__DEV__) {
+        console.warn(`[API Auth Error] 401 Unauthorized on ${originalRequest.url}. Attempting token refresh...`);
+      }
+
       // 1. Try automatic token refresh if a refresh token is present
       if (refreshToken && !originalRequest.url?.includes('/auth/')) {
         if (isRefreshing) {
@@ -71,7 +84,11 @@ apiClient.interceptors.response.use(
             failedQueue.push({ resolve, reject });
           })
             .then((token) => {
-              originalRequest.headers.Authorization = `Bearer ${token}`;
+              if (typeof originalRequest.headers.set === 'function') {
+                originalRequest.headers.set('Authorization', `Bearer ${token}`);
+              } else {
+                originalRequest.headers.Authorization = `Bearer ${token}`;
+              }
               return apiClient(originalRequest);
             })
             .catch((err) => Promise.reject(err));
@@ -87,12 +104,17 @@ apiClient.interceptors.response.use(
           );
 
           const newAccessToken = refreshResponse.data?.data?.accessToken || refreshResponse.data?.accessToken;
-          const newRefreshToken = refreshResponse.data?.data?.refreshToken || refreshResponse.data?.refreshToken || refreshToken;
+          const newRefreshToken =
+            refreshResponse.data?.data?.refreshToken || refreshResponse.data?.refreshToken || refreshToken;
 
           if (newAccessToken) {
             useAuthStore.getState().setTokens(newAccessToken, newRefreshToken);
             processQueue(null, newAccessToken);
-            originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            if (typeof originalRequest.headers.set === 'function') {
+              originalRequest.headers.set('Authorization', `Bearer ${newAccessToken}`);
+            } else {
+              originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
+            }
             return apiClient(originalRequest);
           }
         } catch (refreshErr) {
@@ -104,19 +126,6 @@ apiClient.interceptors.response.use(
 
       // 2. Token refresh failed or no refresh token: Logout expired session
       useAuthStore.getState().logout();
-
-      // 3. For public GET routes (e.g., search, categories, workers), retry without Authorization header
-      const isPublicReadRoute =
-        originalRequest.method?.toLowerCase() === 'get' &&
-        (originalRequest.url?.includes('/search') ||
-          originalRequest.url?.includes('/categories') ||
-          originalRequest.url?.includes('/services') ||
-          originalRequest.url?.includes('/workers'));
-
-      if (isPublicReadRoute && originalRequest.headers) {
-        delete originalRequest.headers.Authorization;
-        return apiClient(originalRequest);
-      }
     }
 
     // Normalize backend API error structure

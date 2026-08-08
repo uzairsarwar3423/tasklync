@@ -1,7 +1,7 @@
 import { apiClient } from './client';
 import { SearchParams, SearchResult, SearchSuggestion } from '../../types/search.types';
 import { ApiResponse } from '../../types/api.types';
-import { mapRawWorkerNearby } from '../mappers/worker.mapper';
+import { mapRawWorkerNearby, extractRawWorkerList, extractPaginationMeta } from '../mappers/worker.mapper';
 
 /**
  * Module 4: Worker Search & Autocomplete Engine
@@ -15,18 +15,26 @@ export const searchApi = {
   searchWorkers: async (params: SearchParams): Promise<SearchResult> => {
     try {
       const queryParams: Record<string, any> = {
-        q: params.q || '',
         page: params.page || 1,
         limit: params.limit || 20,
       };
+
+      if (params.q && params.q.trim().length > 0) {
+        queryParams.q = params.q.trim();
+      }
 
       if (params.lat !== undefined && params.lat !== 0) {
         queryParams.lat = params.lat;
       }
       if (params.lng !== undefined && params.lng !== 0) {
         queryParams.lng = params.lng;
-        queryParams.radius = params.radius || 5000;
       }
+      if (params.radius !== undefined) {
+        queryParams.radius = Math.min(params.radius, 20000);
+      } else if (params.lat !== undefined && params.lng !== undefined) {
+        queryParams.radius = 20000;
+      }
+
       if (params.category) {
         queryParams.category = params.category;
       }
@@ -43,32 +51,36 @@ export const searchApi = {
         queryParams.available = params.available;
       }
 
+      if (__DEV__) {
+        console.log('[DEBUG nearby-workers] GET /search/workers queryParams:', queryParams);
+      }
+
       const response = await apiClient.get<ApiResponse<any>>('/search/workers', {
         params: queryParams,
       });
 
-      const data = response.data?.data;
-      const rawWorkers = Array.isArray(data)
-        ? data
-        : Array.isArray(data?.workers)
-        ? data.workers
-        : Array.isArray(data?.items)
-        ? data.items
-        : [];
+      if (__DEV__) {
+        console.log('[DEBUG nearby-workers] GET /search/workers raw response status:', response.status, 'data:', response.data);
+      }
 
-      const pagination = data?.pagination || response.data?.meta?.pagination;
-      const total = pagination?.total || rawWorkers.length;
-      const page = pagination?.page || params.page || 1;
-      const totalPages = pagination?.totalPages || Math.ceil(total / (params.limit || 20));
+      const rawWorkers = extractRawWorkerList(response.data);
+      const meta = extractPaginationMeta(response.data, rawWorkers.length, params.page || 1, params.limit || 20);
+
+      const transformedWorkers = rawWorkers.map(mapRawWorkerNearby);
+
+      if (__DEV__) {
+        console.log('[DEBUG nearby-workers] Worker array length:', rawWorkers.length, 'Transformed count:', transformedWorkers.length);
+        console.log('[DEBUG nearby-workers] Worker objects after transformation:', transformedWorkers);
+      }
 
       return {
-        workers: rawWorkers.map(mapRawWorkerNearby),
-        total,
-        page,
-        hasMore: page < totalPages,
+        workers: transformedWorkers,
+        total: meta.total,
+        page: meta.page,
+        hasMore: meta.hasMore,
       };
     } catch (error) {
-      console.warn('searchWorkers API failed, serving client fallback', error);
+      console.warn('[DEBUG nearby-workers] searchWorkers API error:', error);
       return {
         workers: [],
         total: 0,
