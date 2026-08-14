@@ -21,13 +21,15 @@ class SocketService {
     this.socket = io(SOCKET_CONFIG.SOCKET_URL, {
       path: '/chat',
       auth: { token },
-      transports: ['websocket'],
-      // We handle reconnection manually to fully control backoff and lifecycle
-      reconnection: false,
+      transports: ['polling', 'websocket'],
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 10000,
+      timeout: 20000,
     });
 
     this.attachInternalListeners();
-    this.socket.connect();
   }
 
   /**

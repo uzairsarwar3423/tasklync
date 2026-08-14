@@ -1,6 +1,11 @@
+const getSocketBaseUrl = (): string => {
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+  return apiUrl.replace(/\/api\/v1\/?$/, '');
+};
+
 export const SOCKET_CONFIG = {
-  // Use a fallback URL if env is not defined
-  SOCKET_URL: process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000',
+  // Use root gateway URL (e.g., https://api.tasklync.pk) for WebSocket handshake
+  SOCKET_URL: getSocketBaseUrl(),
   
   // Exponential backoff delays
   RECONNECT_DELAYS_MS: [1000, 2000, 4000, 8000, 16000, 30000],
