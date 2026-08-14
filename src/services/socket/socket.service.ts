@@ -21,6 +21,10 @@ class SocketService {
     this.socket = io(SOCKET_CONFIG.SOCKET_URL, {
       path: '/chat',
       auth: { token },
+      query: { token },
+      extraHeaders: {
+        Authorization: `Bearer ${token}`,
+      },
       transports: ['polling', 'websocket'],
       reconnection: true,
       reconnectionAttempts: Infinity,
