@@ -4,6 +4,4 @@ export { useLocationStore } from './location.store';
 export { useMapFilterStore } from './mapFilter.store';
 export { useCartStore } from './cart.store';
 export { useBookingDraftStore } from './bookingDraft.store';
-
-
-
+export { useSocketStore } from './socket.store';

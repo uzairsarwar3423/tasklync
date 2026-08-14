@@ -8,7 +8,7 @@ export interface CartTotals {
   itemCount: number;
 }
 
-const PLATFORM_FEE_RATE = 0.15; // 15% platform fee per specification
+const PLATFORM_FEE_RATE = 0.05; // 5% customer platform fee
 
 export const useCartTotals = (): CartTotals => {
   const items = useCartStore((state) => state.items);

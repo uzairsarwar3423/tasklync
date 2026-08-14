@@ -23,13 +23,13 @@ export const BookingPriceSummary: React.FC<BookingPriceSummaryProps> = ({
 }) => {
   return (
     <View style={styles.card}>
-      <PriceSummaryRow label="Services Subtotal" amount={subtotal - urgentFee} />
+      <PriceSummaryRow label="Services Subtotal" amount={subtotal} />
 
       {urgentFee > 0 && (
         <PriceSummaryRow label="Urgent Dispatch Surge (+30%)" amount={urgentFee} />
       )}
 
-      <PriceSummaryRow label="Platform Service Fee" amount={platformFee} />
+      <PriceSummaryRow label="Platform Service Fee (15%)" amount={platformFee} />
 
       {discount > 0 && (
         <PriceSummaryRow label="Promotional Discount" amount={-discount} />

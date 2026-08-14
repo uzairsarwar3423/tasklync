@@ -11,6 +11,7 @@ import { queryClient } from '@config/queryClient';
 import { AppProviders } from '@providers/AppProviders';
 
 import { FloatingCartBar } from '../src/components/cart/FloatingCartBar';
+import { ConnectionBanner } from '../src/components/feedback/ConnectionBanner';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -57,6 +58,7 @@ export default function RootLayout() {
               <Stack.Screen name="search/filters" options={{ presentation: 'modal', animation: 'slide_from_bottom' }} />
             </Stack>
             <FloatingCartBar />
+            <ConnectionBanner />
           </AppProviders>
         </QueryClientProvider>
       </SafeAreaProvider>

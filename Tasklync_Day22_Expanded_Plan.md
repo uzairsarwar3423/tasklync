@@ -4,7 +4,8 @@
 > Senior engineering principle applied here: **one component = one responsibility.**
 > `StepProgress` and `app/booking/schedule.tsx` are the two most-reused/most-seen surfaces in the entire booking funnel (StepProgress renders on 3 more screens across Days 23–24). If either is built as one big file, every later step (Address, Summary) inherits that tangle. Today we build both as small, composable pieces so `StepProgress` becomes a true **shared primitive**, and `schedule.tsx` becomes pure composition.
 
-**Fonts (locked, no exceptions):**
+**Fonts (locked, no except
+ions):**
 - **Poppins** → step labels ("Services," "Schedule," "Address," "Review"), screen title "When should we come?"
 - **Plus Jakarta Sans** → weekday header row (Su/Mo/Tu…), "Urgent" toggle label, helper sub-labels, chip text
 - **Inter** → step numbers inside dots, day numbers in the calendar grid, time slot labels ("9:00 AM"), the "+30%" price badge value
@@ -20,7 +21,8 @@ Ship a **reusable** `StepProgress` component (used again Days 23–24 unchanged)
 ## 2. Full File/Folder Breakdown
 
 ```
-src/components/booking/
+src/components/bo
+oking/
   ├── StepProgress.tsx                        — container: lays out N StepDots + connector lines
   ├── StepDot.tsx                              — single dot: number / checkmark / active-pulse states
   ├── StepConnectorLine.tsx                    — single fillable line segment between two dots

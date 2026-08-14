@@ -4,6 +4,7 @@ import { Calendar, Clock } from 'lucide-react-native';
 import { SummarySectionCard } from './SummarySectionCard';
 import { UrgentPriceBadge } from '../schedule/UrgentPriceBadge';
 import { colors, fontFamily } from '../../../design';
+import { formatPKTDate } from '../../../utils/timezone';
 
 export interface SummaryScheduleRowProps {
   selectedDate: string | null;
@@ -19,20 +20,7 @@ export const SummaryScheduleRow: React.FC<SummaryScheduleRowProps> = ({
   // Format date helper: "2026-08-15" -> "Saturday, Aug 15, 2026"
   const formattedDate = React.useMemo(() => {
     if (!selectedDate) return 'Not selected';
-    try {
-      const [yearStr, monthStr, dayStr] = selectedDate.split('-');
-      const year = parseInt(yearStr, 10);
-      const monthZero = parseInt(monthStr, 10) - 1;
-      const day = parseInt(dayStr, 10);
-      const dateObj = new Date(year, monthZero, day);
-
-      const daysOfWeek = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-      return `${daysOfWeek[dateObj.getDay()]}, ${months[dateObj.getMonth()]} ${day}, ${year}`;
-    } catch (_e) {
-      return selectedDate;
-    }
+    return formatPKTDate(`${selectedDate}T12:00:00.000Z`, { weekday: 'long' });
   }, [selectedDate]);
 
   return (

@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useCartStore } from '../store/cart.store';
 import { useBookingDraftStore } from '../store/bookingDraft.store';
 import { useLocationStore } from '../store/location.store';
 import { bookingApi } from '../services/api/booking.api';
 import { PriceEstimateData } from '../types/booking.types';
+import { slotToUTCISO } from '../utils/timezone';
+
+const PLATFORM_FEE_RATE = 0.05; // 5% customer platform fee
 
 export function useBookingEstimate() {
   const cartItems = useCartStore((s) => s.items);
@@ -17,25 +20,18 @@ export function useBookingEstimate() {
 
   const currentLocation = useLocationStore((s) => s.currentLocation);
 
-  const [estimate, setEstimate] = useState<PriceEstimateData>({
-    base_price: 3000,
-    urgency_multiplier: 1.0,
-    demand_multiplier: 1.0,
-    time_of_day_multiplier: 1.0,
-    estimated_total: 3000,
-    platform_fee: 450,
-    worker_amount: 2550,
-    currency: 'PKR',
-    price_type: 'hourly',
-  });
+  // Single Source of Truth for Subtotal: Dynamic sum of cart items (Σ service.price * service.quantity)
+  const cartSubtotal = useMemo(() => {
+    return cartItems.reduce((acc, item) => acc + (Number(item.price) || 0) * (Number(item.quantity) || 1), 0);
+  }, [cartItems]);
+
+  const [estimateData, setEstimateData] = useState<PriceEstimateData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const fetchEstimate = useCallback(async () => {
-    // Construct ISO-8601 UTC scheduled timestamp
     let scheduledAt = new Date().toISOString();
     if (selectedDate) {
-      const timePart = selectedTimeSlot ? selectedTimeSlot.split(' ')[0] : '10:00';
-      scheduledAt = new Date(`${selectedDate}T${timePart}:00.000Z`).toISOString();
+      scheduledAt = slotToUTCISO(selectedDate, selectedTimeSlot || '10:00 AM');
     }
 
     const firstService = cartItems[0];
@@ -56,28 +52,12 @@ export function useBookingEstimate() {
         latitude: lat,
         longitude: lng,
         is_urgent: isUrgent,
+        custom_base_price: cartSubtotal > 0 ? cartSubtotal : undefined,
       });
 
-      setEstimate(result);
+      setEstimateData(result);
     } catch (_e) {
-      // Direct local computation fallback
-      const cartSubtotal = cartItems.reduce((acc, i) => acc + i.price * i.quantity, 0);
-      const basePrice = cartSubtotal > 0 ? cartSubtotal : 3000;
-      const urgMult = isUrgent ? 1.5 : 1.0;
-      const total = Math.round(basePrice * urgMult);
-      const fee = Math.round(total * 0.15);
-
-      setEstimate({
-        base_price: basePrice,
-        urgency_multiplier: urgMult,
-        demand_multiplier: 1.0,
-        time_of_day_multiplier: 1.0,
-        estimated_total: total,
-        platform_fee: fee,
-        worker_amount: total - fee,
-        currency: 'PKR',
-        price_type: 'hourly',
-      });
+      setEstimateData(null);
     } finally {
       setIsLoading(false);
     }
@@ -87,16 +67,25 @@ export function useBookingEstimate() {
     fetchEstimate();
   }, [fetchEstimate]);
 
+  // Derived price values using API estimation data when available (Single Source of Truth)
+  const basePrice = estimateData?.base_price ?? (cartSubtotal > 0 ? cartSubtotal : 500);
+  const subtotal = basePrice;
+  const platformFee = estimateData?.platform_fee ?? Math.round(subtotal * PLATFORM_FEE_RATE);
+  const urgentFee = (isUrgent && !estimateData) ? Math.round(subtotal * 0.3) : 0;
+  const discount = 0;
+  const total = estimateData?.estimated_total ?? (subtotal + platformFee + urgentFee - discount);
+  const workerAmount = estimateData?.worker_amount ?? Math.round(subtotal * 0.95);
+
   return {
-    basePrice: estimate.base_price,
-    subtotal: estimate.base_price,
-    platformFee: estimate.platform_fee,
-    urgentFee: isUrgent ? Math.round(estimate.base_price * 0.5) : 0,
-    discount: 0,
-    total: estimate.estimated_total,
-    workerAmount: estimate.worker_amount,
-    currency: estimate.currency,
-    estimateData: estimate,
+    basePrice,
+    subtotal,
+    platformFee,
+    urgentFee,
+    discount,
+    total,
+    workerAmount,
+    currency: 'PKR',
+    estimateData,
     isLoading,
     refetch: fetchEstimate,
   };

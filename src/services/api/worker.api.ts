@@ -146,7 +146,6 @@ export const workerApi = {
     const total = pagination?.total || summary.totalReviews || rawReviews.length;
     const page = pagination?.page || params.page || 1;
     const totalPages = pagination?.totalPages || Math.ceil(total / (params.limit || 20));
-
     return {
       reviews: rawReviews.map(mapRawWorkerReview),
       summary,
@@ -154,5 +153,56 @@ export const workerApi = {
       page,
       hasMore: page < totalPages,
     };
+  },
+
+  /**
+   * GET /workers/:id/slots?date=YYYY-MM-DD
+   * Fetch real-time open time slots for worker on a date
+   */
+  getWorkerSlots: async (workerId: string, dateStr: string) => {
+    try {
+      const response = await apiClient.get<ApiResponse<any>>(`/workers/${workerId}/slots`, {
+        params: { date: dateStr },
+      });
+      const rawSlots: string[] = response.data?.data?.slots || [];
+      return rawSlots.map((time24) => {
+        const parts = time24.split(':');
+        let h = parseInt(parts[0], 10);
+        const m = parseInt(parts[1] || '0', 10);
+        const period = h >= 12 ? 'PM' : 'AM';
+        h = h % 12;
+        if (h === 0) h = 12;
+        const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')} ${period}`;
+        return {
+          id: `slot-${dateStr}-${time24}`,
+          timeStr,
+          available: true,
+        };
+      });
+    } catch (err) {
+      return [];
+    }
+  },
+
+  /**
+   * GET /workers/:id/availability/month?year=YYYY&month=MM
+   * Fetch available dates for a worker in a month
+   */
+  getWorkerMonthAvailability: async (
+    workerId: string,
+    year: number,
+    month: number
+  ): Promise<{ availableDates: string[]; unavailableDates: string[] }> => {
+    try {
+      const response = await apiClient.get<ApiResponse<any>>(`/workers/${workerId}/availability/month`, {
+        params: { year, month },
+      });
+      return {
+        availableDates: response.data?.data?.available_dates || [],
+        unavailableDates: response.data?.data?.unavailable_dates || [],
+      };
+    } catch (err) {
+      return { availableDates: [], unavailableDates: [] };
+    }
   },
 };

@@ -39,6 +39,10 @@ export default function ScheduleScreen() {
     setIsUrgent,
     setWorkerId,
     hydrate,
+    // Read the persisted workerId directly from the draft store so both hooks
+    // share a single stable reference — avoids a double cart-subscription that
+    // was causing duplicate /availability/month and /slots requests.
+    workerId: draftWorkerId,
   } = useBookingDraftStore();
 
   // Hydrate store on mount
@@ -46,12 +50,19 @@ export default function ScheduleScreen() {
     hydrate();
   }, [hydrate]);
 
-  // Sync worker ID from cart if present
+  // Sync worker ID from cart into the draft store whenever the cart changes.
+  // Only update when the cart has a real UUID to avoid writing null over a
+  // previously persisted (and valid) workerId.
   useEffect(() => {
-    if (cartWorker?.id) {
+    if (cartWorker?.id && cartWorker.id !== 'default') {
       setWorkerId(cartWorker.id);
     }
   }, [cartWorker, setWorkerId]);
+
+  // Derive a single stable workerId for both availability hooks.
+  // Prefer the draft store's persisted value (survives navigation) over the
+  // live cart value to avoid an unnecessary extra render/fetch cycle.
+  const resolvedWorkerId = draftWorkerId || cartWorker?.id || null;
 
   // Calendar month state hook
   const {
@@ -64,10 +75,10 @@ export default function ScheduleScreen() {
     nextMonth,
     prevMonth,
     selectDate,
-  } = useCalendarMonth(selectedDate || undefined);
+  } = useCalendarMonth(selectedDate || undefined, resolvedWorkerId);
 
   // Time slots hook (re-queries automatically whenever selectedDate or workerId changes)
-  const { slots, isLoading } = useWorkerSlots(selectedDate, cartWorker?.id);
+  const { slots, isLoading } = useWorkerSlots(selectedDate, resolvedWorkerId);
 
   // Navigation action
   const handleContinue = () => {

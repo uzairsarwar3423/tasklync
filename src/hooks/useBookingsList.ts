@@ -1,33 +1,116 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState, useEffect, useCallback } from 'react';
+import { BookingDetails, BookingStatus } from '../types/booking.types';
 import { bookingApi } from '../services/api/booking.api';
-import { ListBookingsParams, ListBookingsResponse } from '../types/booking.types';
-import { useAuthStore } from '../store/auth.store';
+import { workerApi } from '../services/api/worker.api';
+import { formatCategoryName } from '../utils/formatters';
 
-export function useBookingsList(params?: ListBookingsParams) {
-  const accessToken = useAuthStore((s) => s.accessToken);
-  const authState = useAuthStore((s) => s.authState);
+export type TabType = 'ACTIVE' | 'PAST' | 'CANCELLED';
 
-  const queryKey = ['bookings-list', params?.status || 'ALL', params?.page || 1, params?.limit || 20, accessToken];
+const ACTIVE_STATUSES: BookingStatus[] = ['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED_BY_WORKER'];
+const PAST_STATUSES: BookingStatus[] = ['COMPLETED', 'AUTO_COMPLETED', 'RESOLVED', 'REFUNDED'];
+const CANCELLED_STATUSES: BookingStatus[] = ['CANCELLED', 'REJECTED', 'DISPUTED'];
 
-  const isAuthenticated = Boolean(accessToken && authState === 'authenticated');
+// In-memory worker profile cache across list renders
+const workerProfileCache = new Map<string, { name: string; avatarUrl?: string | null | undefined }>();
 
-  const query = useQuery<ListBookingsResponse, Error>({
-    queryKey,
-    queryFn: async () => {
-      return await bookingApi.listBookings(params);
-    },
-    enabled: isAuthenticated,
-    staleTime: 15_000,
-    retry: false,
+export function useBookingsList(activeTab: TabType) {
+  const [allBookings, setAllBookings] = useState<BookingDetails[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isError, setIsError] = useState<boolean>(false);
+
+  const fetchBookings = useCallback(async () => {
+    setIsLoading(true);
+    setIsError(false);
+
+    try {
+      // Fetch real customer bookings from backend API / persistent cache
+      const response = await bookingApi.listBookings({ page: 1, limit: 50 });
+      const rawData = response?.data || [];
+      const bookingsList = Array.isArray(rawData) ? rawData : [];
+
+      // Initial pass: ensure category names and worker names are formatted
+      const normalizedBookings: BookingDetails[] = bookingsList.map((b) => ({
+        ...b,
+        category_name: b.category_name || formatCategoryName(b.category_id, 'Service', 'title'),
+        worker_name: b.worker_name || (workerProfileCache.get(b.worker_id)?.name) || undefined,
+        worker_avatar_url: (b.worker_avatar_url || workerProfileCache.get(b.worker_id)?.avatarUrl) || undefined,
+      }));
+
+      setAllBookings(normalizedBookings);
+
+      // Secondary pass: Asynchronously enrich any missing worker names from worker service
+      const missingWorkers = normalizedBookings.filter(
+        (b) => !b.worker_name && b.worker_id && b.worker_id.includes('-')
+      );
+
+      if (missingWorkers.length > 0) {
+        Promise.allSettled(
+          missingWorkers.map(async (b) => {
+            if (workerProfileCache.has(b.worker_id)) {
+              return { workerId: b.worker_id, profile: workerProfileCache.get(b.worker_id)! };
+            }
+            try {
+              const profile = await workerApi.getWorkerProfile(b.worker_id);
+              if (profile?.name) {
+                const info = { name: profile.name, avatarUrl: profile.avatarUrl };
+                workerProfileCache.set(b.worker_id, info);
+                return { workerId: b.worker_id, profile: info };
+              }
+            } catch {
+              // Ignore network failures for background profile lookup
+            }
+            return null;
+          })
+        ).then((results) => {
+          let hasUpdates = false;
+          const updatedBookings: BookingDetails[] = normalizedBookings.map((b) => {
+            if (!b.worker_name && workerProfileCache.has(b.worker_id)) {
+              const cached = workerProfileCache.get(b.worker_id)!;
+              hasUpdates = true;
+              return {
+                ...b,
+                worker_name: cached.name,
+                worker_avatar_url: (b.worker_avatar_url || cached.avatarUrl) || undefined,
+              };
+            }
+            return b;
+          });
+
+          if (hasUpdates) {
+            setAllBookings(updatedBookings);
+          }
+        });
+      }
+    } catch (_err) {
+      setIsError(true);
+      setAllBookings([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchBookings();
+  }, [fetchBookings]);
+
+  // Filter bookings strictly based on real status groups
+  const filteredBookings = allBookings.filter((b) => {
+    if (activeTab === 'ACTIVE') {
+      return ACTIVE_STATUSES.includes(b.status);
+    }
+    if (activeTab === 'PAST') {
+      return PAST_STATUSES.includes(b.status);
+    }
+    if (activeTab === 'CANCELLED') {
+      return CANCELLED_STATUSES.includes(b.status);
+    }
+    return false;
   });
 
   return {
-    bookings: query.data?.data || [],
-    meta: query.data?.meta,
-    isLoading: isAuthenticated ? query.isLoading : false,
-    isRefetching: query.isRefetching,
-    error: query.error,
-    refetch: query.refetch,
-    isAuthenticated,
+    bookings: filteredBookings,
+    isLoading,
+    isError,
+    refetch: fetchBookings,
   };
 }

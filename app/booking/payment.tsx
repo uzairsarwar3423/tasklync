@@ -7,6 +7,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { palette } from '../../src/design';
 
 // Hooks & APIs
+import { useCartStore } from '../../src/store/cart.store';
 import { useBookingEstimate } from '../../src/hooks/useBookingEstimate';
 import { useBookingDetails } from '../../src/hooks/useBookingDetails';
 import { usePaymentMethods } from '../../src/hooks/usePaymentMethods';
@@ -29,6 +30,8 @@ export default function PaymentScreen() {
   const bookingId = params.bookingId || null;
 
   const bottomSheetRef = useRef<BottomSheetRef>(null);
+
+  const clearCart = useCartStore((s) => s.clearCart);
 
   // Derived price calculation hook & live booking details
   const { total: estimateTotal } = useBookingEstimate();
@@ -70,6 +73,7 @@ export default function PaymentScreen() {
     const success = await processPayment(amountToPay, targetMethodId);
 
     if (success) {
+      clearCart();
       // Auto-navigate directly to success screen on payment confirmation
       router.push({
         pathname: '/booking/success',

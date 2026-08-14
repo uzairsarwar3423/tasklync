@@ -52,20 +52,18 @@ export default function SummaryScreen() {
   const { subtotal, platformFee, urgentFee, discount, total } = useBookingEstimate();
 
   // Create booking mutation hook
-  const { submit, isLoading, error } = useCreateBooking();
+  const { submit, isLoading, error: createError } = useCreateBooking();
 
   const handleConfirmBooking = async () => {
-    const response = await submit();
-    if (response && response.id) {
-      // Clear cart on successful booking submission
-      clearCart();
-      // Navigate directly to success tracking page with no duplicate flash
+    const { booking, error: submitError } = await submit();
+    if (booking && booking.id) {
+      // Navigate directly to payment screen
       router.push({
         pathname: '/booking/payment',
-        params: { bookingId: response.id },
+        params: { bookingId: booking.id },
       } as any);
-    } else if (error) {
-      Alert.alert('Booking Error', error);
+    } else {
+      Alert.alert('Booking Error', submitError || createError || 'Unable to confirm booking. Please try again.');
     }
   };
 

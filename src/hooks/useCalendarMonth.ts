@@ -1,5 +1,7 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useBookingDraftStore } from '../store/bookingDraft.store';
+import { workerApi } from '../services/api/worker.api';
+import { getPKTTodayDateString } from '../utils/timezone';
 
 export interface CalendarDayItem {
   dateStr: string; // Format: YYYY-MM-DD
@@ -8,6 +10,7 @@ export interface CalendarDayItem {
   isToday: boolean;
   isPast: boolean; // Before today's date
   isSunday: boolean;
+  isAvailable: boolean; // Real-time DB availability
   month: number; // 0-indexed (0 = Jan)
   year: number;
 }
@@ -27,12 +30,13 @@ export function getDaysInMonth(year: number, monthZeroIndexed: number): number {
   return daysPerMonth[monthZeroIndexed];
 }
 
-export function useCalendarMonth(initialDateStr?: string) {
-  const today = useMemo(() => new Date(), []);
-  const todayYear = today.getFullYear();
-  const todayMonth = today.getMonth(); // 0..11
-  const todayDateNumber = today.getDate();
-  const todayStr = useMemo(() => formatYYYYMMDD(todayYear, todayMonth, todayDateNumber), [todayYear, todayMonth, todayDateNumber]);
+export function useCalendarMonth(initialDateStr?: string, workerId?: string | null) {
+  // Derive current calendar date strictly in Pakistan Standard Time (PKT, Asia/Karachi, UTC+5)
+  const todayStr = useMemo(() => getPKTTodayDateString(), []);
+  const [todayYear, todayMonth] = useMemo(() => {
+    const [y, m] = todayStr.split('-').map((num) => parseInt(num, 10));
+    return [y, m - 1];
+  }, [todayStr]);
 
   // Read selected date from store
   const storeSelectedDate = useBookingDraftStore((s) => s.selectedDate);
@@ -54,6 +58,48 @@ export function useCalendarMonth(initialDateStr?: string) {
   const [visibleYear, setVisibleYear] = useState<number>(initialYear);
   const [visibleMonth, setVisibleMonth] = useState<number>(initialMonth);
   const [slideDirection, setSlideDirection] = useState<'next' | 'prev'>('next');
+
+  // Month availability state
+  const [availableDatesSet, setAvailableDatesSet] = useState<Set<string>>(new Set());
+  const [isAvailabilityLoaded, setIsAvailabilityLoaded] = useState<boolean>(false);
+
+  // Fetch month availability when visible month/year or workerId changes.
+  // Only runs when a valid UUID workerId is provided — never falls back to a
+  // placeholder string so we don't emit 400s to /workers/default/…
+  useEffect(() => {
+    // Guard: require a non-empty workerId that is not the literal 'default'
+    if (!workerId || workerId === 'default') {
+      setAvailableDatesSet(new Set());
+      setIsAvailabilityLoaded(false);
+      return;
+    }
+
+    let isMounted = true;
+    const fetchMonthAvail = async () => {
+      try {
+        const res = await workerApi.getWorkerMonthAvailability(
+          workerId,
+          visibleYear,
+          visibleMonth + 1
+        );
+        if (isMounted) {
+          setAvailableDatesSet(new Set(res.availableDates));
+          setIsAvailabilityLoaded(true);
+        }
+      } catch {
+        if (isMounted) {
+          setAvailableDatesSet(new Set());
+          setIsAvailabilityLoaded(false);
+        }
+      }
+    };
+
+    fetchMonthAvail();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [workerId, visibleYear, visibleMonth]);
 
   // Check if we can navigate to previous month (cannot go prior to current month)
   const canGoPrev = useMemo(() => {
@@ -118,6 +164,7 @@ export function useCalendarMonth(initialDateStr?: string) {
         isToday: dateStr === todayStr,
         isPast,
         isSunday,
+        isAvailable: false,
         month: prevMonthIdx,
         year: prevYear,
       });
@@ -129,6 +176,9 @@ export function useCalendarMonth(initialDateStr?: string) {
       const dayOfWeek = (startWeekday + dayNum - 1) % 7;
       const isPast = dateStr < todayStr;
 
+      // Available if in current month, not past, and in real-time availableDatesSet (when loaded)
+      const isAvailable = !isPast && (!isAvailabilityLoaded || availableDatesSet.has(dateStr));
+
       days.push({
         dateStr,
         dayNumber: dayNum,
@@ -136,6 +186,7 @@ export function useCalendarMonth(initialDateStr?: string) {
         isToday: dateStr === todayStr,
         isPast,
         isSunday: dayOfWeek === 0,
+        isAvailable,
         month: visibleMonth,
         year: visibleYear,
       });
@@ -159,13 +210,14 @@ export function useCalendarMonth(initialDateStr?: string) {
         isToday: dateStr === todayStr,
         isPast,
         isSunday: dayOfWeek === 0,
+        isAvailable: false,
         month: nextMonthIdx,
         year: nextYear,
       });
     }
 
     return days;
-  }, [visibleYear, visibleMonth, todayStr]);
+  }, [visibleYear, visibleMonth, todayStr, availableDatesSet, isAvailabilityLoaded]);
 
   const monthNames = [
     'January',

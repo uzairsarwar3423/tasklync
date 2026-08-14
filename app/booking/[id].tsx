@@ -23,6 +23,7 @@ import {
   CheckCircle2,
   AlertCircle,
   User,
+  MessageSquare,
 } from 'lucide-react-native';
 import { palette, colors } from '../../src/design';
 import { useBookingDetails } from '../../src/hooks/useBookingDetails';
@@ -231,12 +232,22 @@ export default function BookingDetailsScreen() {
                 <Text style={styles.workerName}>{booking.worker_name || 'Ahmed Khan'}</Text>
                 <Text style={styles.categorySub}>{booking.category_name || 'Electrical Specialist'}</Text>
               </View>
-              <TouchableOpacity
-                style={styles.callBtn}
-                onPress={() => Alert.alert('Contact Worker', 'Dialing +92 300 1234567...')}
-              >
-                <Phone size={18} color={palette.white} />
-              </TouchableOpacity>
+              <View style={styles.workerActions}>
+                <TouchableOpacity
+                  style={styles.chatBtn}
+                  onPress={() => router.push(`/booking/${booking.id}/chat`)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <MessageSquare size={18} color={palette.white} />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.callBtn}
+                  onPress={() => Alert.alert('Contact Worker', 'Dialing +92 300 1234567...')}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Phone size={18} color={palette.white} />
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
 
@@ -594,11 +605,24 @@ const styles = StyleSheet.create({
     color: palette.gray500,
     marginTop: 2,
   },
+  workerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  chatBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#16A34A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   callBtn: {
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.primaryDark,
     alignItems: 'center',
     justifyContent: 'center',
   },

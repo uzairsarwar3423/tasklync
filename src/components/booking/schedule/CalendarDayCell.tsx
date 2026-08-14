@@ -22,10 +22,10 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
   isSelected,
   onSelect,
 }) => {
-  const { dateStr, dayNumber, isCurrentMonth, isToday, isPast } = dayItem;
+  const { dateStr, dayNumber, isCurrentMonth, isToday, isPast, isAvailable } = dayItem;
 
-  // Disabled if outside current month or in the past
-  const isDisabled = !isCurrentMonth || isPast;
+  // Disabled if outside current month, in the past, or has no real-time availability
+  const isDisabled = !isCurrentMonth || isPast || !isAvailable;
 
   // Minimal 100ms timing transition
   const scale = useSharedValue(1);

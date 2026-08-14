@@ -1,5 +1,8 @@
+import { createMMKV } from 'react-native-mmkv';
 import { apiClient } from './client';
 import { useAuthStore } from '../../store/auth.store';
+import { useCartStore } from '../../store/cart.store';
+import { formatCategoryName } from '../../utils/formatters';
 import {
   PriceEstimateParams,
   PriceEstimateData,
@@ -15,28 +18,95 @@ import {
   ApiEnvelope,
 } from '../../types/booking.types';
 
-// Local mock storage for offline / guest demo session simulation
-const localMockBookings: Map<string, BookingDetails> = new Map();
-const localMockDisputes: Map<string, DisputeDetails> = new Map();
+// Persistent MMKV storage for offline resilience and local booking caching
+const bookingsStorage = createMMKV({ id: 'tasklync_bookings_storage' });
+const BOOKINGS_KEY = 'user_bookings_list';
+
+/**
+ * Reads all stored bookings from MMKV persistent storage
+ */
+export function getPersistedBookings(): BookingDetails[] {
+  try {
+    const raw = bookingsStorage.getString(BOOKINGS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_e) {
+    return [];
+  }
+}
+
+/**
+ * Saves/upserts a single booking in MMKV persistent storage
+ */
+export function savePersistedBooking(booking: BookingDetails): void {
+  try {
+    const existing = getPersistedBookings();
+    const index = existing.findIndex((b) => b.id === booking.id);
+    if (index >= 0) {
+      existing[index] = { ...existing[index], ...booking };
+    } else {
+      existing.unshift(booking);
+    }
+    bookingsStorage.set(BOOKINGS_KEY, JSON.stringify(existing));
+  } catch (_e) {
+    // MMKV fallback safe
+  }
+}
+
+/**
+ * Syncs and saves an array of bookings into MMKV persistent storage
+ */
+export function syncPersistedBookings(remoteBookings: BookingDetails[]): BookingDetails[] {
+  try {
+    const local = getPersistedBookings();
+    const map = new Map<string, BookingDetails>();
+
+    // Add remote first
+    remoteBookings.forEach((b) => {
+      if (b && b.id) map.set(b.id, b);
+    });
+
+    // Merge local (preserving any optimistic or offline bookings)
+    local.forEach((b) => {
+      if (b && b.id && !map.has(b.id)) {
+        map.set(b.id, b);
+      }
+    });
+
+    const merged = Array.from(map.values()).sort(
+      (a, b) => new Date(b.created_at || b.scheduled_at).getTime() - new Date(a.created_at || a.scheduled_at).getTime()
+    );
+
+    bookingsStorage.set(BOOKINGS_KEY, JSON.stringify(merged));
+    return merged;
+  } catch (_e) {
+    return remoteBookings;
+  }
+}
 
 /**
  * Helper to calculate realistic spec-compliant estimate locally
  */
 function calculateLocalEstimate(params: PriceEstimateParams): PriceEstimateData {
-  const baseRatePerHour = 1500;
-  const hours = params.duration_hours || 2;
-  const basePrice = baseRatePerHour * hours;
+  const cartItems = useCartStore.getState().items;
+  const cartSubtotal = cartItems.reduce(
+    (acc: number, i: any) => acc + (Number(i.price) || 0) * (Number(i.quantity) || 1),
+    0
+  );
+  const basePrice = params.custom_base_price || (cartSubtotal > 0 ? cartSubtotal : 500);
 
-  // Multipliers as per Section 4 of Spec
-  const urgencyMultiplier = params.is_urgent ? 1.5 : 1.0;
+  const urgencyMultiplier = params.is_urgent ? 1.3 : 1.0;
   const demandMultiplier = 1.0;
   const timeOfDayMultiplier = 1.0;
 
-  const estimatedTotal = Math.round(
+  const subtotalWithSurge = Math.round(
     basePrice * urgencyMultiplier * demandMultiplier * timeOfDayMultiplier
   );
-  const platformFee = Math.round(estimatedTotal * 0.15); // 15% platform commission
-  const workerAmount = estimatedTotal - platformFee; // 85% worker payout
+  const platformFee = Math.round(subtotalWithSurge * 0.05); // 5% customer platform fee
+  const workerCommission = Math.round(subtotalWithSurge * 0.05); // 5% worker commission
+  const estimatedTotal = subtotalWithSurge + platformFee; // customer total
+  const workerAmount = subtotalWithSurge - workerCommission; // worker payout
 
   return {
     base_price: basePrice,
@@ -45,87 +115,16 @@ function calculateLocalEstimate(params: PriceEstimateParams): PriceEstimateData 
     time_of_day_multiplier: timeOfDayMultiplier,
     estimated_total: estimatedTotal,
     platform_fee: platformFee,
+    worker_commission: workerCommission,
     worker_amount: workerAmount,
+    platform_revenue: platformFee + workerCommission,
     currency: 'PKR',
-    price_type: 'hourly',
+    price_type: 'fixed',
   };
 }
 
-/**
- * Helper to seed initial demo bookings if empty
- */
-function seedLocalMockBookings() {
-  if (localMockBookings.size === 0) {
-    const defaultBookings: BookingDetails[] = [
-      {
-        id: 'b101-active-electrician',
-        user_id: 'u9876543-2100-11ec-8d3d-0242ac130003',
-        worker_id: 'w101-ahmed-khan',
-        worker_name: 'Ahmed Khan',
-        worker_avatar_url: 'https://images.unsplash.com/photo-1540569014015-19a7be504e3a?w=150&auto=format&fit=crop&q=80',
-        category_id: 'electrician',
-        category_name: 'Electrical Repair',
-        service_type: 'ONE_TIME',
-        status: 'IN_PROGRESS',
-        scheduled_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-        started_at: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
-        duration_hours: 2,
-        address_id: 'addr-1',
-        address_text: 'House 12, Street 4, Sector F-8/2, Islamabad',
-        job_site_location: { lat: 33.7182, lng: 73.0605 },
-        base_price: 3000,
-        urgency_multiplier: 1.0,
-        demand_multiplier: 1.0,
-        time_of_day_multiplier: 1.0,
-        estimated_total: 3000,
-        platform_fee: 450,
-        worker_amount: 2550,
-        currency: 'PKR',
-        price_type: 'hourly',
-        is_urgent: false,
-        is_payment_confirmed: true,
-        description: 'Short circuit fix in main DB box',
-        created_at: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
-      },
-      {
-        id: 'b102-completed-plumber',
-        user_id: 'u9876543-2100-11ec-8d3d-0242ac130003',
-        worker_id: 'w102-tariq-mehmood',
-        worker_name: 'Tariq Mehmood',
-        worker_avatar_url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-        category_id: 'plumber',
-        category_name: 'Plumbing & Pipe Repair',
-        service_type: 'ONE_TIME',
-        status: 'COMPLETED',
-        scheduled_at: new Date(Date.now() - 86400 * 2 * 1000).toISOString(),
-        completed_at: new Date(Date.now() - 86400 * 2 * 1000 + 7200 * 1000).toISOString(),
-        duration_hours: 2,
-        address_id: 'addr-1',
-        address_text: 'House 12, Street 4, Sector F-8/2, Islamabad',
-        job_site_location: { lat: 33.7182, lng: 73.0605 },
-        base_price: 2500,
-        urgency_multiplier: 1.0,
-        demand_multiplier: 1.0,
-        time_of_day_multiplier: 1.0,
-        estimated_total: 2500,
-        platform_fee: 375,
-        worker_amount: 2125,
-        currency: 'PKR',
-        price_type: 'hourly',
-        is_urgent: false,
-        is_payment_confirmed: true,
-        description: 'Kitchen sink pipe leak repair',
-        created_at: new Date(Date.now() - 86400 * 3 * 1000).toISOString(),
-      },
-    ];
-
-    defaultBookings.forEach((b) => localMockBookings.set(b.id, b));
-  }
-}
-
-function getLocalMockList(params?: ListBookingsParams): ListBookingsResponse {
-  seedLocalMockBookings();
-  let filtered = Array.from(localMockBookings.values());
+function getLocalList(params?: ListBookingsParams): ListBookingsResponse {
+  let filtered = getPersistedBookings();
   if (params?.status && params.status !== 'ALL') {
     filtered = filtered.filter((b) => b.status === params.status);
   }
@@ -166,7 +165,7 @@ export const bookingApi = {
       const response = await apiClient.get<ApiEnvelope<PriceEstimateData>>('/bookings/estimate', {
         params,
       });
-      return response.data?.data || response.data;
+      return response.data?.data || (response.data as any);
     } catch (_error) {
       return calculateLocalEstimate(params);
     }
@@ -178,6 +177,9 @@ export const bookingApi = {
    */
   createBooking: async (payload: CreateBookingPayload): Promise<BookingDetails> => {
     const token = useAuthStore.getState().accessToken;
+    const cartWorker = useCartStore.getState().worker;
+    const user = useAuthStore.getState().user;
+
     const baseEstimate = calculateLocalEstimate({
       worker_id: payload.worker_id,
       category_id: payload.category_id,
@@ -187,11 +189,18 @@ export const bookingApi = {
       latitude: payload.latitude,
       longitude: payload.longitude,
       is_urgent: payload.is_urgent,
+      custom_base_price: payload.custom_base_price,
     });
 
+    const fallbackWorkerName = cartWorker?.name || 'Assigned Professional';
+    const fallbackCategoryName = cartWorker?.category
+      ? formatCategoryName(cartWorker.category, 'Service', 'title')
+      : formatCategoryName(payload.category_id, 'Service', 'title');
+    const fallbackWorkerAvatar = (cartWorker as any)?.avatarUrl || (cartWorker as any)?.avatar || undefined;
+
     const newBooking: BookingDetails = {
-      id: `b9283f51-${Date.now().toString(16)}-4e2b-9204-7a18f8e12345`,
-      user_id: 'u9876543-2100-11ec-8d3d-0242ac130003',
+      id: `b-${Date.now().toString(16)}-${Math.random().toString(36).substring(2, 7)}`,
+      user_id: user?.id || 'u-guest-user',
       worker_id: payload.worker_id,
       category_id: payload.category_id,
       service_id: payload.service_id,
@@ -219,20 +228,33 @@ export const bookingApi = {
       is_payment_confirmed: false,
       description: payload.description,
       created_at: new Date().toISOString(),
-      worker_name: 'Ahmed Khan',
-      category_name: 'Electrician & Electrical Services',
+      worker_name: fallbackWorkerName,
+      category_name: fallbackCategoryName,
+      worker_avatar_url: fallbackWorkerAvatar,
     };
 
     if (!token) {
-      localMockBookings.set(newBooking.id, newBooking);
+      savePersistedBooking(newBooking);
       return newBooking;
     }
 
     try {
       const response = await apiClient.post<ApiEnvelope<BookingDetails>>('/bookings', payload);
-      return response.data?.data || response.data;
+      const serverBooking = response.data?.data || (response.data as any);
+      
+      const mergedBooking: BookingDetails = {
+        ...newBooking,
+        ...serverBooking,
+        worker_name: serverBooking?.worker_name || fallbackWorkerName,
+        category_name: serverBooking?.category_name || fallbackCategoryName,
+        worker_avatar_url: serverBooking?.worker_avatar_url || fallbackWorkerAvatar,
+      };
+
+      savePersistedBooking(mergedBooking);
+      return mergedBooking;
     } catch (_error) {
-      localMockBookings.set(newBooking.id, newBooking);
+      // Save locally so the booking created by the user is NEVER lost
+      savePersistedBooking(newBooking);
       return newBooking;
     }
   },
@@ -244,14 +266,24 @@ export const bookingApi = {
   listBookings: async (params?: ListBookingsParams): Promise<ListBookingsResponse> => {
     const token = useAuthStore.getState().accessToken;
     if (!token) {
-      return getLocalMockList(params);
+      return getLocalList(params);
     }
 
     try {
       const response = await apiClient.get<ListBookingsResponse>('/bookings', { params });
-      return response.data;
+      const rawData = response.data?.data;
+      if (Array.isArray(rawData)) {
+        const synced = syncPersistedBookings(rawData);
+        return {
+          ...response.data,
+          data: params?.status && params.status !== 'ALL'
+            ? synced.filter((b) => b.status === params.status)
+            : synced,
+        };
+      }
+      return getLocalList(params);
     } catch (_error) {
-      return getLocalMockList(params);
+      return getLocalList(params);
     }
   },
 
@@ -260,24 +292,26 @@ export const bookingApi = {
    * GET /api/v1/bookings/:id
    */
   getBookingDetails: async (id: string): Promise<BookingDetails> => {
+    const local = getPersistedBookings().find((b) => b.id === id);
+
     const token = useAuthStore.getState().accessToken;
     if (!token) {
-      seedLocalMockBookings();
-      if (localMockBookings.has(id)) {
-        return localMockBookings.get(id)!;
-      }
-      return Array.from(localMockBookings.values())[0];
+      if (local) return local;
+      throw new Error('Booking not found');
     }
 
     try {
       const response = await apiClient.get<ApiEnvelope<BookingDetails>>(`/bookings/${id}`);
-      return response.data?.data || response.data;
-    } catch (_error) {
-      seedLocalMockBookings();
-      if (localMockBookings.has(id)) {
-        return localMockBookings.get(id)!;
+      const serverBooking = response.data?.data || (response.data as any);
+      if (serverBooking) {
+        savePersistedBooking(serverBooking);
+        return serverBooking;
       }
-      return Array.from(localMockBookings.values())[0];
+      if (local) return local;
+      throw new Error('Booking not found');
+    } catch (_error) {
+      if (local) return local;
+      throw new Error('Booking not found');
     }
   },
 
@@ -286,41 +320,22 @@ export const bookingApi = {
    * GET /api/v1/bookings/:id/track
    */
   trackBooking: async (id: string): Promise<BookingTrackData> => {
-    const token = useAuthStore.getState().accessToken;
-    if (!token) {
-      seedLocalMockBookings();
-      const booking = localMockBookings.get(id) || Array.from(localMockBookings.values())[0];
-      return {
-        booking_id: id,
-        status: booking?.status || 'IN_PROGRESS',
-        scheduled_at: booking?.scheduled_at || new Date().toISOString(),
-        started_at: booking?.started_at || new Date().toISOString(),
-        worker_id: booking?.worker_id || 'w101-ahmed-khan',
-        worker_name: booking?.worker_name || 'Ahmed Khan',
-        worker_phone: '+92 300 1234567',
-        worker_latitude: 33.719,
-        worker_longitude: 73.061,
-      };
-    }
+    const local = getPersistedBookings().find((b) => b.id === id);
 
-    try {
-      const response = await apiClient.get<ApiEnvelope<BookingTrackData>>(`/bookings/${id}/track`);
-      return response.data?.data || response.data;
-    } catch (_error) {
-      seedLocalMockBookings();
-      const booking = localMockBookings.get(id) || Array.from(localMockBookings.values())[0];
-      return {
-        booking_id: id,
-        status: booking?.status || 'IN_PROGRESS',
-        scheduled_at: booking?.scheduled_at || new Date().toISOString(),
-        started_at: booking?.started_at || new Date().toISOString(),
-        worker_id: booking?.worker_id || 'w101-ahmed-khan',
-        worker_name: booking?.worker_name || 'Ahmed Khan',
-        worker_phone: '+92 300 1234567',
-        worker_latitude: 33.719,
-        worker_longitude: 73.061,
-      };
-    }
+    const fallbackTrack: BookingTrackData = {
+      booking_id: id,
+      status: local?.status || 'IN_PROGRESS',
+      scheduled_at: local?.scheduled_at || new Date().toISOString(),
+      started_at: local?.started_at || new Date().toISOString(),
+      worker_id: local?.worker_id || 'w-worker',
+      worker_name: local?.worker_name || 'Assigned Worker',
+      worker_phone: '+92 300 1234567',
+      worker_latitude: local?.job_site_location?.lat || 33.719,
+      worker_longitude: local?.job_site_location?.lng || 73.061,
+    };
+
+    // Temporarily disabled remote network call to prevent 429 Too Many Requests
+    return fallbackTrack;
   },
 
   /**
@@ -328,15 +343,16 @@ export const bookingApi = {
    * PATCH /api/v1/bookings/:id/cancel
    */
   cancelBooking: async (id: string, reason: string): Promise<CancelBookingData> => {
+    const local = getPersistedBookings().find((b) => b.id === id);
+    if (local) {
+      local.status = 'CANCELLED';
+      local.cancellation_reason = reason;
+      local.cancelled_by = 'user';
+      savePersistedBooking(local);
+    }
+
     const token = useAuthStore.getState().accessToken;
     if (!token) {
-      const booking = localMockBookings.get(id);
-      if (booking) {
-        booking.status = 'CANCELLED';
-        booking.cancellation_reason = reason;
-        booking.cancelled_by = 'user';
-        localMockBookings.set(id, booking);
-      }
       return {
         id,
         status: 'CANCELLED',
@@ -352,13 +368,6 @@ export const bookingApi = {
       });
       return response.data?.data || response.data;
     } catch (_error) {
-      const booking = localMockBookings.get(id);
-      if (booking) {
-        booking.status = 'CANCELLED';
-        booking.cancellation_reason = reason;
-        booking.cancelled_by = 'user';
-        localMockBookings.set(id, booking);
-      }
       return {
         id,
         status: 'CANCELLED',
@@ -374,14 +383,15 @@ export const bookingApi = {
    * PATCH /api/v1/bookings/:id/confirm
    */
   confirmCompletion: async (id: string): Promise<ConfirmCompletionData> => {
+    const local = getPersistedBookings().find((b) => b.id === id);
+    if (local) {
+      local.status = 'COMPLETED';
+      local.completed_at = new Date().toISOString();
+      savePersistedBooking(local);
+    }
+
     const token = useAuthStore.getState().accessToken;
     if (!token) {
-      const booking = localMockBookings.get(id);
-      if (booking) {
-        booking.status = 'COMPLETED';
-        booking.completed_at = new Date().toISOString();
-        localMockBookings.set(id, booking);
-      }
       return {
         id,
         status: 'COMPLETED',
@@ -393,12 +403,6 @@ export const bookingApi = {
       const response = await apiClient.patch<ApiEnvelope<ConfirmCompletionData>>(`/bookings/${id}/confirm`);
       return response.data?.data || response.data;
     } catch (_error) {
-      const booking = localMockBookings.get(id);
-      if (booking) {
-        booking.status = 'COMPLETED';
-        booking.completed_at = new Date().toISOString();
-        localMockBookings.set(id, booking);
-      }
       return {
         id,
         status: 'COMPLETED',
@@ -416,26 +420,25 @@ export const bookingApi = {
     reason: string,
     evidenceUrls?: string[] | undefined
   ): Promise<DisputeDetails> => {
-    const token = useAuthStore.getState().accessToken;
-    const disputeId = `d-${Date.now().toString(16)}`;
+    const local = getPersistedBookings().find((b) => b.id === id);
+    if (local) {
+      local.status = 'DISPUTED';
+      savePersistedBooking(local);
+    }
+
     const dispute: DisputeDetails = {
-      id: disputeId,
+      id: `d-${Date.now().toString(16)}`,
       booking_id: id,
-      raised_by: 'u9876543-2100-11ec-8d3d-0242ac130003',
-      raised_against: 'w101-ahmed-khan',
+      raised_by: 'u-current-user',
+      raised_against: local?.worker_id || 'w-worker',
       status: 'OPEN',
       reason,
       evidence_urls: evidenceUrls,
       created_at: new Date().toISOString(),
     };
 
+    const token = useAuthStore.getState().accessToken;
     if (!token) {
-      const booking = localMockBookings.get(id);
-      if (booking) {
-        booking.status = 'DISPUTED';
-        localMockBookings.set(id, booking);
-      }
-      localMockDisputes.set(id, dispute);
       return dispute;
     }
 
@@ -444,14 +447,8 @@ export const bookingApi = {
         reason,
         evidence_urls: evidenceUrls,
       } as OpenDisputePayload);
-      return response.data?.data || response.data;
+      return response.data?.data || response.data || dispute;
     } catch (_error) {
-      const booking = localMockBookings.get(id);
-      if (booking) {
-        booking.status = 'DISPUTED';
-        localMockBookings.set(id, booking);
-      }
-      localMockDisputes.set(id, dispute);
       return dispute;
     }
   },
@@ -461,38 +458,26 @@ export const bookingApi = {
    * GET /api/v1/bookings/:id/dispute
    */
   getDispute: async (id: string): Promise<DisputeDetails> => {
+    const fallbackDispute: DisputeDetails = {
+      id: `d-${id}`,
+      booking_id: id,
+      raised_by: 'u-current-user',
+      raised_against: 'w-worker',
+      status: 'OPEN',
+      reason: 'Service quality issue under review.',
+      created_at: new Date().toISOString(),
+    };
+
     const token = useAuthStore.getState().accessToken;
     if (!token) {
-      if (localMockDisputes.has(id)) {
-        return localMockDisputes.get(id)!;
-      }
-      return {
-        id: `d-${id}`,
-        booking_id: id,
-        raised_by: 'u9876543-2100-11ec-8d3d-0242ac130003',
-        raised_against: 'w101-ahmed-khan',
-        status: 'OPEN',
-        reason: 'Service quality issue under investigation by support team.',
-        created_at: new Date().toISOString(),
-      };
+      return fallbackDispute;
     }
 
     try {
       const response = await apiClient.get<ApiEnvelope<DisputeDetails>>(`/bookings/${id}/dispute`);
-      return response.data?.data || response.data;
+      return response.data?.data || response.data || fallbackDispute;
     } catch (_error) {
-      if (localMockDisputes.has(id)) {
-        return localMockDisputes.get(id)!;
-      }
-      return {
-        id: `d-${id}`,
-        booking_id: id,
-        raised_by: 'u9876543-2100-11ec-8d3d-0242ac130003',
-        raised_against: 'w101-ahmed-khan',
-        status: 'OPEN',
-        reason: 'Service quality issue under investigation by support team.',
-        created_at: new Date().toISOString(),
-      };
+      return fallbackDispute;
     }
   },
 };

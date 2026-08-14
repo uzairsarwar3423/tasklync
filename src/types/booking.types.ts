@@ -34,6 +34,7 @@ export interface PriceEstimateParams {
   latitude: number;
   longitude: number;
   is_urgent: boolean;
+  custom_base_price?: number | undefined;
 }
 
 /**
@@ -46,7 +47,9 @@ export interface PriceEstimateData {
   time_of_day_multiplier: number;
   estimated_total: number;
   platform_fee: number;
+  worker_commission?: number | undefined;
   worker_amount: number;
+  platform_revenue?: number | undefined;
   currency: string;
   price_type: PriceType;
 }
@@ -67,6 +70,7 @@ export interface CreateBookingPayload {
   longitude: number;
   is_urgent: boolean;
   description?: string | undefined;
+  custom_base_price?: number | undefined;
 }
 
 /**

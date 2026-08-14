@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { bookingApi } from '../services/api/booking.api';
 import { BookingStatus } from '../types/booking.types';
+import { formatPKTRelativeSchedule } from '../utils/timezone';
 
 export interface ActiveBooking {
   id: string;
@@ -32,7 +33,7 @@ export const useActiveBooking = () => {
           status: active.status,
           workerName: active.worker_name || 'Assigned Professional',
           workerAvatarUrl: active.worker_avatar_url || null,
-          scheduledTime: active.scheduled_at ? new Date(active.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Scheduled',
+          scheduledTime: formatPKTRelativeSchedule(active.scheduled_at),
           startedAt: active.started_at || null,
           distanceLabel: '1.2 km',
           expiresAt: active.expires_at || null,

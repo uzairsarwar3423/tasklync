@@ -72,7 +72,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     googleMapsKey: process.env.GOOGLE_MAPS_KEY,
     stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
     eas: {
-      projectId: process.env.EAS_PROJECT_ID || '56ec82e0-2a10-4683-b6bc-cfbae071eb29',
+      projectId: process.env.EAS_PROJECT_ID || '231e181a-e4bc-4d71-9434-e4b9b5507a90',
     },
   },
 });
