@@ -111,10 +111,15 @@ export const notificationApi = {
       return true;
     } catch {
       try {
-        await apiClient.patch('/users/profile', { fcm_token: token, push_enabled: true });
+        await apiClient.post('/notifications/device-token', { token });
         return true;
       } catch {
-        return false;
+        try {
+          await apiClient.patch('/users/profile', { fcm_token: token, push_enabled: true });
+          return true;
+        } catch {
+          return false;
+        }
       }
     }
   },
@@ -128,7 +133,12 @@ export const notificationApi = {
       await apiClient.post('/users/me/fcm-token', { token: null });
       return true;
     } catch {
-      return false;
+      try {
+        await apiClient.post('/notifications/device-token', { token: null });
+        return true;
+      } catch {
+        return false;
+      }
     }
   },
 };
