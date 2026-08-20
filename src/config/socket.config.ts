@@ -1,5 +1,5 @@
 const getSocketBaseUrl = (): string => {
-  const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:3000';
+  const apiUrl = process.env.EXPO_PUBLIC_API_URL || 'https://api.tasklync.pk/api/v1';
   return apiUrl.replace(/\/api\/v1\/?$/, '');
 };
 

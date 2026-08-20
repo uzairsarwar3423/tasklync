@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, Pressable, ViewStyle } from 'react-native';
-import Animated, { useAnimatedStyle, withSpring, ZoomIn } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Chip } from '../ui/Chip/Chip';
 import { colors } from '../../design/colors';
@@ -87,19 +87,15 @@ export const WorkerSkillList: React.FC<WorkerSkillListProps> = ({
       {/* Animated visible container */}
       <Animated.View style={[styles.animatedContent, animatedStyle]}>
         <View style={styles.chipGrid}>
-          {visibleSkills.map((skill, index) => (
-            <Animated.View
+          {visibleSkills.map((skill) => (
+            <Chip
               key={skill.id}
-              entering={ZoomIn.duration(200).delay(index * 30)}
-            >
-              <Chip
-                variant={skill.isVerified ? 'skill' : 'tag'}
-                selected={skill.isVerified}
-                label={skill.isVerified ? `✓ ${skill.categoryName}` : skill.categoryName}
-                size="sm"
-                style={styles.chip}
-              />
-            </Animated.View>
+              variant={skill.isVerified ? 'skill' : 'tag'}
+              selected={skill.isVerified}
+              label={skill.isVerified ? `✓ ${skill.categoryName}` : skill.categoryName}
+              size="sm"
+              style={styles.chip}
+            />
           ))}
         </View>
       </Animated.View>

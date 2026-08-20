@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 interface ChatHeaderProps {
   workerName: string;
   workerAvatarUrl?: string | undefined;
+  categoryName?: string | undefined;
   isOnline?: boolean | undefined;
   workerPhone?: string | undefined;
   onCallPress?: () => void;
@@ -15,6 +16,7 @@ interface ChatHeaderProps {
 export const ChatHeader = React.memo(function ChatHeader({
   workerName,
   workerAvatarUrl,
+  categoryName,
   isOnline = true,
   workerPhone,
   onCallPress,
@@ -22,7 +24,8 @@ export const ChatHeader = React.memo(function ChatHeader({
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const avatarInitial = workerName ? workerName.charAt(0).toUpperCase() : 'W';
+  const trimmedName = workerName ? workerName.trim() : '';
+  const avatarInitial = trimmedName.length > 0 ? trimmedName.charAt(0).toUpperCase() : 'W';
 
   return (
     <View style={[styles.container, { paddingTop: insets.top > 0 ? insets.top : Platform.OS === 'ios' ? 44 : 12 }]}>
@@ -50,11 +53,13 @@ export const ChatHeader = React.memo(function ChatHeader({
 
           <View style={styles.textDetails}>
             <Text style={styles.name} numberOfLines={1}>
-              {workerName || 'Assigned Worker'}
+              {trimmedName || 'Assigned Professional'}
             </Text>
             <View style={styles.statusRow}>
               <View style={[styles.statusDot, isOnline ? styles.dotOnline : styles.dotOffline]} />
-              <Text style={styles.statusText}>{isOnline ? 'Online' : 'Offline'}</Text>
+              <Text style={styles.statusText} numberOfLines={1}>
+                {categoryName ? `${categoryName} • ${isOnline ? 'Online' : 'Offline'}` : isOnline ? 'Online' : 'Offline'}
+              </Text>
             </View>
           </View>
         </View>

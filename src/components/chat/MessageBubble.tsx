@@ -8,29 +8,49 @@ import Animated, {
 } from 'react-native-reanimated';
 import { MessageBubbleItem } from '../../types/chat.types';
 import { ReadReceipt } from './ReadReceipt';
+import { ImageMessage } from './ImageMessage';
 import { formatPKTTime } from '../../utils/timezone';
 
 interface MessageBubbleProps {
   item: MessageBubbleItem;
+  workerName?: string | undefined;
   workerAvatarUrl?: string | undefined;
+  uploadProgress?: number;
   onRetry?: (tempId: string) => void;
+  onLongPressText?: (content: string) => void;
+  onImagePress?: (uri: string) => void;
 }
 
 export const MessageBubble = React.memo(function MessageBubble({
   item,
+  workerName,
   workerAvatarUrl,
+  uploadProgress,
   onRetry,
+  onLongPressText,
+  onImagePress,
 }: MessageBubbleProps) {
   const { message, isFirstInGroup, isLastInGroup, showAvatar, isOutgoing, readReceiptStatus } = item;
 
-  // Entrance animation: translateY 12 -> 0, opacity 0 -> 1 (200ms spring-gentle)
-  const translateY = useSharedValue(12);
-  const opacity = useSharedValue(0);
+  const trimmedWorkerName = workerName ? workerName.trim() : '';
+  const avatarInitial = trimmedWorkerName.length > 0 ? trimmedWorkerName.charAt(0).toUpperCase() : 'W';
+
+  // Entrance animation: Only run spring for newly sent/received messages (<2s old)
+  const isFresh = React.useMemo(() => {
+    if (!message.created_at) return true;
+    const age = Date.now() - new Date(message.created_at).getTime();
+    return age < 2000 || message.status === 'sending';
+  }, [message.created_at, message.status]);
+
+  const translateY = useSharedValue(isFresh ? 12 : 0);
+  const opacity = useSharedValue(isFresh ? 0 : 1);
 
   useEffect(() => {
-    translateY.value = withSpring(0, { damping: 18, stiffness: 220, mass: 0.8 });
-    opacity.value = withTiming(1, { duration: 180 });
-  }, [translateY, opacity]);
+    if (isFresh) {
+      translateY.value = withSpring(0, { damping: 18, stiffness: 220, mass: 0.8 });
+      opacity.value = withTiming(1, { duration: 180 });
+    }
+  }, [isFresh, translateY, opacity]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
@@ -39,10 +59,12 @@ export const MessageBubble = React.memo(function MessageBubble({
 
   const timeString = formatPKTTime(message.created_at);
   const isFailed = readReceiptStatus === 'failed';
+  const isImageMessage = message.type === 'image' || !!message.media_url;
 
   const bubbleCustomStyle: ViewStyle[] = [
     styles.bubble,
     isOutgoing ? styles.bubbleOutgoing : styles.bubbleIncoming,
+    isImageMessage ? styles.imageBubblePadding : undefined,
   ];
 
   if (!isFirstInGroup) {
@@ -51,6 +73,12 @@ export const MessageBubble = React.memo(function MessageBubble({
   if (!isLastInGroup) {
     bubbleCustomStyle.push(isOutgoing ? styles.bubbleTightBottomRight : styles.bubbleTightBottomLeft);
   }
+
+  const handleLongPress = () => {
+    if (message.type === 'text' && message.content && onLongPressText) {
+      onLongPressText(message.content);
+    }
+  };
 
   return (
     <Animated.View
@@ -69,7 +97,7 @@ export const MessageBubble = React.memo(function MessageBubble({
               <Image source={{ uri: workerAvatarUrl }} style={styles.avatar} />
             ) : (
               <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarInitial}>W</Text>
+                <Text style={styles.avatarInitial}>{avatarInitial}</Text>
               </View>
             )
           ) : (
@@ -80,13 +108,29 @@ export const MessageBubble = React.memo(function MessageBubble({
 
       {/* Bubble + Metadata Container */}
       <View style={[styles.bubbleContainer, isOutgoing ? styles.alignRight : styles.alignLeft]}>
-        {/* Bubble */}
-        <View style={bubbleCustomStyle}>
-          {message.type === 'image' && message.media_url ? (
-            <View style={styles.imageWrapper}>
-              <Image source={{ uri: message.media_url }} style={styles.messageImage} resizeMode="cover" />
-              {message.content ? (
-                <Text style={[styles.text, isOutgoing ? styles.textOutgoing : styles.textIncoming, styles.textWithImage]}>
+        {/* Bubble (Tappable/Long-pressable for text) */}
+        <Pressable
+          onLongPress={handleLongPress}
+          delayLongPress={280}
+          style={bubbleCustomStyle}
+        >
+          {isImageMessage ? (
+            <View style={styles.imageMessageContainer}>
+              <ImageMessage
+                message={message}
+                progress={uploadProgress}
+                onRetry={onRetry}
+                onPress={onImagePress}
+                isOutgoing={isOutgoing}
+              />
+              {message.content && message.content !== 'Photo' ? (
+                <Text
+                  style={[
+                    styles.text,
+                    isOutgoing ? styles.textOutgoing : styles.textIncoming,
+                    styles.captionText,
+                  ]}
+                >
                   {message.content}
                 </Text>
               ) : null}
@@ -102,12 +146,12 @@ export const MessageBubble = React.memo(function MessageBubble({
             <Text style={[styles.timeText, isOutgoing ? styles.timeOutgoing : styles.timeIncoming]}>
               {timeString}
             </Text>
-            {isOutgoing && <ReadReceipt status={readReceiptStatus} />}
+            {isOutgoing && <ReadReceipt status={readReceiptStatus} color="#6B7280" />}
           </View>
-        </View>
+        </Pressable>
 
-        {/* Failed Retry Affordance */}
-        {isFailed && (
+        {/* Text Failed Retry Affordance (Image retry is centered inside ImageMessage) */}
+        {!isImageMessage && isFailed && (
           <Pressable
             style={styles.retryButton}
             onPress={() => onRetry && (message.temp_id || message.id) && onRetry(message.temp_id || message.id)}
@@ -166,7 +210,7 @@ const styles = StyleSheet.create({
     height: 28,
   },
   bubbleContainer: {
-    maxWidth: '78%',
+    maxWidth: '82%',
   },
   alignLeft: {
     alignItems: 'flex-start',
@@ -180,6 +224,11 @@ const styles = StyleSheet.create({
     paddingBottom: 7,
     borderRadius: 18,
   },
+  imageBubblePadding: {
+    paddingHorizontal: 6,
+    paddingTop: 6,
+    paddingBottom: 6,
+  },
   bubbleIncoming: {
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
@@ -192,12 +241,14 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   bubbleOutgoing: {
-    backgroundColor: '#16A34A',
+    backgroundColor: '#DCFCE7',
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
     borderBottomRightRadius: 4,
-    shadowColor: '#16A34A',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
+    shadowOpacity: 0.04,
+    shadowRadius: 2,
     elevation: 1,
   },
   bubbleTightTopLeft: {
@@ -212,34 +263,31 @@ const styles = StyleSheet.create({
   bubbleTightBottomRight: {
     borderBottomRightRadius: 6,
   },
+  imageMessageContainer: {
+    borderRadius: 14,
+    overflow: 'hidden',
+  },
+  captionText: {
+    marginTop: 6,
+    paddingHorizontal: 6,
+  },
   text: {
     fontFamily: 'PlusJakartaSans-Regular',
     fontSize: 15,
     lineHeight: 21,
   },
-  textWithImage: {
-    marginTop: 6,
-  },
   textIncoming: {
     color: '#111827',
   },
   textOutgoing: {
-    color: '#FFFFFF',
-  },
-  imageWrapper: {
-    marginBottom: 4,
-  },
-  messageImage: {
-    width: 200,
-    height: 150,
-    borderRadius: 12,
-    backgroundColor: '#E5E7EB',
+    color: '#111827',
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-end',
     marginTop: 3,
+    paddingHorizontal: 2,
     alignSelf: 'flex-end',
   },
   timeText: {
@@ -250,7 +298,7 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
   timeOutgoing: {
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#6B7280',
   },
   retryButton: {
     marginTop: 4,

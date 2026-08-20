@@ -1,6 +1,5 @@
 import React from 'react';
 import { StyleSheet, View, Text, ViewStyle } from 'react-native';
-import Animated, { FadeInLeft } from 'react-native-reanimated';
 import { WorkerServiceRow } from './WorkerServiceRow';
 import { SkeletonWorkerServiceRow } from '../ui/Skeleton/SkeletonWorkerServiceRow';
 import { colors } from '../../design/colors';
@@ -71,12 +70,8 @@ export const WorkerServicesSection: React.FC<WorkerServicesSectionProps> = ({
       </View>
 
       <View style={styles.listContainer}>
-        {displayServices.map((service, index) => (
-          <Animated.View
-            key={service.id}
-            entering={FadeInLeft.duration(300).delay(index * 40)}
-            style={styles.rowWrapper}
-          >
+        {displayServices.map((service) => (
+          <View key={service.id} style={styles.rowWrapper}>
             <WorkerServiceRow
               service={service}
               workerId={workerId}
@@ -86,7 +81,7 @@ export const WorkerServicesSection: React.FC<WorkerServicesSectionProps> = ({
               workerCategory={workerCategory}
               workerVerified={workerVerified}
             />
-          </Animated.View>
+          </View>
         ))}
       </View>
     </View>

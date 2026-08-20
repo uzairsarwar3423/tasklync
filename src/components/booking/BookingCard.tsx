@@ -23,10 +23,26 @@ export function BookingCard({ booking }: BookingCardProps) {
   const handleAction = (action: string) => {
     switch (action) {
       case 'track':
-        router.push(`/booking/${booking.id}/track` as any);
+        router.push(`/booking/${booking.id}` as any);
         break;
       case 'message':
-        router.push(`/booking/${booking.id}/chat` as any);
+        router.push({
+          pathname: `/booking/${booking.id}/chat`,
+          params: {
+            workerName: booking.worker_name,
+            workerAvatar: booking.worker_avatar_url,
+            workerPhone: booking.worker_phone,
+            categoryName: booking.category_name,
+            workerId: booking.worker_id,
+          },
+        } as any);
+        break;
+      case 'review':
+        if (booking.worker_id) {
+          router.push(`/worker/${booking.worker_id}/reviews` as any);
+        } else {
+          router.push(`/booking/${booking.id}` as any);
+        }
         break;
       case 'book_again':
         router.push('/(tabs)' as any);

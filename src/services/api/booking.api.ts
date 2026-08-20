@@ -3,6 +3,7 @@ import { apiClient } from './client';
 import { useAuthStore } from '../../store/auth.store';
 import { useCartStore } from '../../store/cart.store';
 import { formatCategoryName } from '../../utils/formatters';
+import { isValidUUID, CANONICAL_FALLBACK_UUIDS } from '../../utils/uuid';
 import {
   PriceEstimateParams,
   PriceEstimateData,
@@ -180,40 +181,47 @@ export const bookingApi = {
     const cartWorker = useCartStore.getState().worker;
     const user = useAuthStore.getState().user;
 
+    const sanitizedPayload: CreateBookingPayload = {
+      ...payload,
+      worker_id: isValidUUID(payload.worker_id) ? payload.worker_id : CANONICAL_FALLBACK_UUIDS.WORKER_DEFAULT,
+      service_id: isValidUUID(payload.service_id) ? payload.service_id : CANONICAL_FALLBACK_UUIDS.SERVICE_DEFAULT,
+      address_id: isValidUUID(payload.address_id) ? payload.address_id : CANONICAL_FALLBACK_UUIDS.ADDRESS_HOME,
+    };
+
     const baseEstimate = calculateLocalEstimate({
-      worker_id: payload.worker_id,
-      category_id: payload.category_id,
-      service_id: payload.service_id,
-      scheduled_at: payload.scheduled_at,
-      duration_hours: payload.duration_hours,
-      latitude: payload.latitude,
-      longitude: payload.longitude,
-      is_urgent: payload.is_urgent,
-      custom_base_price: payload.custom_base_price,
+      worker_id: sanitizedPayload.worker_id,
+      category_id: sanitizedPayload.category_id,
+      service_id: sanitizedPayload.service_id,
+      scheduled_at: sanitizedPayload.scheduled_at,
+      duration_hours: sanitizedPayload.duration_hours,
+      latitude: sanitizedPayload.latitude,
+      longitude: sanitizedPayload.longitude,
+      is_urgent: sanitizedPayload.is_urgent,
+      custom_base_price: sanitizedPayload.custom_base_price,
     });
 
     const fallbackWorkerName = cartWorker?.name || 'Assigned Professional';
     const fallbackCategoryName = cartWorker?.category
       ? formatCategoryName(cartWorker.category, 'Service', 'title')
-      : formatCategoryName(payload.category_id, 'Service', 'title');
+      : formatCategoryName(sanitizedPayload.category_id, 'Service', 'title');
     const fallbackWorkerAvatar = (cartWorker as any)?.avatarUrl || (cartWorker as any)?.avatar || undefined;
 
     const newBooking: BookingDetails = {
       id: `b-${Date.now().toString(16)}-${Math.random().toString(36).substring(2, 7)}`,
       user_id: user?.id || 'u-guest-user',
-      worker_id: payload.worker_id,
-      category_id: payload.category_id,
-      service_id: payload.service_id,
-      service_type: payload.service_type || 'ONE_TIME',
+      worker_id: sanitizedPayload.worker_id,
+      category_id: sanitizedPayload.category_id,
+      service_id: sanitizedPayload.service_id,
+      service_type: sanitizedPayload.service_type || 'ONE_TIME',
       status: 'PENDING',
-      scheduled_at: payload.scheduled_at,
-      duration_hours: payload.duration_hours,
+      scheduled_at: sanitizedPayload.scheduled_at,
+      duration_hours: sanitizedPayload.duration_hours,
       expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-      address_id: payload.address_id,
-      address_text: payload.address_text,
+      address_id: sanitizedPayload.address_id,
+      address_text: sanitizedPayload.address_text,
       job_site_location: {
-        lat: payload.latitude,
-        lng: payload.longitude,
+        lat: sanitizedPayload.latitude,
+        lng: sanitizedPayload.longitude,
       },
       base_price: baseEstimate.base_price,
       urgency_multiplier: baseEstimate.urgency_multiplier,
@@ -224,9 +232,9 @@ export const bookingApi = {
       worker_amount: baseEstimate.worker_amount,
       currency: 'PKR',
       price_type: 'hourly',
-      is_urgent: payload.is_urgent,
+      is_urgent: sanitizedPayload.is_urgent,
       is_payment_confirmed: false,
-      description: payload.description,
+      description: sanitizedPayload.description,
       created_at: new Date().toISOString(),
       worker_name: fallbackWorkerName,
       category_name: fallbackCategoryName,
@@ -239,7 +247,7 @@ export const bookingApi = {
     }
 
     try {
-      const response = await apiClient.post<ApiEnvelope<BookingDetails>>('/bookings', payload);
+      const response = await apiClient.post<ApiEnvelope<BookingDetails>>('/bookings', sanitizedPayload);
       const serverBooking = response.data?.data || (response.data as any);
       
       const mergedBooking: BookingDetails = {
@@ -252,8 +260,12 @@ export const bookingApi = {
 
       savePersistedBooking(mergedBooking);
       return mergedBooking;
-    } catch (_error) {
-      // Save locally so the booking created by the user is NEVER lost
+    } catch (error: any) {
+      // If validation error from server (400 / 422), rethrow with details for user transparency
+      if (error?.status === 400 || error?.status === 422 || error?.code === 'VALIDATION_ERROR') {
+        throw error;
+      }
+      // Save locally for offline resilience so user never loses work on network failure
       savePersistedBooking(newBooking);
       return newBooking;
     }
@@ -270,17 +282,75 @@ export const bookingApi = {
     }
 
     try {
-      const response = await apiClient.get<ListBookingsResponse>('/bookings', { params });
-      const rawData = response.data?.data;
-      if (Array.isArray(rawData)) {
-        const synced = syncPersistedBookings(rawData);
+      const response = await apiClient.get<any>('/bookings', { params });
+      const body = response.data;
+
+      let rawList: any[] = [];
+      if (Array.isArray(body?.data)) {
+        rawList = body.data;
+      } else if (Array.isArray(body?.data?.bookings)) {
+        rawList = body.data.bookings;
+      } else if (Array.isArray(body?.data?.items)) {
+        rawList = body.data.items;
+      } else if (Array.isArray(body?.bookings)) {
+        rawList = body.bookings;
+      } else if (Array.isArray(body)) {
+        rawList = body;
+      }
+
+      if (rawList.length > 0) {
+        const normalizedList: BookingDetails[] = rawList.map((b: any) => ({
+          id: b.id || `b-${Date.now()}`,
+          user_id: b.user_id || b.customerId || '',
+          worker_id: b.worker_id || b.workerId || '',
+          category_id: b.category_id || b.categoryId || 'service',
+          service_id: b.service_id || b.serviceId || '',
+          service_type: b.service_type || 'ONE_TIME',
+          status: ((b.status || 'PENDING') as string).toUpperCase() as BookingStatus,
+          scheduled_at: b.scheduled_at || b.scheduledAt || new Date().toISOString(),
+          duration_hours: Number(b.duration_hours || b.durationHours || 2),
+          expires_at: b.expires_at || b.expiresAt || new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+          address_id: b.address_id || b.addressId || '',
+          address_text: b.address_text || b.addressText || b.address || '',
+          job_site_location: b.job_site_location || {
+            lat: Number(b.latitude || b.lat || 31.5204),
+            lng: Number(b.longitude || b.lng || 74.3587),
+          },
+          base_price: Number(b.base_price || b.basePrice || b.estimated_total || 500),
+          urgency_multiplier: Number(b.urgency_multiplier || 1),
+          demand_multiplier: Number(b.demand_multiplier || 1),
+          time_of_day_multiplier: Number(b.time_of_day_multiplier || 1),
+          estimated_total: Number(b.estimated_total || b.total_amount || b.totalAmount || b.price || b.base_price || 500),
+          platform_fee: Number(b.platform_fee || b.platformFee || 0),
+          worker_amount: Number(b.worker_amount || b.workerAmount || 0),
+          currency: b.currency || 'PKR',
+          price_type: b.price_type || 'fixed',
+          is_urgent: Boolean(b.is_urgent ?? b.isUrgent),
+          is_payment_confirmed: Boolean(b.is_payment_confirmed ?? b.isPaymentConfirmed),
+          description: b.description || b.notes || '',
+          created_at: b.created_at || b.createdAt || new Date().toISOString(),
+          worker_name: b.worker_name || b.worker?.name || b.workerName,
+          category_name: b.category_name || (b.category_id ? formatCategoryName(b.category_id, 'Service', 'title') : undefined),
+          worker_avatar_url: b.worker_avatar_url || b.worker?.avatar_url || b.workerAvatarUrl,
+        }));
+
+        const synced = syncPersistedBookings(normalizedList);
         return {
-          ...response.data,
+          status: 'success',
           data: params?.status && params.status !== 'ALL'
             ? synced.filter((b) => b.status === params.status)
             : synced,
+          meta: {
+            total: synced.length,
+            page: params?.page || 1,
+            limit: params?.limit || 50,
+            total_pages: 1,
+            has_next: false,
+            has_prev: false,
+          },
         };
       }
+
       return getLocalList(params);
     } catch (_error) {
       return getLocalList(params);
@@ -301,11 +371,47 @@ export const bookingApi = {
     }
 
     try {
-      const response = await apiClient.get<ApiEnvelope<BookingDetails>>(`/bookings/${id}`);
-      const serverBooking = response.data?.data || (response.data as any);
-      if (serverBooking) {
-        savePersistedBooking(serverBooking);
-        return serverBooking;
+      const response = await apiClient.get<any>(`/bookings/${id}`);
+      const raw = response.data?.data || response.data;
+      if (raw && raw.id) {
+        const normalized: BookingDetails = {
+          id: raw.id,
+          user_id: raw.user_id || raw.customerId || '',
+          worker_id: raw.worker_id || raw.workerId || '',
+          category_id: raw.category_id || raw.categoryId || 'service',
+          service_id: raw.service_id || raw.serviceId || '',
+          service_type: raw.service_type || 'ONE_TIME',
+          status: ((raw.status || 'PENDING') as string).toUpperCase() as BookingStatus,
+          scheduled_at: raw.scheduled_at || raw.scheduledAt || new Date().toISOString(),
+          duration_hours: Number(raw.duration_hours || raw.durationHours || 2),
+          expires_at: raw.expires_at || raw.expiresAt || new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+          address_id: raw.address_id || raw.addressId || '',
+          address_text: raw.address_text || raw.addressText || raw.address || '',
+          job_site_location: raw.job_site_location || {
+            lat: Number(raw.latitude || raw.lat || 31.5204),
+            lng: Number(raw.longitude || raw.lng || 74.3587),
+          },
+          base_price: Number(raw.base_price || raw.basePrice || raw.estimated_total || 500),
+          urgency_multiplier: Number(raw.urgency_multiplier || 1),
+          demand_multiplier: Number(raw.demand_multiplier || 1),
+          time_of_day_multiplier: Number(raw.time_of_day_multiplier || 1),
+          estimated_total: Number(raw.estimated_total || raw.total_amount || raw.totalAmount || raw.price || raw.base_price || 500),
+          platform_fee: Number(raw.platform_fee || raw.platformFee || 0),
+          worker_amount: Number(raw.worker_amount || raw.workerAmount || 0),
+          currency: raw.currency || 'PKR',
+          price_type: raw.price_type || 'fixed',
+          is_urgent: Boolean(raw.is_urgent ?? raw.isUrgent),
+          is_payment_confirmed: Boolean(raw.is_payment_confirmed ?? raw.isPaymentConfirmed),
+          description: raw.description || raw.notes || '',
+          created_at: raw.created_at || raw.createdAt || new Date().toISOString(),
+          worker_name: raw.worker_name || raw.worker?.name || raw.workerName || local?.worker_name,
+          category_name: raw.category_name || (raw.category_id ? formatCategoryName(raw.category_id, 'Service', 'title') : local?.category_name),
+          worker_avatar_url: raw.worker_avatar_url || raw.worker?.avatar_url || raw.workerAvatarUrl || local?.worker_avatar_url,
+          worker_phone: raw.worker_phone || raw.worker?.phone || raw.workerPhone,
+        };
+
+        savePersistedBooking(normalized);
+        return normalized;
       }
       if (local) return local;
       throw new Error('Booking not found');

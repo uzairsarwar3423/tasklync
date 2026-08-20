@@ -30,18 +30,27 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
       </View>
 
       <View style={styles.grid}>
-        {isLoading
-          ? Array.from({ length: 9 }).map((_, idx) => (
-              <TimeSlotSkeleton key={`slot-skel-${idx}`} />
-            ))
-          : slots.map((slot) => (
-              <TimeSlotChip
-                key={slot.id}
-                slot={slot}
-                isSelected={selectedTimeSlot === slot.timeStr}
-                onSelect={onSelectSlot}
-              />
-            ))}
+        {isLoading ? (
+          Array.from({ length: 6 }).map((_, idx) => (
+            <TimeSlotSkeleton key={`slot-skel-${idx}`} />
+          ))
+        ) : slots.length > 0 ? (
+          slots.map((slot) => (
+            <TimeSlotChip
+              key={slot.id}
+              slot={slot}
+              isSelected={selectedTimeSlot === slot.timeStr}
+              onSelect={onSelectSlot}
+            />
+          ))
+        ) : (
+          <View style={styles.emptySlotBox}>
+            <Text style={styles.emptySlotText}>No available slots on this date</Text>
+            <Text style={styles.emptySlotSub}>
+              Please select another date on the calendar or turn on Urgent Booking below.
+            </Text>
+          </View>
+        )}
       </View>
     </View>
   );
@@ -74,5 +83,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+  },
+  emptySlotBox: {
+    width: '100%',
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: palette.gray50,
+    borderWidth: 1,
+    borderColor: palette.gray200,
+    alignItems: 'center',
+    marginVertical: 4,
+  },
+  emptySlotText: {
+    fontFamily: fontFamily.poppins.semiBold,
+    fontSize: 13,
+    color: colors.textPrimary,
+    marginBottom: 4,
+  },
+  emptySlotSub: {
+    fontFamily: fontFamily.jakarta.regular,
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });

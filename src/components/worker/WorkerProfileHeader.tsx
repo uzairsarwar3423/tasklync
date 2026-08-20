@@ -3,7 +3,7 @@ import { StyleSheet, View, Text, Pressable } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   interpolate,
-  Extrapolate,
+  Extrapolation,
   SharedValue,
 } from 'react-native-reanimated';
 import { ChevronLeft, Share2, MoreVertical } from 'lucide-react-native';
@@ -30,15 +30,9 @@ export const WorkerProfileHeader: React.FC<WorkerProfileHeaderProps> = ({
   onMore,
 }) => {
   const animatedHeroStyle = useAnimatedStyle(() => {
-    // Zoom/parallax effect when pulling down, shrink when scrolling up
-    const scale = interpolate(scrollY.value, [-100, 0], [1.2, 1], {
-      extrapolateLeft: Extrapolate.CLAMP,
-      extrapolateRight: Extrapolate.CLAMP,
-    });
-    
-    const translateY = interpolate(scrollY.value, [-100, 0, 150], [0, 0, -40], {
-      extrapolateLeft: Extrapolate.CLAMP,
-    });
+    // Subtle parallax when scrolling up, gentle stretch when pulling down
+    const scale = interpolate(scrollY.value, [-100, 0], [1.06, 1], Extrapolation.CLAMP);
+    const translateY = interpolate(scrollY.value, [0, 200], [0, -30], Extrapolation.CLAMP);
 
     return {
       transform: [{ scale }, { translateY }],
@@ -46,18 +40,9 @@ export const WorkerProfileHeader: React.FC<WorkerProfileHeaderProps> = ({
   });
 
   const animatedContentStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(scrollY.value, [60, 130], [1, 0], Extrapolate.CLAMP);
+    const opacity = interpolate(scrollY.value, [40, 140], [1, 0], Extrapolation.CLAMP);
     return {
       opacity,
-    };
-  });
-
-  const animatedAvatarStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(scrollY.value, [40, 100], [1, 0], Extrapolate.CLAMP);
-    const scale = interpolate(scrollY.value, [0, 100], [1, 0.7], Extrapolate.CLAMP);
-    return {
-      opacity,
-      transform: [{ scale }],
     };
   });
 
@@ -109,7 +94,7 @@ export const WorkerProfileHeader: React.FC<WorkerProfileHeaderProps> = ({
 
         {/* Layer 3: Absolute Bottom Name and Avatar */}
         <Animated.View style={[styles.bottomInfo, animatedContentStyle]}>
-          <Animated.View style={[styles.avatarWrapper, animatedAvatarStyle]}>
+          <View style={styles.avatarWrapper}>
             {worker?.avatarUrl ? (
               <Image
                 source={{ uri: worker.avatarUrl }}
@@ -119,7 +104,7 @@ export const WorkerProfileHeader: React.FC<WorkerProfileHeaderProps> = ({
             ) : (
               <View style={[styles.avatar, styles.avatarPlaceholder]} />
             )}
-          </Animated.View>
+          </View>
 
           <View style={styles.textWrapper}>
             <Text style={styles.nameText} numberOfLines={1}>

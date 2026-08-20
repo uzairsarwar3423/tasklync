@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { useEffect } from 'react';
+import { Text, Pressable, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -37,10 +37,7 @@ export const SuccessCTAGroup: React.FC<SuccessCTAGroupProps> = ({ bookingId }) =
 
   const handleTrackBooking = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push({
-      pathname: '/booking/[id]/track',
-      params: { id: bookingId },
-    } as any);
+    router.push(`/booking/${bookingId}` as any);
   };
 
   const handleBackToHome = () => {

@@ -4,7 +4,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, {
   useSharedValue,
   useAnimatedScrollHandler,
-  runOnJS,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
@@ -28,6 +27,7 @@ import { ReviewSummary } from '@components/review/ReviewSummary';
 import { ReviewCard } from '@components/review/ReviewCard';
 import { SectionDivider } from '@components/ui/Divider';
 import { ImageViewer } from '@components/common/ImageViewer';
+import { getPersistedBookings } from '../../src/services/api/booking.api';
 
 import {
   SkeletonWorkerProfileHero,
@@ -50,8 +50,6 @@ export default function WorkerProfileScreen() {
   
   const scrollY = useSharedValue(0);
   const [optionsVisible, setOptionsVisible] = useState(false);
-  const [summaryAnimated, setSummaryAnimated] = useState(false);
-  const reviewSummaryY = useSharedValue(9999);
 
   const [viewerVisible, setViewerVisible] = useState(false);
   const [viewerStartIndex, setViewerStartIndex] = useState(0);
@@ -63,10 +61,6 @@ export default function WorkerProfileScreen() {
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
       scrollY.value = event.contentOffset.y;
-      
-      if (event.contentOffset.y > reviewSummaryY.value - 400 && !summaryAnimated) {
-        runOnJS(setSummaryAnimated)(true);
-      }
     },
   });
 
@@ -113,10 +107,25 @@ export default function WorkerProfileScreen() {
 
   const handleChat = () => {
     Haptics.selectionAsync();
-    router.push({
-      pathname: '/chat',
-      params: { workerId: worker?.id, workerName: worker?.name },
-    } as any);
+    const existing = getPersistedBookings().find(
+      (b) => b.worker_id === id && (b.status === 'ACCEPTED' || b.status === 'IN_PROGRESS' || b.status === 'PENDING')
+    );
+    if (existing) {
+      router.push({
+        pathname: `/booking/${existing.id}/chat`,
+        params: {
+          workerName: worker?.name || existing.worker_name,
+          workerAvatar: worker?.avatar_url || existing.worker_avatar_url,
+          workerPhone: worker?.phone_number || existing.worker_phone,
+          workerId: worker?.id || existing.worker_id,
+        },
+      } as any);
+    } else {
+      Alert.alert(
+        'Direct Chat',
+        `Direct chat with ${worker?.name || 'this worker'} is enabled once you book a service.`
+      );
+    }
   };
 
   const handleBookNow = () => {
@@ -267,10 +276,6 @@ export default function WorkerProfileScreen() {
           <ReviewSummary
             summary={summary}
             onViewAll={() => router.push(`/worker/${id}/reviews`)}
-            animated={summaryAnimated}
-            onLayout={(e) => {
-              reviewSummaryY.value = e.nativeEvent.layout.y;
-            }}
           />
 
           {previewReviews.slice(0, 3).map((review) => (

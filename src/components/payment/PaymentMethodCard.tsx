@@ -7,7 +7,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { CreditCard, Check } from 'lucide-react-native';
+import { CreditCard, Check, Banknote, Smartphone } from 'lucide-react-native';
 import { SavedPaymentMethod } from '../../services/api/payment.api';
 import { AddressDefaultBadge } from '../address/AddressDefaultBadge';
 import { colors, palette, fontFamily } from '../../design';
@@ -25,7 +25,7 @@ export const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
   isSelected,
   onSelect,
 }) => {
-  const { brand, last4, expMonth, expYear, isDefault, holderName } = method;
+  const { id, type, brand, last4, expMonth, expYear, isDefault, holderName, title, subtitle } = method;
 
   const scale = useSharedValue(1);
 
@@ -46,7 +46,38 @@ export const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
     transform: [{ scale: scale.value }],
   }));
 
-  const formattedExpiry = `${String(expMonth).padStart(2, '0')}/${String(expYear).slice(-2)}`;
+  const isCash = id === 'CASH' || type === 'cash';
+  const isWallet = id === 'JAZZCASH' || type === 'wallet';
+
+  const cardTitle = title
+    ? title
+    : isCash
+    ? 'Cash on Delivery'
+    : isWallet
+    ? 'JazzCash / EasyPaisa'
+    : `${(brand || 'Card').toUpperCase()} •••• ${last4 || '4242'}`;
+
+  const cardSubtitle = subtitle
+    ? subtitle
+    : isCash
+    ? 'Pay directly in cash after service completion'
+    : isWallet
+    ? 'Direct mobile wallet prompt'
+    : expMonth && expYear
+    ? `Expires ${String(expMonth).padStart(2, '0')}/${String(expYear).slice(-2)}${
+        holderName ? ` • ${holderName}` : ''
+      }`
+    : 'Online Payment';
+
+  const renderIcon = () => {
+    if (isCash) {
+      return <Banknote size={22} color={isSelected ? colors.primaryDark : palette.gray600} strokeWidth={2} />;
+    }
+    if (isWallet) {
+      return <Smartphone size={22} color={isSelected ? colors.primaryDark : palette.gray600} strokeWidth={2} />;
+    }
+    return <CreditCard size={20} color={isSelected ? colors.primaryDark : palette.gray600} strokeWidth={2} />;
+  };
 
   return (
     <AnimatedPressable
@@ -57,9 +88,7 @@ export const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
         animatedStyle,
       ]}
       accessibilityRole="radio"
-      accessibilityLabel={`${brand.toUpperCase()} ending in ${last4} ${
-        isSelected ? 'selected' : ''
-      }`}
+      accessibilityLabel={`${cardTitle} ${isSelected ? 'selected' : ''}`}
       accessibilityState={{ selected: isSelected }}
     >
       <View style={styles.contentRow}>
@@ -70,23 +99,19 @@ export const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
             isSelected ? styles.iconCircleSelected : styles.iconCircleUnselected,
           ]}
         >
-          <CreditCard
-            size={20}
-            color={isSelected ? colors.primaryDark : palette.gray600}
-            strokeWidth={2}
-          />
+          {renderIcon()}
         </View>
 
         {/* Card Details */}
         <View style={styles.textContainer}>
           <View style={styles.titleRow}>
-            <Text style={styles.brandTitle}>
-              {brand.toUpperCase()} •••• {last4}
+            <Text style={styles.brandTitle} numberOfLines={1}>
+              {cardTitle}
             </Text>
             {isDefault && <AddressDefaultBadge />}
           </View>
-          <Text style={styles.subText}>
-            Expires {formattedExpiry} • {holderName || 'Primary Card'}
+          <Text style={styles.subText} numberOfLines={2}>
+            {cardSubtitle}
           </Text>
         </View>
 

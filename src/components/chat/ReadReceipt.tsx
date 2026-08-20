@@ -18,7 +18,7 @@ export const ReadReceipt = React.memo(function ReadReceipt({
     case 'sending':
       return (
         <View style={styles.container}>
-          <Clock size={iconSize - 2} color={color || 'rgba(255, 255, 255, 0.7)'} />
+          <Clock size={iconSize - 2} color={color || '#6B7280'} />
         </View>
       );
 
@@ -32,14 +32,14 @@ export const ReadReceipt = React.memo(function ReadReceipt({
     case 'read':
       return (
         <View style={styles.container}>
-          <CheckCheck size={iconSize} color="#60A5FA" />
+          <CheckCheck size={iconSize} color="#2563EB" />
         </View>
       );
 
     case 'delivered':
       return (
         <View style={styles.container}>
-          <CheckCheck size={iconSize} color={color || 'rgba(255, 255, 255, 0.75)'} />
+          <CheckCheck size={iconSize} color={color || '#6B7280'} />
         </View>
       );
 
@@ -47,7 +47,7 @@ export const ReadReceipt = React.memo(function ReadReceipt({
     default:
       return (
         <View style={styles.container}>
-          <Check size={iconSize} color={color || 'rgba(255, 255, 255, 0.75)'} />
+          <Check size={iconSize} color={color || '#6B7280'} />
         </View>
       );
   }

@@ -229,20 +229,47 @@ export default function BookingDetailsScreen() {
                 </View>
               )}
               <View style={styles.workerDetails}>
-                <Text style={styles.workerName}>{booking.worker_name || 'Ahmed Khan'}</Text>
-                <Text style={styles.categorySub}>{booking.category_name || 'Electrical Specialist'}</Text>
+                <Text style={styles.workerName}>{booking.worker_name || 'Assigned Professional'}</Text>
+                <Text style={styles.categorySub}>{booking.category_name || 'Service Professional'}</Text>
               </View>
               <View style={styles.workerActions}>
                 <TouchableOpacity
                   style={styles.chatBtn}
-                  onPress={() => router.push(`/booking/${booking.id}/chat`)}
+                  onPress={() =>
+                    router.push({
+                      pathname: `/booking/${booking.id}/chat`,
+                      params: {
+                        workerName: booking.worker_name,
+                        workerAvatar: booking.worker_avatar_url,
+                        workerPhone: booking.worker_phone || trackData?.worker_phone,
+                        categoryName: booking.category_name,
+                        workerId: booking.worker_id,
+                      },
+                    } as any)
+                  }
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                   <MessageSquare size={18} color={palette.white} />
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.callBtn}
-                  onPress={() => Alert.alert('Contact Worker', 'Dialing +92 300 1234567...')}
+                  onPress={() => {
+                    const phone = trackData?.worker_phone || (booking as any).worker_phone;
+                    if (phone) {
+                      Alert.alert('Contact Worker', `Call ${booking.worker_name || 'Worker'} at ${phone}?`);
+                    } else {
+                      router.push({
+                        pathname: `/booking/${booking.id}/chat`,
+                        params: {
+                          workerName: booking.worker_name,
+                          workerAvatar: booking.worker_avatar_url,
+                          workerPhone: phone,
+                          categoryName: booking.category_name,
+                          workerId: booking.worker_id,
+                        },
+                      } as any);
+                    }
+                  }}
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
                   <Phone size={18} color={palette.white} />

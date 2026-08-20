@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "395425307209",
+    "project_id": "tasklync-6e7ae",
+    "storage_bucket": "tasklync-6e7ae.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:395425307209:android:da1add4e7f3e59a4c37d98",
+        "android_client_info": {
+          "package_name": "com.tasklync.user"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD7CQw0jJN1bYn3JqmzaA3FMh0Fv49gnSc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

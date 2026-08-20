@@ -1,24 +1,21 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
 import { Plus, ChevronRight } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { colors, palette, fontFamily } from '../../design';
 
 export interface AddNewAddressRowProps {
   onAdd?: () => void;
+  onPress?: () => void;
 }
 
-export const AddNewAddressRow: React.FC<AddNewAddressRowProps> = ({ onAdd }) => {
-  const router = useRouter();
-
+export const AddNewAddressRow: React.FC<AddNewAddressRowProps> = ({ onAdd, onPress }) => {
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (onAdd) {
+    if (onPress) {
+      onPress();
+    } else if (onAdd) {
       onAdd();
-    } else {
-      // Navigate to location permission / address map picker flow
-      router.push('/(map)/location-picker' as any);
     }
   };
 

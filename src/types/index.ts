@@ -1,9 +1,8 @@
-export * from './api.types';
-export * from './category.types';
-export * from './worker.types';
-export * from './location.types';
 export * from './auth.types';
 export * from './user.types';
-export * from './review.types';
+export * from './category.types';
+export * from './worker.types';
+export * from './search.types';
 export * from './booking.types';
-
+export * from './chat.types';
+export * from './notification.types';

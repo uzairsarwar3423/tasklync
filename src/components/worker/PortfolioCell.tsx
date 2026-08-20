@@ -22,9 +22,9 @@ interface PortfolioCellProps {
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const springConfig = {
-  damping: 20,
-  stiffness: 90,
-  mass: 1,
+  damping: 24,
+  stiffness: 300,
+  mass: 0.8,
 };
 
 export const PortfolioCell = ({
@@ -50,7 +50,7 @@ export const PortfolioCell = ({
   });
 
   const handlePressIn = () => {
-    scale.value = withSpring(0.95, springConfig);
+    scale.value = withSpring(0.98, springConfig);
   };
 
   const handlePressOut = () => {

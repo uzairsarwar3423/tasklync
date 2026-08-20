@@ -30,8 +30,8 @@ export const AddCardBottomSheet = forwardRef<BottomSheetRef, AddCardBottomSheetP
         brand: cardDetails?.cardNumber?.startsWith('5') ? 'mastercard' : 'visa',
         last4: cardDetails?.cardNumber?.slice(-4) || '4242',
         expMonth: parseInt(cardDetails?.expiry?.split('/')[0] || '12', 10),
-        expYear: parseInt(2000 + parseInt(cardDetails?.expiry?.split('/')[1] || '28', 10), 10),
-        isDefault: false,
+        expYear: 2000 + parseInt(cardDetails?.expiry?.split('/')[1] || '28', 10),
+        isDefault: Boolean(saveCard),
         holderName: cardDetails?.name || 'Primary Card',
       };
 

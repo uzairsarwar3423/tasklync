@@ -9,51 +9,47 @@ export interface SendMessageSocketPayload {
   tempId?: string | undefined;
 }
 
+/**
+ * chatSocket — thin, spec-compliant wrapper around the singleton socketService.
+ *
+ * Changes vs. previous version:
+ *  - Removed duplicate chat:* event emissions. The server spec defines only
+ *    canonical event names (join_room, leave_room, send_message, typing_start,
+ *    typing_stop, heartbeat). Emitting chat:join_room etc. in addition caused
+ *    the server to receive double events and may have triggered validation
+ *    errors (400) from unexpected event names.
+ */
 export const chatSocket = {
-  /**
-   * 3.2.1 Join Room Channel
-   */
+  /** 3.2.1 — Join the room channel for a booking. */
   joinRoom: (bookingId: string) => {
     socketService.emit('join_room', { bookingId });
-    socketService.emit('chat:join_room', { bookingId });
   },
 
-  /**
-   * 3.2.2 Leave Room Channel
-   */
+  /** 3.2.2 — Leave the room channel when the user navigates away. */
   leaveRoom: (bookingId: string) => {
     socketService.emit('leave_room', { bookingId });
-    socketService.emit('chat:leave_room', { bookingId });
   },
 
-  /**
-   * 3.2.3 Send Message
-   */
+  /** 3.2.3 — Send a message (text / image / location). */
   sendMessage: (payload: SendMessageSocketPayload) => {
     socketService.emit('send_message', payload);
-    socketService.emit('chat:send_message', payload);
   },
 
-  /**
-   * 3.2.4 Typing Start
-   */
+  /** 3.2.4 — Notify server that the customer started typing. */
   startTyping: (bookingId: string) => {
     socketService.emit('typing_start', { bookingId });
-    socketService.emit('chat:typing_start', { bookingId });
   },
 
-  /**
-   * 3.2.4 Typing Stop
-   */
+  /** 3.2.4 — Notify server that the customer stopped typing. */
   stopTyping: (bookingId: string) => {
     socketService.emit('typing_stop', { bookingId });
-    socketService.emit('chat:typing_stop', { bookingId });
   },
 
   /**
-   * 3.2.5 Heartbeat (Send every 30s)
+   * 3.2.5 — Heartbeat to maintain Redis presence TTL.
+   * Called every 30s from useChat while the room is mounted.
    */
   sendHeartbeat: () => {
-    socketService.emit('heartbeat', {});
+    socketService.emit('heartbeat');
   },
 };

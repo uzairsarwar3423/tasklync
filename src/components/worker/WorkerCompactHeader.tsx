@@ -5,6 +5,7 @@ import Animated, {
   useAnimatedReaction,
   runOnJS,
   interpolate,
+  Extrapolation,
   SharedValue,
 } from 'react-native-reanimated';
 import { ChevronLeft } from 'lucide-react-native';
@@ -45,8 +46,8 @@ export const WorkerCompactHeader: React.FC<WorkerCompactHeaderProps> = ({
   );
 
   const containerAnimatedStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(scrollY.value, [100, 160], [0, 1], 'clamp');
-    const translateY = interpolate(scrollY.value, [80, 140], [-24, 0], 'clamp');
+    const opacity = interpolate(scrollY.value, [100, 150], [0, 1], Extrapolation.CLAMP);
+    const translateY = interpolate(scrollY.value, [100, 150], [-8, 0], Extrapolation.CLAMP);
 
     return {
       opacity,

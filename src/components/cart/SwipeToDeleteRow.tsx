@@ -1,18 +1,20 @@
-import { FC, ReactNode, useState } from 'react';
-import { StyleSheet, View, Dimensions, Platform, Pressable } from 'react-native';
+import { FC, ReactNode, useState, useCallback } from 'react';
+import { StyleSheet, Pressable, Platform, useWindowDimensions, LayoutChangeEvent } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
   withTiming,
   runOnJS,
+  interpolate,
+  Extrapolation,
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { Trash2 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { springConfig } from '../../design/animations';
+import { colors } from '../../design/colors';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SWIPE_THRESHOLD = -80; // Distance in px required to commit delete
 
 interface SwipeToDeleteRowProps {
@@ -24,27 +26,39 @@ export const SwipeToDeleteRow: FC<SwipeToDeleteRowProps> = ({
   children,
   onDelete,
 }) => {
+  const { width: screenWidth } = useWindowDimensions();
   const [isDeleting, setIsDeleting] = useState(false);
   const translateX = useSharedValue(0);
-  const itemHeight = useSharedValue(84); // Default row height constraint
+  const measuredHeight = useSharedValue(0);
   const opacity = useSharedValue(1);
 
-  const triggerCommitHaptic = () => {
+  const triggerCommitHaptic = useCallback(() => {
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     }
-  };
+  }, []);
 
-  const handleFinishDelete = () => {
+  const handleFinishDelete = useCallback(() => {
     onDelete();
-  };
+  }, [onDelete]);
+
+  const handleLayout = useCallback(
+    (event: LayoutChangeEvent) => {
+      const { height } = event.nativeEvent.layout;
+      if (height > 0) {
+        measuredHeight.value = height;
+      }
+    },
+    [measuredHeight]
+  );
 
   const panGesture = Gesture.Pan()
     .activeOffsetX([-10, 10])
+    .failOffsetY([-10, 10])
     .onUpdate((event) => {
       // Only allow swiping left (negative translateX)
       if (event.translationX < 0) {
-        translateX.value = Math.max(event.translationX, -SCREEN_WIDTH * 0.4);
+        translateX.value = Math.max(event.translationX, -screenWidth * 0.4);
       } else {
         translateX.value = 0;
       }
@@ -54,11 +68,11 @@ export const SwipeToDeleteRow: FC<SwipeToDeleteRowProps> = ({
         // Commit delete action
         runOnJS(triggerCommitHaptic)();
         runOnJS(setIsDeleting)(true);
-        translateX.value = withTiming(-SCREEN_WIDTH, { duration: 200 });
+        translateX.value = withTiming(-screenWidth, { duration: 200 });
         opacity.value = withTiming(0, { duration: 200 });
 
-        // Collapse row height to 0
-        itemHeight.value = withSpring(0, springConfig.gentle, (finished) => {
+        // Collapse dynamically measured row height to 0
+        measuredHeight.value = withSpring(0, springConfig.gentle, (finished) => {
           if (finished) {
             runOnJS(handleFinishDelete)();
           }
@@ -69,34 +83,53 @@ export const SwipeToDeleteRow: FC<SwipeToDeleteRowProps> = ({
       }
     });
 
+  // Reveal delete background smoothly as user swipes left; 0 opacity in default state
+  const animatedDeleteBackgroundStyle = useAnimatedStyle(() => {
+    const bgOpacity = interpolate(
+      translateX.value,
+      [-40, 0],
+      [1, 0],
+      Extrapolation.CLAMP
+    );
+
+    return {
+      opacity: isDeleting ? opacity.value : bgOpacity,
+    };
+  });
+
   const animatedRowStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
   }));
 
   const animatedContainerStyle = useAnimatedStyle(() => ({
-    height: isDeleting ? itemHeight.value : undefined,
+    height: isDeleting ? measuredHeight.value : undefined,
     opacity: opacity.value,
-    marginBottom: isDeleting ? itemHeight.value === 0 ? 0 : 8 : 8,
+    marginBottom: isDeleting ? (measuredHeight.value === 0 ? 0 : 8) : 8,
   }));
 
   return (
     <Animated.View style={[styles.container, animatedContainerStyle]}>
-      {/* Red Delete Background Layer */}
-      <View style={styles.deleteBackground}>
+      {/* Red Delete Background Layer - positioned strictly behind with zero layout footprint */}
+      <Animated.View style={[styles.deleteBackground, animatedDeleteBackgroundStyle]}>
         <Pressable
           style={styles.deleteButton}
           onPress={() => {
             triggerCommitHaptic();
             onDelete();
           }}
+          accessibilityRole="button"
+          accessibilityLabel="Delete item"
         >
           <Trash2 size={22} color="#FFFFFF" />
         </Pressable>
-      </View>
+      </Animated.View>
 
-      {/* Foreground Content Row */}
+      {/* Foreground Content Row - measured dynamically onLayout */}
       <GestureDetector gesture={panGesture}>
-        <Animated.View style={[styles.foreground, animatedRowStyle]}>
+        <Animated.View
+          style={[styles.foreground, animatedRowStyle]}
+          onLayout={handleLayout}
+        >
           {children}
         </Animated.View>
       </GestureDetector>
@@ -113,13 +146,18 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   deleteBackground: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
     backgroundColor: '#EF4444', // Danger Red
     borderRadius: 16,
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
     paddingRight: 24,
+    zIndex: 0,
   },
   deleteButton: {
     width: 60,
@@ -128,7 +166,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   foreground: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.bgCard,
     borderRadius: 16,
+    zIndex: 1,
   },
 });

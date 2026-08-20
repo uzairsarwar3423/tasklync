@@ -98,13 +98,13 @@ export const workerApi = {
    * Fetch worker portfolio photo gallery
    */
   getWorkerPortfolio: async (workerId: string): Promise<WorkerPortfolioImage[]> => {
-    if (workerId.startsWith('w')) {
-      const { MOCK_PORTFOLIO_DAY9 } = require('./mockDataDay9');
-      return MOCK_PORTFOLIO_DAY9;
+    try {
+      const response = await apiClient.get<ApiResponse<any[]>>(`/workers/${workerId}/portfolio`);
+      const rawData = response.data?.data || [];
+      return Array.isArray(rawData) ? rawData.map(mapRawWorkerPortfolio) : [];
+    } catch (_err) {
+      return [];
     }
-    const response = await apiClient.get<ApiResponse<any[]>>(`/workers/${workerId}/portfolio`);
-    const rawData = response.data?.data || [];
-    return Array.isArray(rawData) ? rawData.map(mapRawWorkerPortfolio) : [];
   },
 
   /**
@@ -115,44 +115,42 @@ export const workerApi = {
     workerId: string,
     params: { page?: number; limit?: number; sortBy?: ReviewSortOption } = {}
   ): Promise<{ reviews: WorkerReview[]; summary?: ReviewSummaryData; total: number; page: number; hasMore: boolean }> => {
-    if (workerId.startsWith('w')) {
-      const { MOCK_REVIEWS_DAY9, MOCK_SUMMARY_DAY9 } = require('./mockDataDay9');
+    try {
+      const response = await apiClient.get<ApiResponse<any>>(`/workers/${workerId}/reviews`, {
+        params: {
+          page: params.page || 1,
+          limit: params.limit || 20,
+          sortBy: params.sortBy || 'recent',
+        },
+      });
+
+      const data = response.data?.data;
+      const rawReviews = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.reviews)
+        ? data.reviews
+        : [];
+
+      const summary = mapRawReviewSummary(data?.rating_summary || data?.summary);
+      const pagination = data?.pagination || response.data?.meta?.pagination;
+      const total = pagination?.total || summary.totalReviews || rawReviews.length;
+      const page = pagination?.page || params.page || 1;
+      const totalPages = pagination?.totalPages || Math.ceil(total / (params.limit || 20));
       return {
-        reviews: MOCK_REVIEWS_DAY9,
-        summary: MOCK_SUMMARY_DAY9,
-        total: MOCK_SUMMARY_DAY9.totalReviews,
+        reviews: rawReviews.map(mapRawWorkerReview),
+        summary,
+        total,
+        page,
+        hasMore: page < totalPages,
+      };
+    } catch (_err) {
+      return {
+        reviews: [],
+        total: 0,
         page: params.page || 1,
         hasMore: false,
       };
     }
-
-    const response = await apiClient.get<ApiResponse<any>>(`/workers/${workerId}/reviews`, {
-      params: {
-        page: params.page || 1,
-        limit: params.limit || 20,
-        sortBy: params.sortBy || 'recent',
-      },
-    });
-
-    const data = response.data?.data;
-    const rawReviews = Array.isArray(data)
-      ? data
-      : Array.isArray(data?.reviews)
-      ? data.reviews
-      : [];
-
-    const summary = mapRawReviewSummary(data?.rating_summary || data?.summary);
-    const pagination = data?.pagination || response.data?.meta?.pagination;
-    const total = pagination?.total || summary.totalReviews || rawReviews.length;
-    const page = pagination?.page || params.page || 1;
-    const totalPages = pagination?.totalPages || Math.ceil(total / (params.limit || 20));
-    return {
-      reviews: rawReviews.map(mapRawWorkerReview),
-      summary,
-      total,
-      page,
-      hasMore: page < totalPages,
-    };
   },
 
   /**

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { View, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -17,10 +17,12 @@ import { BookingFooterCTA } from '../../src/components/booking/BookingFooterCTA'
 import { AddressHeader } from '../../src/components/address/AddressHeader';
 import { AddressList } from '../../src/components/address/AddressList';
 import { AddNewAddressRow } from '../../src/components/address/AddNewAddressRow';
+import { AddAddressBottomSheet, AddAddressBottomSheetRef } from '../../src/components/address/AddAddressBottomSheet';
 import { MiniMapPreview } from '../../src/components/address/MiniMapPreview';
 
 export default function AddressScreen() {
   const router = useRouter();
+  const addAddressSheetRef = useRef<AddAddressBottomSheetRef>(null);
 
   const { addressId, address, setAddress, hydrate } = useBookingDraftStore();
 
@@ -32,12 +34,16 @@ export default function AddressScreen() {
     setAddress(selected);
   };
 
+  const handleOpenAddSheet = () => {
+    addAddressSheetRef.current?.open();
+  };
+
   const handleContinue = () => {
     router.push('/booking/summary' as any);
   };
 
   const isEnabled = Boolean(addressId || address);
-  const subtext = address ? `${address.label || 'Selected'}: ${address.street}` : 'Select a delivery address';
+  const subtext = address ? `${address.label || 'Selected'}: ${address.street}` : 'Select or add a delivery address';
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -61,7 +67,7 @@ export default function AddressScreen() {
           />
 
           {/* Add New Address Button */}
-          <AddNewAddressRow />
+          <AddNewAddressRow onPress={handleOpenAddSheet} />
 
           {/* Mini Map Location Thumbnail */}
           <MiniMapPreview selectedAddress={address} />
@@ -76,6 +82,12 @@ export default function AddressScreen() {
           subtext={subtext}
           enabled={isEnabled}
           onPress={handleContinue}
+        />
+
+        {/* Add Address Modal Bottom Sheet */}
+        <AddAddressBottomSheet
+          ref={addAddressSheetRef}
+          onAddressCreated={handleSelectAddress}
         />
       </View>
     </SafeAreaView>

@@ -112,6 +112,7 @@ export interface BookingDetails {
   created_at: string;
   worker_name?: string | undefined;
   worker_avatar_url?: string | undefined;
+  worker_phone?: string | undefined;
   category_name?: string | undefined;
 }
 

@@ -5,7 +5,9 @@ import { Message, MessageRenderItem, ReadReceiptStatus } from '../types/chat.typ
  * e.g. "Today", "Yesterday", "Monday, Aug 12", "Dec 25, 2025"
  */
 export function formatDateDividerLabel(dateString: string): string {
+  if (!dateString) return 'Today';
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'Today';
   const now = new Date();
 
   // Create date-only midnight timestamps for accurate comparison
@@ -67,17 +69,20 @@ export function groupMessagesForInvertedList(
   }
 
   // 1. Sort messages in strict chronological order (oldest to newest)
-  const sorted = [...messages].sort(
-    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-  );
+  const sorted = [...messages].sort((a, b) => {
+    const timeA = a.created_at ? new Date(a.created_at).getTime() : 0;
+    const timeB = b.created_at ? new Date(b.created_at).getTime() : 0;
+    return (isNaN(timeA) ? 0 : timeA) - (isNaN(timeB) ? 0 : timeB);
+  });
 
   const chronologicalItems: MessageRenderItem[] = [];
   let lastDateKey = '';
 
   for (let i = 0; i < sorted.length; i++) {
     const current = sorted[i]!;
-    const currentDate = new Date(current.created_at);
-    const dateKey = `${currentDate.getFullYear()}-${currentDate.getMonth()}-${currentDate.getDate()}`;
+    const currentDate = current.created_at ? new Date(current.created_at) : new Date();
+    const validDate = isNaN(currentDate.getTime()) ? new Date() : currentDate;
+    const dateKey = `${validDate.getFullYear()}-${validDate.getMonth()}-${validDate.getDate()}`;
 
     // Inject date divider at day boundary
     if (dateKey !== lastDateKey) {
@@ -94,7 +99,7 @@ export function groupMessagesForInvertedList(
     if (current.type === 'system') {
       chronologicalItems.push({
         type: 'system',
-        id: current.id,
+        id: current.temp_id || current.id,
         content: current.content,
         timestamp: current.created_at,
       });
@@ -104,12 +109,17 @@ export function groupMessagesForInvertedList(
     const prev = i > 0 ? sorted[i - 1] : null;
     const next = i < sorted.length - 1 ? sorted[i + 1] : null;
 
-    const isOutgoing = current.sender_type === 'customer' || current.sender_id === currentUserId;
+    // 'user' is the backend's canonical sender_type for the customer.
+    // 'customer' is kept as a legacy alias from older API versions.
+    const isOutgoing =
+      current.sender_type === 'user' ||
+      current.sender_type === 'customer' ||
+      current.sender_id === currentUserId;
 
     // Check if consecutive same-sender within 60 seconds
-    const prevTime = prev ? new Date(prev.created_at).getTime() : 0;
-    const currTime = new Date(current.created_at).getTime();
-    const nextTime = next ? new Date(next.created_at).getTime() : 0;
+    const prevTime = prev && prev.created_at ? new Date(prev.created_at).getTime() : 0;
+    const currTime = current.created_at ? new Date(current.created_at).getTime() : 0;
+    const nextTime = next && next.created_at ? new Date(next.created_at).getTime() : 0;
 
     const isSameSenderAsPrev = prev && prev.type !== 'system' && prev.sender_id === current.sender_id;
     const isWithin60sOfPrev = isSameSenderAsPrev && currTime - prevTime <= 60000;
@@ -131,7 +141,7 @@ export function groupMessagesForInvertedList(
 
     chronologicalItems.push({
       type: 'message',
-      id: current.id,
+      id: current.temp_id || current.id,
       message: current,
       isFirstInGroup,
       isLastInGroup,

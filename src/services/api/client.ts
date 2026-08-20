@@ -38,6 +38,15 @@ apiClient.interceptors.request.use((config) => {
     }
   }
 
+  // Handle FormData in React Native: Do not enforce application/json on FormData payloads
+  if (config.data instanceof FormData && config.headers) {
+    if (typeof config.headers.delete === 'function') {
+      config.headers.delete('Content-Type');
+    } else {
+      delete (config.headers as Record<string, string>)['Content-Type'];
+    }
+  }
+
   // Non-sensitive request logging for authentication diagnostics
   if (__DEV__) {
     const hasAuth = Boolean(token);
@@ -129,9 +138,23 @@ apiClient.interceptors.response.use(
     }
 
     // Normalize backend API error structure
-    const apiError = error.response?.data?.error || {
-      code: error.response?.data?.code || error.response?.data?.status || 'SERVER_ERROR',
-      message: error.response?.data?.message || error.message || 'An unexpected error occurred',
+    const rawError = error.response?.data?.error || error.response?.data;
+    let errorMessage = rawError?.message || error.message || 'An unexpected error occurred';
+
+    if (Array.isArray(rawError?.details) && rawError.details.length > 0) {
+      const detailMessages = rawError.details
+        .map((d: any) => `${d.field ? d.field + ': ' : ''}${d.message || d}`)
+        .join(', ');
+      if (detailMessages) {
+        errorMessage = `${errorMessage} (${detailMessages})`;
+      }
+    }
+
+    const apiError = {
+      code: rawError?.code || error.response?.status || 'SERVER_ERROR',
+      message: errorMessage,
+      details: rawError?.details,
+      status: error.response?.status,
     };
 
     return Promise.reject(apiError);

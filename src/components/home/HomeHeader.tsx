@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { MapPin, ChevronDown } from 'lucide-react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, withSpring } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { Text } from '../ui/Text/Text';
 import { NotificationBell } from './NotificationBell';
 import { useAuthStore } from '../../store/auth.store';
@@ -65,7 +65,7 @@ export const HomeHeader = () => {
       </View>
 
       <View style={styles.rightSide}>
-        <NotificationBell unreadCount={2} />
+        <NotificationBell />
       </View>
     </View>
   );

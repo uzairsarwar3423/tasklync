@@ -1,6 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { View, StyleSheet, Text, ViewStyle, useWindowDimensions, Pressable } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withDelay, withSpring } from 'react-native-reanimated';
 import { WorkerPortfolioImage } from '../../types/review.types';
 import { PortfolioCell } from './PortfolioCell';
 
@@ -18,11 +17,8 @@ interface WorkerPortfolioGridProps {
   onLayout?: (e: any) => void;
 }
 
-const AnimatedView = Animated.createAnimatedComponent(View);
-
 export const WorkerPortfolioGrid = ({
   images,
-  workerId,
   maxVisible = 6,
   onViewAll,
   onImagePress,
@@ -31,13 +27,6 @@ export const WorkerPortfolioGrid = ({
   onLayout,
 }: WorkerPortfolioGridProps) => {
   const { width: screenWidth } = useWindowDimensions();
-  const [hasAnimated, setHasAnimated] = useState(false);
-
-  // Trigger animation simply on mount for this component or if triggered by scroll.
-  // For simplicity, we trigger on mount or can be exposed as an animated prop.
-  useEffect(() => {
-    setHasAnimated(true);
-  }, []);
 
   if (!images || images.length === 0) return null;
 
@@ -52,45 +41,25 @@ export const WorkerPortfolioGrid = ({
 
   const renderCell = (image: WorkerPortfolioImage, index: number) => {
     const isLastCell = index === maxVisible - 1 && remainingCount > 0;
-    
-    // Animation shared values for each cell
-    const cellOpacity = useSharedValue(hasAnimated ? 1 : 0);
-    const cellScale = useSharedValue(hasAnimated ? 1 : 0.92);
-
-    useEffect(() => {
-      if (hasAnimated) {
-        cellOpacity.value = withDelay(index * 60, withSpring(1, { damping: 20, stiffness: 90 }));
-        cellScale.value = withDelay(index * 60, withSpring(1, { damping: 20, stiffness: 90 }));
-      }
-    }, [hasAnimated, index, cellOpacity, cellScale]);
-
-    const animatedStyle = useAnimatedStyle(() => {
-      return {
-        opacity: cellOpacity.value,
-        transform: [{ scale: cellScale.value }],
-      };
-    });
 
     return (
-      <AnimatedView key={image.id} style={animatedStyle}>
-        <View style={isLastCell ? styles.lastCellContainer : undefined}>
-          <PortfolioCell
-            image={image}
-            size={cellSize}
-            index={index}
-            onPress={() => (isLastCell && onViewAll ? onViewAll() : onImagePress(images, index))}
-            priority={index < 3 ? 'high' : 'normal'}
-          />
-          {isLastCell && (
-            <Pressable
-              style={[styles.lastCellOverlay, { width: cellSize, height: cellSize }]}
-              onPress={onViewAll}
-            >
-              <Text style={styles.remainingText}>+{remainingCount}</Text>
-            </Pressable>
-          )}
-        </View>
-      </AnimatedView>
+      <View key={image.id} style={isLastCell ? styles.lastCellContainer : undefined}>
+        <PortfolioCell
+          image={image}
+          size={cellSize}
+          index={index}
+          onPress={() => (isLastCell && onViewAll ? onViewAll() : onImagePress(images, index))}
+          priority={index < 3 ? 'high' : 'normal'}
+        />
+        {isLastCell && (
+          <Pressable
+            style={[styles.lastCellOverlay, { width: cellSize, height: cellSize }]}
+            onPress={onViewAll}
+          >
+            <Text style={styles.remainingText}>+{remainingCount}</Text>
+          </Pressable>
+        )}
+      </View>
     );
   };
 

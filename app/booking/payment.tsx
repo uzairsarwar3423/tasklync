@@ -68,21 +68,23 @@ export default function PaymentScreen() {
   };
 
   const handlePay = async () => {
-    const targetMethodId = selectedMethod?.id || 'pm-visa-4242';
+    const targetMethodId = selectedMethod?.id || 'CASH';
 
-    const success = await processPayment(amountToPay, targetMethodId);
+    const success = await processPayment(amountToPay, targetMethodId, bookingId);
 
     if (success) {
       clearCart();
       // Auto-navigate directly to success screen on payment confirmation
       router.push({
         pathname: '/booking/success',
-        params: { bookingId: bookingId || `TL-${Math.floor(100000 + Math.random() * 900000)}` },
+        params: { bookingId: bookingId || `b-${Date.now().toString(16)}` },
       } as any);
     } else {
-      Alert.alert('Payment Error', 'Payment processing failed. Please try a different card.');
+      Alert.alert('Payment Error', 'Payment processing failed. Please try again.');
     }
   };
+
+  const isCash = selectedMethod?.id === 'CASH' || selectedMethod?.type === 'cash';
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
@@ -109,7 +111,7 @@ export default function PaymentScreen() {
           {/* Add New Card Button (Opens Bottom Sheet Modal) */}
           <AddNewCardRow onPress={handleOpenAddCardSheet} />
 
-          {/* Static Stripe Security Badge */}
+          {/* Static Security Badge */}
           <SecurePaymentBadge />
 
           {/* Bottom Spacer for Sticky Footer */}
@@ -118,12 +120,12 @@ export default function PaymentScreen() {
 
         {/* Sticky Primary Payment Footer CTA */}
         <BookingFooterCTA
-          label={`Pay Rs. ${amountToPay.toLocaleString()}`}
-          subtext="Encrypted & Processed via Stripe"
+          label={isCash ? 'Confirm Booking (Cash on Delivery)' : `Pay Rs. ${amountToPay.toLocaleString()}`}
+          subtext={isCash ? `Pay Rs. ${amountToPay.toLocaleString()} after service` : 'Secure Encrypted Transaction'}
           enabled={true}
           loading={isLoading}
           onPress={handlePay}
-          accessibilityLabel={`Pay rupees ${amountToPay.toLocaleString()}`}
+          accessibilityLabel={`Confirm payment for rupees ${amountToPay.toLocaleString()}`}
         />
 
         {/* Add Card Bottom Sheet Modal */}

@@ -29,6 +29,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   android: {
     package: 'com.tasklync.user',
     versionCode: 1,
+    googleServicesFile: './google-services.json',
     adaptiveIcon: {
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundColor: '#16A34A',
@@ -44,6 +45,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'CAMERA',
       'READ_EXTERNAL_STORAGE',
       'WRITE_EXTERNAL_STORAGE',
+      'RECEIVE_BOOT_COMPLETED',
+      'VIBRATE',
     ],
   },
   plugins: [
@@ -61,7 +64,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         cameraPermission: 'Allow $(PRODUCT_NAME) to access your camera.',
       },
     ],
-    'expo-notifications',
+    [
+      'expo-notifications',
+      {
+        icon: './assets/images/icon.png',
+        color: '#16A34A',
+      },
+    ],
     'expo-secure-store',
   ],
   experiments: {

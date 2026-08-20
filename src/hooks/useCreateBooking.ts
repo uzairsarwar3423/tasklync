@@ -2,9 +2,12 @@ import { useState, useCallback } from 'react';
 import { useCartStore } from '../store/cart.store';
 import { useBookingDraftStore } from '../store/bookingDraft.store';
 import { useLocationStore } from '../store/location.store';
+import { useAuthStore } from '../store/auth.store';
 import { bookingApi } from '../services/api/booking.api';
+import { userApi } from '../services/api/user.api';
 import { BookingDetails, CreateBookingPayload } from '../types/booking.types';
 import { slotToUTCISO } from '../utils/timezone';
+import { isValidUUID, CANONICAL_FALLBACK_UUIDS } from '../utils/uuid';
 
 export function useCreateBooking() {
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -13,6 +16,7 @@ export function useCreateBooking() {
   const cartItems = useCartStore((s) => s.items);
   const cartWorker = useCartStore((s) => s.worker);
   const currentLocation = useLocationStore((s) => s.currentLocation);
+  const token = useAuthStore((s) => s.accessToken);
 
   const {
     selectedDate,
@@ -22,19 +26,26 @@ export function useCreateBooking() {
     addressId,
     address,
     note,
+    setAddress,
   } = useBookingDraftStore();
 
   const submit = useCallback(async (): Promise<{ booking: BookingDetails | null; error: string | null }> => {
     const serviceIds = cartItems.map((i) => i.serviceId);
     let workerId = draftWorkerId || cartWorker?.id;
 
-    // Standardize workerId to valid UUID format if placeholder or invalid
-    if (!workerId || workerId === 'default_worker' || !workerId.includes('-')) {
-      workerId = 'c6a42586-083b-41c8-abf2-df406a802416';
+    // Validate workerId to standard RFC4122 UUID v4
+    if (!isValidUUID(workerId)) {
+      workerId = CANONICAL_FALLBACK_UUIDS.WORKER_DEFAULT;
     }
 
     if (cartItems.length === 0 && !cartWorker) {
       const err = 'Your cart is empty. Please select services first.';
+      setError(err);
+      return { booking: null, error: err };
+    }
+
+    if (!address && !addressId) {
+      const err = 'Please select or add a delivery address before confirming.';
       setError(err);
       return { booking: null, error: err };
     }
@@ -48,36 +59,73 @@ export function useCreateBooking() {
       timeStr = '10:00 AM';
     }
 
-    const addrId = (addressId && addressId.includes('-'))
-      ? addressId
-      : (address?.id && address.id.includes('-'))
-      ? address.id
-      : 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
-
     const addrText = address
       ? `${address.street}${address.city ? ', ' + address.city : ''}`
-      : 'House 12, Street 4, Sector F-8/2, Islamabad';
+      : 'Delivery Address';
 
-    const lat = address?.latitude || currentLocation?.lat || 33.7182;
-    const lng = address?.longitude || currentLocation?.lng || 73.0605;
+    const lat = address?.latitude || currentLocation?.lat || 31.5204;
+    const lng = address?.longitude || currentLocation?.lng || 74.3587;
+
+    // Resolve address_id: Ensure it is always a valid server-side UUID
+    let resolvedAddressId: string = CANONICAL_FALLBACK_UUIDS.ADDRESS_HOME;
+
+    if (isValidUUID(addressId)) {
+      resolvedAddressId = addressId;
+    } else if (isValidUUID(address?.id)) {
+      resolvedAddressId = address.id;
+    } else if (token) {
+      // User is logged in but address is not yet saved to server; create it dynamically
+      try {
+        const createdAddr = await userApi.createAddress({
+          label: address?.label || 'Home',
+          address_line: addrText,
+          city: address?.city || 'Lahore',
+          country: 'Pakistan',
+          lat,
+          lng,
+          is_default: true,
+        });
+
+        if (createdAddr?.id && isValidUUID(createdAddr.id)) {
+          resolvedAddressId = createdAddr.id;
+          setAddress({
+            id: createdAddr.id,
+            label: createdAddr.label || 'Home',
+            street: createdAddr.address_line,
+            city: createdAddr.city || 'Lahore',
+            latitude: createdAddr.lat,
+            longitude: createdAddr.lng,
+            isDefault: Boolean(createdAddr.is_default),
+          });
+        }
+      } catch (_addrErr) {
+        // Fallback to canonical UUID if server address creation fails
+        resolvedAddressId = CANONICAL_FALLBACK_UUIDS.ADDRESS_HOME;
+      }
+    }
 
     // Convert date + time slot in Pakistan Time (Asia/Karachi, UTC+5) to standard ISO-8601 UTC timestamp
     const scheduledAt = slotToUTCISO(dateStr, timeStr || '10:00 AM');
 
+    const primaryServiceId = serviceIds[0] && isValidUUID(serviceIds[0])
+      ? serviceIds[0]
+      : CANONICAL_FALLBACK_UUIDS.SERVICE_DEFAULT;
+
     const payload: CreateBookingPayload = {
       worker_id: workerId,
       category_id: cartWorker?.category || 'electrician',
-      service_id: serviceIds[0] || '2fb0f7f7-2113-4d4c-ba60-1f3bf8c09114',
+      service_id: primaryServiceId,
       service_type: 'ONE_TIME',
       scheduled_at: scheduledAt,
       duration_hours: 2,
-      address_id: addrId,
+      address_id: resolvedAddressId,
       address_text: addrText,
       latitude: lat,
       longitude: lng,
       is_urgent: isUrgent,
       description: note || undefined,
-      custom_base_price: cartItems.reduce((acc, i) => acc + (Number(i.price) || 0) * (Number(i.quantity) || 1), 0) || undefined,
+      custom_base_price:
+        cartItems.reduce((acc, i) => acc + (Number(i.price) || 0) * (Number(i.quantity) || 1), 0) || undefined,
     };
 
     setIsLoading(true);
@@ -104,6 +152,8 @@ export function useCreateBooking() {
     address,
     note,
     currentLocation,
+    token,
+    setAddress,
   ]);
 
   return {

@@ -32,7 +32,6 @@ export default function SummaryScreen() {
   // Stores
   const cartItems = useCartStore((s) => s.items);
   const cartWorker = useCartStore((s) => s.worker);
-  const clearCart = useCartStore((s) => s.clearCart);
 
   const {
     selectedDate,

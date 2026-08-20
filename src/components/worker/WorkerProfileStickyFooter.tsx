@@ -1,11 +1,9 @@
-import React, { useEffect } from 'react';
-import { StyleSheet, ViewStyle } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withDelay } from 'react-native-reanimated';
+import React from 'react';
+import { StyleSheet, View, ViewStyle } from 'react-native';
 import { MessageCircle } from 'lucide-react-native';
 import { Button } from '../ui/Button/Button';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../../design/colors';
-import { springConfig } from '../../design/animations';
 
 interface WorkerProfileStickyFooterProps {
   workerId: string;
@@ -17,37 +15,20 @@ interface WorkerProfileStickyFooterProps {
 }
 
 export const WorkerProfileStickyFooter: React.FC<WorkerProfileStickyFooterProps> = ({
-  workerId,
-  workerName,
   onChat,
   onBookNow,
   isWorkerAvailable,
   style,
 }) => {
   const insets = useSafeAreaInsets();
-  const translateY = useSharedValue(120);
-
-  useEffect(() => {
-    translateY.value = withDelay(
-      300,
-      withSpring(0, springConfig.gentle)
-    );
-  }, []);
-
-  const animatedStyle = useAnimatedStyle(() => {
-    return {
-      transform: [{ translateY: translateY.value }],
-    };
-  });
 
   return (
-    <Animated.View
+    <View
       style={[
         styles.container,
         {
           paddingBottom: Math.max(insets.bottom, 14),
         },
-        animatedStyle,
         style,
       ]}
     >
@@ -71,7 +52,7 @@ export const WorkerProfileStickyFooter: React.FC<WorkerProfileStickyFooterProps>
         haptic="medium"
         style={styles.bookButton}
       />
-    </Animated.View>
+    </View>
   );
 };
 

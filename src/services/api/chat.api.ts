@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { createMMKV } from 'react-native-mmkv';
 import { apiClient } from './client';
 import { useAuthStore } from '../../store/auth.store';
@@ -83,7 +84,6 @@ export const chatApi = {
     }
 
     try {
-      // Primary route per CHAT_SERVICE_CUSTOMER_API_SPECIFICATION.md
       const response = await apiClient.get<any>(`/chat/rooms/${bookingId}/messages`, {
         params: { cursor: cursor || undefined, limit },
       });
@@ -102,13 +102,14 @@ export const chatApi = {
         media_url: m.media_url || m.mediaUrl || undefined,
         media_thumbnail_url: m.media_thumbnail_url || m.mediaThumbnailUrl || undefined,
         metadata: m.metadata || undefined,
-        status: m.status || 'delivered',
+        status: (m.status as any) || 'sent',
         read_by: Array.isArray(m.read_by) ? m.read_by : Array.isArray(m.readBy) ? m.readBy : [],
         created_at: m.created_at || m.createdAt || new Date().toISOString(),
       }));
 
-      // Cache historical messages locally
-      saveCachedChatMessages(bookingId, normalizedMessages);
+      if (!cursor) {
+        saveCachedChatMessages(bookingId, normalizedMessages);
+      }
 
       return {
         messages: normalizedMessages,
@@ -125,48 +126,102 @@ export const chatApi = {
   },
 
   /**
-   * 2.4 Upload Media (Images)
+   * 2.4 Upload Media (Images) with Cross-Platform Binary Streaming
    * POST /api/v1/chat/rooms/:bookingId/messages/media
+   * Backend chat-service expects 'image' form-data field via multer.single('image')
    */
   uploadMedia: async (
     bookingId: string,
     fileUri: string,
-    mimeType: string = 'image/jpeg'
+    mimeType: string = 'image/jpeg',
+    onProgress?: (percent: number) => void
   ): Promise<ChatMediaUploadResponse> => {
     const token = useAuthStore.getState().accessToken;
 
     if (!token) {
-      return { media_url: fileUri };
+      throw new Error('Unauthorized: No access token found');
     }
 
-    try {
-      const formData = new FormData();
-      const filename = fileUri.split('/').pop() || `chat_upload_${Date.now()}.jpg`;
+    const rawFilename = fileUri.split('/').pop() || `chat_upload_${Date.now()}.jpg`;
+    const cleanFilename = rawFilename.split('?')[0].split('#')[0];
+    const filename = cleanFilename.includes('.') ? cleanFilename : `${cleanFilename}.jpg`;
+    const ext = filename.split('.').pop()?.toLowerCase();
+    const resolvedMimeType =
+      ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
 
-      formData.append('file', {
+    const formData = new FormData();
+
+    // Universal Cross-Platform Multipart Support (Web Blob / Native React Native Object)
+    if (Platform.OS === 'web' || fileUri.startsWith('blob:') || fileUri.startsWith('data:')) {
+      const res = await fetch(fileUri);
+      const blob = await res.blob();
+      const fileObj = new File([blob], filename, { type: resolvedMimeType || blob.type || 'image/jpeg' });
+      formData.append('image', fileObj, filename);
+    } else {
+      const nativeFilePayload = {
         uri: fileUri,
         name: filename,
-        type: mimeType,
-      } as any);
-
-      const response = await apiClient.post<any>(
-        `/chat/rooms/${bookingId}/messages/media`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-
-      const data = response.data?.data || response.data;
-      return {
-        media_url: data?.media_url || data?.mediaUrl || fileUri,
-        media_thumbnail_url: data?.media_thumbnail_url || data?.mediaThumbnailUrl || undefined,
-      };
-    } catch (_error) {
-      return { media_url: fileUri };
+        type: resolvedMimeType,
+      } as any;
+      formData.append('image', nativeFilePayload);
     }
+
+    const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.tasklync.pk/api/v1';
+    const cleanBaseUrl = API_URL.replace(/\/+$/, '');
+    const url = `${cleanBaseUrl}/chat/rooms/${bookingId}/messages/media`;
+
+    return new Promise<ChatMediaUploadResponse>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', url);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.setRequestHeader('Accept', 'application/json');
+
+      if (xhr.upload && onProgress) {
+        xhr.upload.onprogress = (event) => {
+          if (event.lengthComputable && event.total > 0) {
+            const percent = Math.round((event.loaded * 100) / event.total);
+            onProgress(Math.min(100, Math.max(0, percent)));
+          }
+        };
+      }
+
+      xhr.onload = () => {
+        try {
+          const responseJson = JSON.parse(xhr.responseText);
+          if (xhr.status >= 200 && xhr.status < 300 && (responseJson.success || responseJson.data)) {
+            const data = responseJson.data || responseJson;
+            const mediaUrl = data.media_url || data.mediaUrl || data.url;
+            if (!mediaUrl) {
+              reject(new Error('No media URL returned in upload response'));
+              return;
+            }
+            resolve({
+              media_url: mediaUrl,
+              media_thumbnail_url: data.media_thumbnail_url || data.mediaThumbnailUrl || undefined,
+            });
+          } else {
+            const errorMsg =
+              responseJson?.error?.message ||
+              responseJson?.message ||
+              `Upload failed with status ${xhr.status}`;
+            reject(new Error(errorMsg));
+          }
+        } catch (err) {
+          reject(new Error(`Failed to parse upload response: ${xhr.responseText}`));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error('Network error during media upload'));
+      };
+
+      xhr.ontimeout = () => {
+        reject(new Error('Media upload timed out'));
+      };
+
+      xhr.timeout = 60000;
+      xhr.send(formData);
+    });
   },
 
   /**
