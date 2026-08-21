@@ -80,6 +80,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     'expo-secure-store',
+    'expo-image',
+    'expo-splash-screen',
+    'expo-status-bar',
+    'expo-web-browser',
   ],
   experiments: {
     typedRoutes: true,
