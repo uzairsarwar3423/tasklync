@@ -33,9 +33,9 @@ export interface InAppBannerData {
   id: string;
   title: string;
   body: string;
-  category?: string;
-  deepLink?: string;
-  data?: Record<string, any>;
+  category?: string | undefined;
+  deepLink?: string | undefined;
+  data?: Record<string, any> | undefined;
 }
 
 interface InAppBannerProps {

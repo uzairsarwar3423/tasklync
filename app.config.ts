@@ -4,6 +4,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Tasklync',
   slug: 'tasklync-user',
+  owner: 'uzairsarwar164',
   version: '1.0.0',
   scheme: 'tasklync',
   orientation: 'portrait',
@@ -47,6 +48,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'WRITE_EXTERNAL_STORAGE',
       'RECEIVE_BOOT_COMPLETED',
       'VIBRATE',
+      'POST_NOTIFICATIONS',
+      'WAKE_LOCK',
     ],
   },
   plugins: [
@@ -69,6 +72,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         icon: './assets/images/icon.png',
         color: '#16A34A',
+        sounds: [
+          './assets/sounds/receive_message.mp3',
+          './assets/sounds/send_message.mp3',
+        ],
       },
     ],
     'expo-secure-store',
@@ -81,7 +88,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     googleMapsKey: process.env.GOOGLE_MAPS_KEY,
     stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
     eas: {
-      projectId: process.env.EAS_PROJECT_ID || '231e181a-e4bc-4d71-9434-e4b9b5507a90',
+      projectId: process.env.EAS_PROJECT_ID || '90b1f7d5-14e1-4cf6-9035-b1beb8832a36',
     },
   },
 });

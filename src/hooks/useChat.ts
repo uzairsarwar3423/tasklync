@@ -33,7 +33,7 @@ export function useChat(bookingId: string) {
 
   // 1. Initial Load of message history with resilience retry
   useEffect(() => {
-    chatSoundService.ensurePreloaded();
+    chatSoundService.ensurePreloaded().catch(() => {});
   }, []);
 
   const loadHistory = useCallback(async (retryCount = 0) => {
@@ -219,7 +219,9 @@ export function useChat(bookingId: string) {
       if (isFromWorker) {
         setIsWorkerOnline(true);
         // Play receive sound for incoming messages from the counterparty
-        chatSoundService.playReceiveSound(incoming.id, incoming.sender_id, currentUserId);
+        chatSoundService
+          .playReceiveSound(incoming.id, incoming.sender_id, currentUserId)
+          .catch(() => {});
         if (AppState.currentState === 'active') {
           markRead();
         }
@@ -410,7 +412,7 @@ export function useChat(bookingId: string) {
       });
 
       // Play send sound immediately
-      chatSoundService.playSendSound();
+      chatSoundService.playSendSound().catch(() => {});
 
       // 2. Set 20s failure watchdog timeout
       const timeout = setTimeout(() => {

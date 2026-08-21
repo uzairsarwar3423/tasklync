@@ -19,7 +19,6 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const authState = useAuthStore((s) => s.authState);
   const currentUserId = useAuthStore((s) => s.user?.id);
-  const permissionStatus = useNotificationStore((s) => s.permissionStatus);
   const setPermissionStatus = useNotificationStore((s) => s.setPermissionStatus);
   const setUnreadCount = useNotificationStore((s) => s.setUnreadCount);
   const incrementUnread = useNotificationStore((s) => s.incrementUnread);
@@ -31,43 +30,52 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // 1. Initial Cold Start Setup (Channels + Audio Preload + Initial Permission + Cold Start Tap Detection)
   useEffect(() => {
     // 1.0 Preload chat sound assets
-    chatSoundService.ensurePreloaded();
+    chatSoundService.ensurePreloaded().catch(() => {});
 
     // 1.1 Apply Android notification channels & iOS categories
-    pushService.registerNotificationChannels();
+    pushService.registerNotificationChannels().catch(() => {});
 
     // 1.2 Check initial permission state
-    pushService.getPermissionStatus().then((status) => {
-      setPermissionStatus(status);
-    });
+    pushService
+      .getPermissionStatus()
+      .then((status) => {
+        setPermissionStatus(status);
+      })
+      .catch(() => {});
 
     // 1.3 Check for killed-app cold launch tap
-    pushService.getLastNotificationResponse().then((response) => {
-      if (response) {
-        const rawData = response.notification?.request?.content?.data || {};
-        const targetPath = resolveNotificationRoute(rawData as any);
-        if (targetPath) {
-          notificationQueue.enqueue(targetPath);
+    pushService
+      .getLastNotificationResponse()
+      .then((response) => {
+        if (response) {
+          const rawData = response.notification?.request?.content?.data || {};
+          const targetPath = resolveNotificationRoute(rawData as any);
+          if (targetPath) {
+            notificationQueue.enqueue(targetPath);
+          }
         }
-      }
-    });
+      })
+      .catch(() => {});
 
     // 1.4 Initial Unread Count Hydration (Page 1)
-    if (authState === 'AUTHENTICATED') {
-      notificationApi.getNotifications(null, 1).then((res) => {
-        if (res.meta.unread_count !== undefined) {
-          setUnreadCount(res.meta.unread_count);
-        }
-      });
+    if (authState === 'authenticated') {
+      notificationApi
+        .getNotifications(null, 1)
+        .then((res) => {
+          if (res?.meta?.unread_count !== undefined) {
+            setUnreadCount(res.meta.unread_count);
+          }
+        })
+        .catch(() => {});
     }
   }, [authState, setPermissionStatus, setUnreadCount]);
 
   // 2. Auth State Sync (Login Register / Logout Cleanup)
   useEffect(() => {
-    if (authState === 'AUTHENTICATED' && currentUserId) {
-      register();
-    } else if (authState === 'UNAUTHENTICATED') {
-      unregister();
+    if (authState === 'authenticated' && currentUserId) {
+      register().catch(() => {});
+    } else if (authState === 'unauthenticated') {
+      unregister().catch(() => {});
     }
   }, [authState, currentUserId, register, unregister]);
 
@@ -75,43 +83,60 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     // 3.1 Foreground Listener (App Open) -> Show In-App Banner & Increment Unread Badge
     foregroundSubRef.current = pushService.addForegroundListener((notification) => {
-      const content = notification.request.content;
-      const data = content.data || {};
-      const title = content.title || 'Tasklync Update';
-      const body = content.body || '';
-      const category = (data.type || data.category || 'default') as string;
+      try {
+        const content = notification?.request?.content;
+        if (!content) return;
+        const data = (content.data || {}) as Record<string, any>;
+        const title = content.title || 'Tasklync Update';
+        const body = content.body || '';
+        const category = String(data.type || data.category || 'default');
 
-      incrementUnread();
+        incrementUnread();
 
-      // Play receive sound if incoming event is a chat message
-      if (category.includes('chat') || category.includes('message')) {
-        chatSoundService.playReceiveSound(
-          notification.request.identifier,
-          data.sender_id || data.senderId,
-          currentUserId
-        );
+        // Play receive sound if incoming event is a chat message
+        if (category.includes('chat') || category.includes('message')) {
+          const senderId = (data.sender_id || data.senderId) ? String(data.sender_id || data.senderId) : undefined;
+          const messageId = String(data.message_id || data.messageId || data.id || notification.request.identifier || '');
+          chatSoundService
+            .playReceiveSound(
+              messageId,
+              senderId,
+              currentUserId
+            )
+            .catch(() => {});
+        }
+
+        showBanner({
+          id: notification.request.identifier || `notif_${Date.now()}`,
+          title,
+          body,
+          category,
+          deepLink: (data.deep_link || data.deepLink) ? String(data.deep_link || data.deepLink) : undefined,
+          data,
+        });
+      } catch (e) {
+        if (__DEV__) {
+          console.warn('[NotificationProvider] Error in foreground listener:', e);
+        }
       }
-
-      showBanner({
-        id: notification.request.identifier || `notif_${Date.now()}`,
-        title,
-        body,
-        category,
-        deepLink: (data.deep_link || data.deepLink) as string,
-        data,
-      });
     });
 
     // 3.2 Background/Tray Tap Listener -> Direct Immediate Navigation
     responseSubRef.current = pushService.addResponseListener((response) => {
-      const rawData = response.notification?.request?.content?.data || {};
-      const targetPath = resolveNotificationRoute(rawData as any);
+      try {
+        const rawData = response?.notification?.request?.content?.data || {};
+        const targetPath = resolveNotificationRoute(rawData as any);
 
-      if (targetPath) {
-        try {
-          router.push(targetPath as any);
-        } catch {
-          router.push('/notifications' as any);
+        if (targetPath) {
+          try {
+            router.push(targetPath as any);
+          } catch {
+            router.push('/notifications' as any);
+          }
+        }
+      } catch (e) {
+        if (__DEV__) {
+          console.warn('[NotificationProvider] Error handling notification response:', e);
         }
       }
     });
@@ -126,7 +151,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         responseSubRef.current = null;
       }
     };
-  }, [router, showBanner, incrementUnread]);
+  }, [router, showBanner, incrementUnread, currentUserId]);
 
   // 4. AppState Foreground Listener (Self-healing & Permission Revocation Detection)
   useEffect(() => {
@@ -136,20 +161,26 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         nextAppState === 'active'
       ) {
         // App returned to foreground: re-check permissions
-        pushService.getPermissionStatus().then((status) => {
-          setPermissionStatus(status);
-          if (status === 'granted' && authState === 'AUTHENTICATED') {
-            register();
-          }
-        });
+        pushService
+          .getPermissionStatus()
+          .then((status) => {
+            setPermissionStatus(status);
+            if (status === 'granted' && authState === 'authenticated') {
+              register().catch(() => {});
+            }
+          })
+          .catch(() => {});
 
         // Refresh unread counter
-        if (authState === 'AUTHENTICATED') {
-          notificationApi.getNotifications(null, 1).then((res) => {
-            if (res.meta.unread_count !== undefined) {
-              setUnreadCount(res.meta.unread_count);
-            }
-          });
+        if (authState === 'authenticated') {
+          notificationApi
+            .getNotifications(null, 1)
+            .then((res) => {
+              if (res?.meta?.unread_count !== undefined) {
+                setUnreadCount(res.meta.unread_count);
+              }
+            })
+            .catch(() => {});
         }
       }
       appStateRef.current = nextAppState;

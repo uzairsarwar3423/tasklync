@@ -1,22 +1,35 @@
 import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 import { NotificationPermissionStatus } from '../../types/notification.types';
 import { setupNotificationChannelsAndCategories } from './notification-categories';
 
-// Configure foreground notification presentation handler
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPresentAlert: true,
-    shouldPresentSound: true,
-    shouldPresentBadge: true,
-  }),
-});
+/**
+ * Configure foreground notification presentation handler safely.
+ * Provides backwards and forwards compatibility across Expo SDKs.
+ */
+try {
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowBanner: true,
+      shouldShowList: true,
+      shouldPlaySound: true,
+      shouldSetBadge: true,
+      shouldShowAlert: true,
+    }),
+    handleSuccess: () => {},
+    handleError: (notificationId, error) => {
+      if (__DEV__) {
+        console.warn(`[pushService] Notification handling error (${notificationId}):`, error);
+      }
+    },
+  });
+} catch (e) {
+  if (__DEV__) {
+    console.warn('[pushService] setNotificationHandler initialization warning:', e);
+  }
+}
 
 export const pushService = {
   /**
@@ -24,6 +37,7 @@ export const pushService = {
    */
   getPermissionStatus: async (): Promise<NotificationPermissionStatus> => {
     try {
+      if (Platform.OS === 'web') return 'granted';
       const { status } = await Notifications.getPermissionsAsync();
       if (status === 'granted') return 'granted';
       if (status === 'denied') return 'denied';
@@ -34,10 +48,11 @@ export const pushService = {
   },
 
   /**
-   * Prompts the user with the native OS notification permission dialog.
+   * Prompts the user with the native OS notification permission dialog (Android 13+ POST_NOTIFICATIONS & iOS APNs).
    */
   requestPermission: async (): Promise<NotificationPermissionStatus> => {
     try {
+      if (Platform.OS === 'web') return 'granted';
       const { status } = await Notifications.requestPermissionsAsync({
         ios: {
           allowAlert: true,
@@ -54,41 +69,61 @@ export const pushService = {
   },
 
   /**
-   * Universal token retrieval: Retrieves native FCM/APNs device token or Expo push token.
+   * Universal token retrieval: Safely retrieves native FCM/APNs device token or Expo push token.
+   * Checks Device.isDevice and wraps native calls with try/catch to prevent simulator/hardware fatal exceptions.
    */
   getPushToken: async (): Promise<string | null> => {
     try {
-      // 1. Try Native Device Push Token (FCM on Android / APNs on iOS)
-      if (Platform.OS !== 'web') {
-        try {
-          const deviceToken = await Notifications.getDevicePushTokenAsync();
-          if (deviceToken?.data) {
-            return deviceToken.data;
-          }
-        } catch {}
+      if (Platform.OS === 'web') return null;
+
+      // 1. Guard against Simulator/Emulator native FCM bridge fatal crashes
+      if (!Device.isDevice) {
+        if (__DEV__) {
+          console.log('[pushService] Running in simulator/emulator - physical device recommended for native push tokens');
+        }
       }
 
-      // 2. Fallback to Expo Push Token
-      const projectId =
-        Constants?.expoConfig?.extra?.eas?.projectId ||
-        Constants?.easConfig?.projectId ||
-        '231e181a-e4bc-4d71-9434-e4b9b5507a90';
+      // 2. Try Native Device Push Token (FCM on Android / APNs on iOS)
+      try {
+        const deviceToken = await Notifications.getDevicePushTokenAsync();
+        if (deviceToken?.data) {
+          return String(deviceToken.data);
+        }
+      } catch (nativeErr) {
+        if (__DEV__) {
+          console.log('[pushService] Native getDevicePushTokenAsync fallback:', nativeErr);
+        }
+      }
 
-      const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId,
-      });
+      // 3. Fallback to Expo Push Token
+      try {
+        const projectId =
+          Constants?.expoConfig?.extra?.eas?.projectId ||
+          Constants?.easConfig?.projectId ||
+          process.env.EAS_PROJECT_ID ||
+          '90b1f7d5-14e1-4cf6-9035-b1beb8832a36';
 
-      return tokenData.data || null;
+        const tokenData = await Notifications.getExpoPushTokenAsync(
+          projectId ? { projectId } : undefined
+        );
+
+        return tokenData?.data ? String(tokenData.data) : null;
+      } catch (expoTokenErr) {
+        if (__DEV__) {
+          console.warn('[pushService] getExpoPushTokenAsync fallback:', expoTokenErr);
+        }
+        return null;
+      }
     } catch (error) {
       if (__DEV__) {
-        console.warn('[pushService] Failed to retrieve device push token:', error);
+        console.warn('[pushService] Failed to retrieve push token:', error);
       }
       return null;
     }
   },
 
   /**
-   * Registers Android notification channels and iOS categories.
+   * Registers Android notification channels and iOS categories safely.
    */
   registerNotificationChannels: async (): Promise<void> => {
     try {
@@ -106,7 +141,15 @@ export const pushService = {
   addForegroundListener: (
     callback: (notification: Notifications.Notification) => void
   ): Notifications.EventSubscription => {
-    return Notifications.addNotificationReceivedListener(callback);
+    return Notifications.addNotificationReceivedListener((notif) => {
+      try {
+        callback(notif);
+      } catch (err) {
+        if (__DEV__) {
+          console.warn('[pushService] Foreground listener callback error:', err);
+        }
+      }
+    });
   },
 
   /**
@@ -115,7 +158,15 @@ export const pushService = {
   addResponseListener: (
     callback: (response: Notifications.NotificationResponse) => void
   ): Notifications.EventSubscription => {
-    return Notifications.addNotificationResponseReceivedListener(callback);
+    return Notifications.addNotificationResponseReceivedListener((res) => {
+      try {
+        callback(res);
+      } catch (err) {
+        if (__DEV__) {
+          console.warn('[pushService] Response listener callback error:', err);
+        }
+      }
+    });
   },
 
   /**
@@ -130,7 +181,7 @@ export const pushService = {
   },
 
   /**
-   * Sets or clears the app icon badge count.
+   * Sets or clears the app icon badge count safely.
    */
   setBadgeCount: async (count: number): Promise<void> => {
     try {

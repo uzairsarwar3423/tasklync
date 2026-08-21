@@ -15,7 +15,7 @@ import { FloatingCartBar } from '../src/components/cart/FloatingCartBar';
 import { ConnectionBanner } from '../src/components/feedback/ConnectionBanner';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function RootLayout() {
   const router = useRouter();
@@ -23,14 +23,16 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync().catch(() => {});
 
       // Flush any queued cold-start notification navigation once router is ready
       notificationQueue.flush((path) => {
         try {
           router.push(path as any);
         } catch {
-          router.push('/notifications' as any);
+          try {
+            router.push('/notifications' as any);
+          } catch {}
         }
       });
     }
