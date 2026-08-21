@@ -84,6 +84,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-splash-screen',
     'expo-status-bar',
     'expo-web-browser',
+    'expo-asset',
   ],
   experiments: {
     typedRoutes: true,
