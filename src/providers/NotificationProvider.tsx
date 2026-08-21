@@ -27,12 +27,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const responseSubRef = useRef<Notifications.EventSubscription | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
-  // 1. Initial Cold Start Setup (Channels + Audio Preload + Initial Permission + Cold Start Tap Detection)
+  // 1. Initial Cold Start Setup (Channels + Initial Permission + Cold Start Tap Detection)
   useEffect(() => {
-    // 1.0 Preload chat sound assets
-    chatSoundService.ensurePreloaded().catch(() => {});
-
-    // 1.1 Apply Android notification channels & iOS categories
+    // 1.1 Apply Android notification channels & iOS categories asynchronously
     pushService.registerNotificationChannels().catch(() => {});
 
     // 1.2 Check initial permission state
