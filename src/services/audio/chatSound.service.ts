@@ -1,4 +1,5 @@
-import { Audio, InterruptionModeAndroid, InterruptionModeIOS, AVPlaybackStatus } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
+import * as Haptics from 'expo-haptics';
 import { Platform, AppState } from 'react-native';
 
 // Sound assets required via Metro bundler
@@ -6,29 +7,34 @@ const SEND_SOUND_ASSET = require('../../../assets/sounds/send_message.mp3');
 const RECEIVE_SOUND_ASSET = require('../../../assets/sounds/receive_message.mp3');
 
 /**
- * Production-ready, thread-safe chat sound engine.
- * Solves Android JNI MediaPlayer/ExoPlayer concurrency crashes, race conditions,
- * state leaks, background execution violations, and unhandled promise rejections.
+ * Modern, thread-safe, scalable chat sound engine for Expo 57 & React Native 0.86 New Architecture.
+ * Replaces legacy expo-av with TurboModule expo-audio.
+ * Features:
+ * - Lazy initialization (zero overhead or native calls during app cold launch)
+ * - Async mutex serialization (eliminates JNI concurrency crashes)
+ * - 5-minute TTL deduplication (prevents duplicate sounds across socket and push listeners)
+ * - Safe haptic feedback integration
+ * - Total error containment (guarantees 0 unhandled promise rejections or native crashes)
  */
 class ChatSoundService {
-  private sendSound: Audio.Sound | null = null;
-  private receiveSound: Audio.Sound | null = null;
+  private sendPlayer: AudioPlayer | null = null;
+  private receivePlayer: AudioPlayer | null = null;
   private isAudioModeConfigured = false;
   private isPreloaded = false;
   private isEnabled = true;
-  private isPreloading = false;
+  private isInitializing = false;
 
   // Web HTML5 Audio elements
   private webSendAudio: HTMLAudioElement | null = null;
   private webReceiveAudio: HTMLAudioElement | null = null;
 
-  // Execution Queue (Async Mutex) to serialize native playback and prevent JNI races
+  // Execution Queue (Async Mutex) to serialize playback and prevent JNI collisions
   private playbackQueue: Promise<void> = Promise.resolve();
 
   // Deduplication & Throttling
   private playedMessageIds = new Map<string, number>(); // messageId -> timestamp
   private lastPlayedTime = 0;
-  private readonly THROTTLE_MS = 250;
+  private readonly THROTTLE_MS = 200;
   private readonly DEDUP_TTL_MS = 1000 * 60 * 5; // 5 minutes TTL
   private readonly MAX_DEDUP_CACHE = 200;
 
@@ -39,13 +45,10 @@ class ChatSoundService {
     if (this.isAudioModeConfigured || Platform.OS === 'web') return;
 
     try {
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: false,
-        staysActiveInBackground: false,
-        shouldDuckAndroid: true,
-        interruptionModeAndroid: InterruptionModeAndroid.DuckOthers,
-        interruptionModeIOS: InterruptionModeIOS.MixWithOthers,
-        playThroughEarpieceAndroid: false,
+      await setAudioModeAsync({
+        playsInSilentMode: false,
+        shouldPlayInBackground: false,
+        interruptionMode: 'mixWithOthers',
       });
       this.isAudioModeConfigured = true;
     } catch (error) {
@@ -56,11 +59,12 @@ class ChatSoundService {
   }
 
   /**
-   * Thread-safe preloading of sound assets into memory for 0ms instant playback.
+   * Safe on-demand preloading of sound assets into memory for instant playback.
+   * Called only when entering chat screen or when first sound is played.
    */
   public async ensurePreloaded(): Promise<void> {
-    if (this.isPreloaded || this.isPreloading) return;
-    this.isPreloading = true;
+    if (this.isPreloaded || this.isInitializing) return;
+    this.isInitializing = true;
 
     try {
       if (Platform.OS === 'web') {
@@ -78,36 +82,28 @@ class ChatSoundService {
 
       await this.configureAudioMode();
 
-      // Preload Send Sound safely
-      if (!this.sendSound) {
+      // Preload Send Sound Player
+      if (!this.sendPlayer) {
         try {
-          const { sound: sendObj } = await Audio.Sound.createAsync(
-            SEND_SOUND_ASSET,
-            { shouldPlay: false, volume: 0.85 },
-            undefined,
-            false
-          );
-          this.sendSound = sendObj;
+          const player = createAudioPlayer(SEND_SOUND_ASSET);
+          player.volume = 0.85;
+          this.sendPlayer = player;
         } catch (e) {
           if (__DEV__) {
-            console.warn('[ChatSoundService] Send sound preload skipped:', e);
+            console.warn('[ChatSoundService] Send player creation notice:', e);
           }
         }
       }
 
-      // Preload Receive Sound safely
-      if (!this.receiveSound) {
+      // Preload Receive Sound Player
+      if (!this.receivePlayer) {
         try {
-          const { sound: receiveObj } = await Audio.Sound.createAsync(
-            RECEIVE_SOUND_ASSET,
-            { shouldPlay: false, volume: 0.95 },
-            undefined,
-            false
-          );
-          this.receiveSound = receiveObj;
+          const player = createAudioPlayer(RECEIVE_SOUND_ASSET);
+          player.volume = 0.95;
+          this.receivePlayer = player;
         } catch (e) {
           if (__DEV__) {
-            console.warn('[ChatSoundService] Receive sound preload skipped:', e);
+            console.warn('[ChatSoundService] Receive player creation notice:', e);
           }
         }
       }
@@ -115,10 +111,10 @@ class ChatSoundService {
       this.isPreloaded = true;
     } catch (error) {
       if (__DEV__) {
-        console.warn('[ChatSoundService] Preloading sound assets failed gracefully:', error);
+        console.warn('[ChatSoundService] Preloading failed gracefully:', error);
       }
     } finally {
-      this.isPreloading = false;
+      this.isInitializing = false;
     }
   }
 
@@ -143,47 +139,51 @@ class ChatSoundService {
   }
 
   /**
-   * Helper to safely play a Sound instance with auto-rewind and recovery.
+   * Helper to safely play an AudioPlayer with seek-to-start and auto-recovery.
    */
-  private async safePlaySound(
-    soundRef: 'sendSound' | 'receiveSound',
+  private async safePlayPlayer(
+    playerType: 'send' | 'receive',
     asset: any,
     volume: number
   ): Promise<void> {
-    let sound = this[soundRef];
+    const playerKey = playerType === 'send' ? 'sendPlayer' : 'receivePlayer';
+    let player = this[playerKey];
 
-    // 1. If player already exists, check status and replay
-    if (sound) {
+    // 1. If player already exists, rewind and play
+    if (player) {
       try {
-        const status: AVPlaybackStatus = await sound.getStatusAsync();
-        if (status.isLoaded) {
-          await sound.setPositionAsync(0);
-          await sound.setVolumeAsync(volume);
-          await sound.playAsync();
-          return;
-        }
+        await player.seekTo(0);
+        player.volume = volume;
+        player.play();
+        return;
       } catch {
-        // Status check or play failed, release reference safely
+        // Player state corrupted or released, recreate
+        try {
+          player.release();
+        } catch {}
+        this[playerKey] = null;
       }
-
-      try {
-        await sound.unloadAsync();
-      } catch {}
-      this[soundRef] = null;
     }
 
-    // 2. Fresh instantiation if needed
+    // 2. Create fresh player instance on demand
     try {
       await this.configureAudioMode();
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        asset,
-        { shouldPlay: true, volume }
-      );
-      this[soundRef] = newSound;
+      const newPlayer = createAudioPlayer(asset);
+      newPlayer.volume = volume;
+      newPlayer.play();
+      this[playerKey] = newPlayer;
     } catch (err) {
       if (__DEV__) {
-        console.warn(`[ChatSoundService] Error creating sound instance for ${soundRef}:`, err);
+        console.warn(`[ChatSoundService] Error playing ${playerType} sound:`, err);
       }
+      // Haptic fallback if native audio hardware is restricted
+      try {
+        Haptics.impactAsync(
+          playerType === 'send'
+            ? Haptics.ImpactFeedbackStyle.Light
+            : Haptics.ImpactFeedbackStyle.Medium
+        ).catch(() => {});
+      } catch {}
     }
   }
 
@@ -225,7 +225,7 @@ class ChatSoundService {
     }
 
     return this.enqueueTask(async () => {
-      await this.safePlaySound('sendSound', SEND_SOUND_ASSET, 0.85);
+      await this.safePlayPlayer('send', SEND_SOUND_ASSET, 0.85);
     }) as Promise<void>;
   }
 
@@ -278,7 +278,7 @@ class ChatSoundService {
     }
 
     return this.enqueueTask(async () => {
-      await this.safePlaySound('receiveSound', RECEIVE_SOUND_ASSET, 0.95);
+      await this.safePlayPlayer('receive', RECEIVE_SOUND_ASSET, 0.95);
     }) as Promise<void>;
   }
 
@@ -287,7 +287,6 @@ class ChatSoundService {
    */
   private recordPlayedMessageId(id: string, timestamp: number): void {
     if (this.playedMessageIds.size >= this.MAX_DEDUP_CACHE) {
-      // Remove oldest or expired items
       const cutoff = timestamp - this.DEDUP_TTL_MS;
       for (const [key, time] of this.playedMessageIds.entries()) {
         if (time < cutoff || this.playedMessageIds.size >= this.MAX_DEDUP_CACHE) {
@@ -299,18 +298,18 @@ class ChatSoundService {
   }
 
   /**
-   * Unloads sound objects on application shutdown to prevent native memory leaks.
+   * Releases player objects on shutdown to free native memory.
    */
   public async unload(): Promise<void> {
     return this.enqueueTask(async () => {
       try {
-        if (this.sendSound) {
-          await this.sendSound.unloadAsync();
-          this.sendSound = null;
+        if (this.sendPlayer) {
+          this.sendPlayer.release();
+          this.sendPlayer = null;
         }
-        if (this.receiveSound) {
-          await this.receiveSound.unloadAsync();
-          this.receiveSound = null;
+        if (this.receivePlayer) {
+          this.receivePlayer.release();
+          this.receivePlayer = null;
         }
         this.isPreloaded = false;
         this.isAudioModeConfigured = false;

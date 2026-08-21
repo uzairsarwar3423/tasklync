@@ -3,7 +3,6 @@ import {
   NotificationFeedResponse,
   CategoryPreference,
   UpdatePreferencePayload,
-  NotificationItem,
 } from '../../types/notification.types';
 
 export const notificationApi = {

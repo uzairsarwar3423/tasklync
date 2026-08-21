@@ -72,6 +72,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         icon: './assets/images/icon.png',
         color: '#16A34A',
+        defaultChannel: 'tasklync_general_notifications',
         sounds: [
           './assets/sounds/receive_message.mp3',
           './assets/sounds/send_message.mp3',
