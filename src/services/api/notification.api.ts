@@ -48,10 +48,43 @@ export const notificationApi = {
   },
 
   /**
+   * Fetch Isolated Unread Count
+   * GET /api/v1/notifications/unread-count or fallback to GET /notifications?limit=1
+   */
+  getUnreadCount: async (): Promise<number> => {
+    try {
+      // 1. Try dedicated unread-count endpoint
+      const res = await apiClient.get<any>('/notifications/unread-count');
+      const count =
+        res.data?.data?.unread_count ??
+        res.data?.unread_count ??
+        res.data?.data?.count ??
+        res.data?.count;
+      if (typeof count === 'number') {
+        return Math.max(0, count);
+      }
+    } catch {
+      // Fallback: Query page 1 metadata with limit 1
+      try {
+        const fallbackRes = await apiClient.get<any>('/notifications', {
+          params: { limit: 1 },
+        });
+        const unreadCount = fallbackRes.data?.meta?.unread_count;
+        if (typeof unreadCount === 'number') {
+          return Math.max(0, unreadCount);
+        }
+      } catch {
+        return 0;
+      }
+    }
+    return 0;
+  },
+
+  /**
    * 3.2 Mark Single Notification Read
    * PATCH /api/v1/notifications/:id/read
    */
-  markAsRead: async (id: string): Promise<boolean> => {
+  markRead: async (id: string): Promise<boolean> => {
     try {
       const response = await apiClient.patch<any>(`/notifications/${id}/read`);
       return response.data?.success ?? true;
@@ -61,15 +94,43 @@ export const notificationApi = {
   },
 
   /**
+   * Alias for backward compatibility
+   */
+  markAsRead: async (id: string): Promise<boolean> => {
+    return notificationApi.markRead(id);
+  },
+
+  /**
    * 3.3 Mark All Notifications Read
    * PATCH /api/v1/notifications/read-all
    */
-  markAllAsRead: async (): Promise<number> => {
+  markAllRead: async (): Promise<number> => {
     try {
       const response = await apiClient.patch<any>('/notifications/read-all');
       return response.data?.data?.marked_read ?? response.data?.marked_read ?? 0;
     } catch {
       return 0;
+    }
+  },
+
+  /**
+   * Alias for backward compatibility
+   */
+  markAllAsRead: async (): Promise<number> => {
+    return notificationApi.markAllRead();
+  },
+
+  /**
+   * Delete or Dismiss a notification
+   * DELETE /api/v1/notifications/:id
+   */
+  deleteNotification: async (id: string): Promise<boolean> => {
+    try {
+      const response = await apiClient.delete<any>(`/notifications/${id}`);
+      return response.data?.success ?? true;
+    } catch (_error) {
+      // If server does not have DELETE route or returns 404/405, allow client-side dismissal
+      return true;
     }
   },
 

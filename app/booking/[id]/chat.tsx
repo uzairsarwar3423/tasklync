@@ -252,7 +252,11 @@ export default function BookingChatScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+    >
       {/* Fixed Chat Header with Dynamic Online Presence & Worker Details */}
       <ChatHeader
         workerName={resolvedWorkerName}
@@ -264,63 +268,58 @@ export default function BookingChatScreen() {
       />
 
       {/* Main Conversation Container with Inverted FlatList */}
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-      >
-        <View style={styles.flex}>
-          {isLoading ? (
-            <ChatSkeleton />
-          ) : (
-            <FlatList
-              ref={flatListRef}
-              data={renderItems}
-              keyExtractor={(item) => item.id}
-              renderItem={renderMessageItem}
-              inverted
-              contentContainerStyle={styles.listContent}
-              onEndReached={loadMore}
-              onEndReachedThreshold={0.3}
-              showsVerticalScrollIndicator={false}
-              keyboardDismissMode="interactive"
-              initialNumToRender={20}
-              maxToRenderPerBatch={15}
-              updateCellsBatchingPeriod={50}
-              windowSize={11}
-              removeClippedSubviews={Platform.OS === 'android'}
-              onScroll={handleScroll}
-              scrollEventThrottle={16}
-            />
-          )}
-
-          {/* New Messages Pill Banner (Position-aware overlay above bottom bar) */}
-          <NewMessagesBanner
-            count={unreadScrolledCount}
-            visible={unreadScrolledCount > 0 && !isAtBottom}
-            onPress={handleScrollToBottom}
-          />
-        </View>
-
-        {/* Real-time Typing Indicator (above input/archived bar) */}
-        {isWorkerTyping && <TypingIndicator />}
-
-        {/* Positional Consistency: Replace ChatInput with ArchivedBanner when terminal */}
-        {isArchived ? (
-          <ArchivedBanner status={booking?.status} />
+      <View style={styles.flex}>
+        {isLoading ? (
+          <ChatSkeleton />
         ) : (
-          <ChatInput
-            onSend={handleSend}
-            onTyping={notifyTyping}
-            onStopTyping={stopTypingImmediately}
-            disabled={isLoading || isArchived}
+          <FlatList
+            ref={flatListRef}
+            data={renderItems}
+            keyExtractor={(item) => item.id}
+            renderItem={renderMessageItem}
+            inverted
+            contentContainerStyle={styles.listContent}
+            onEndReached={loadMore}
+            onEndReachedThreshold={0.3}
+            showsVerticalScrollIndicator={false}
+            keyboardDismissMode="interactive"
+            keyboardShouldPersistTaps="handled"
+            initialNumToRender={20}
+            maxToRenderPerBatch={15}
+            updateCellsBatchingPeriod={50}
+            windowSize={11}
+            removeClippedSubviews={Platform.OS === 'android'}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
           />
         )}
-      </KeyboardAvoidingView>
+
+        {/* New Messages Pill Banner (Position-aware overlay above bottom bar) */}
+        <NewMessagesBanner
+          count={unreadScrolledCount}
+          visible={unreadScrolledCount > 0 && !isAtBottom}
+          onPress={handleScrollToBottom}
+        />
+      </View>
+
+      {/* Real-time Typing Indicator (above input/archived bar) */}
+      {isWorkerTyping && <TypingIndicator />}
+
+      {/* Positional Consistency: Replace ChatInput with ArchivedBanner when terminal */}
+      {isArchived ? (
+        <ArchivedBanner status={booking?.status} />
+      ) : (
+        <ChatInput
+          onSend={handleSend}
+          onTyping={notifyTyping}
+          onStopTyping={stopTypingImmediately}
+          disabled={isLoading || isArchived}
+        />
+      )}
 
       {/* Native-style Long-Press Copy Context Menu & Global Toast */}
       <MessageContextMenu ref={contextMenuRef} />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 

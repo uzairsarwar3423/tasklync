@@ -24,6 +24,7 @@ import {
   AlertCircle,
   User,
   MessageSquare,
+  FileText,
 } from 'lucide-react-native';
 import { palette, colors } from '../../src/design';
 import { useBookingDetails } from '../../src/hooks/useBookingDetails';
@@ -31,6 +32,7 @@ import { useBookingTrack } from '../../src/hooks/useBookingTrack';
 import { useCancelBooking } from '../../src/hooks/useCancelBooking';
 import { useConfirmCompletion } from '../../src/hooks/useConfirmCompletion';
 import { useBookingDispute } from '../../src/hooks/useBookingDispute';
+import { BookingCancelModal } from '../../src/components/booking/BookingCancelModal';
 import { BookingStatus } from '../../src/types/booking.types';
 
 const STATUS_STEPS: BookingStatus[] = ['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED_BY_WORKER', 'COMPLETED'];
@@ -344,6 +346,17 @@ export default function BookingDetailsScreen() {
 
           {/* Dynamic Actions based on State Machine (Section 3 Spec) */}
           <View style={styles.actionsSection}>
+            {/* Invoice & Receipt Button (Available for completed or in-progress bookings) */}
+            {(currentStatus === 'COMPLETED' || currentStatus === 'AUTO_COMPLETED' || currentStatus === 'RESOLVED') && (
+              <TouchableOpacity
+                style={[styles.confirmBtn, { backgroundColor: colors.primaryDark, marginBottom: 12 }]}
+                onPress={() => router.push(`/booking/${booking.id}/invoice` as any)}
+              >
+                <FileText size={20} color={palette.white} />
+                <Text style={styles.confirmBtnText}>View Official Invoice & Receipt</Text>
+              </TouchableOpacity>
+            )}
+
             {/* Cancel Button (valid during PENDING or ACCEPTED) */}
             {(currentStatus === 'PENDING' || currentStatus === 'ACCEPTED') && (
               <TouchableOpacity
@@ -372,7 +385,7 @@ export default function BookingDetailsScreen() {
 
                 <TouchableOpacity
                   style={styles.disputeBtn}
-                  onPress={() => setDisputeModalVisible(true)}
+                  onPress={() => router.push(`/booking/${booking.id}/dispute` as any)}
                 >
                   <AlertCircle size={20} color="#EA580C" />
                   <Text style={styles.disputeBtnText}>Report Issue / Open Dispute</Text>
@@ -382,42 +395,16 @@ export default function BookingDetailsScreen() {
           </View>
         </ScrollView>
 
-        {/* Modal 1: Cancel Booking Modal */}
-        <Modal visible={cancelModalVisible} transparent animationType="slide">
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalCard}>
-              <Text style={styles.modalTitle}>Cancel Booking</Text>
-              <Text style={styles.modalSubtitle}>
-                Please enter a reason for cancelling. (Cancellation policy apply per Section 5)
-              </Text>
-
-              <TextInput
-                style={styles.textInput}
-                placeholder="Reason for cancellation..."
-                value={cancelReason}
-                onChangeText={setCancelReason}
-                multiline
-                numberOfLines={3}
-              />
-
-              <View style={styles.modalActions}>
-                <TouchableOpacity
-                  style={styles.modalCancelBtn}
-                  onPress={() => setCancelModalVisible(false)}
-                >
-                  <Text style={styles.modalCancelBtnText}>Back</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.modalSubmitBtn}
-                  onPress={handleConfirmCancel}
-                  disabled={isCancelling}
-                >
-                  <Text style={styles.modalSubmitBtnText}>Confirm Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        </Modal>
+        {/* Modal 1: Cancel Booking Modal with Dynamic Refund Policy */}
+        <BookingCancelModal
+          visible={cancelModalVisible}
+          booking={booking}
+          onClose={() => setCancelModalVisible(false)}
+          onCancelled={() => {
+            setCancelModalVisible(false);
+            refetch();
+          }}
+        />
 
         {/* Modal 2: Dispute Booking Modal */}
         <Modal visible={disputeModalVisible} transparent animationType="slide">

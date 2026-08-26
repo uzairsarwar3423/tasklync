@@ -4,7 +4,7 @@ import { FlashList } from '@shopify/flash-list';
 import { BookingAddress, useBookingDraftStore } from '../../store/bookingDraft.store';
 import { useAddresses } from '../../hooks/useAddresses';
 import { AddressCard } from './AddressCard';
-import { AddressSkeletonCard } from './AddressSkeletonCard';
+import { AddressCardSkeleton } from './AddressCardSkeleton';
 import { colors, palette, fontFamily } from '../../design';
 
 export interface AddressListProps {
@@ -22,8 +22,18 @@ export const AddressList: React.FC<AddressListProps> = ({
   // Auto-select default address if no address is selected yet
   useEffect(() => {
     if (!selectedAddressId && addresses.length > 0) {
-      const defaultAddr = addresses.find((a) => a.isDefault) || addresses[0];
-      setAddressStore(defaultAddr);
+      const defaultAddr = addresses.find((a) => a.is_default) || addresses[0];
+      if (defaultAddr) {
+        setAddressStore({
+          id: defaultAddr.id,
+          label: defaultAddr.label,
+          street: defaultAddr.address_line,
+          city: defaultAddr.city || 'Lahore',
+          latitude: defaultAddr.lat,
+          longitude: defaultAddr.lng,
+          isDefault: Boolean(defaultAddr.is_default),
+        });
+      }
     }
   }, [addresses, selectedAddressId, setAddressStore]);
 
@@ -31,7 +41,7 @@ export const AddressList: React.FC<AddressListProps> = ({
     return (
       <View style={styles.container}>
         {Array.from({ length: 2 }).map((_, idx) => (
-          <AddressSkeletonCard key={`addr-skel-${idx}`} />
+          <AddressCardSkeleton key={`addr-skel-${idx}`} delayMs={0} />
         ))}
       </View>
     );
@@ -50,14 +60,26 @@ export const AddressList: React.FC<AddressListProps> = ({
     <View style={styles.container}>
       <FlashList
         data={addresses}
-        estimatedItemSize={88}
+        estimatedItemSize={76}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <AddressCard
-            address={item}
-            isSelected={selectedAddressId === item.id}
-            onSelect={onSelectAddress}
-          />
+          <View style={styles.cardItemWrap}>
+            <AddressCard
+              address={item}
+              isSelected={selectedAddressId === item.id}
+              onSelect={(selected) => {
+                onSelectAddress({
+                  id: selected.id,
+                  label: selected.label,
+                  street: selected.address_line,
+                  city: selected.city || 'Lahore',
+                  latitude: selected.lat,
+                  longitude: selected.lng,
+                  isDefault: Boolean(selected.is_default),
+                });
+              }}
+            />
+          </View>
         )}
         scrollEnabled={false}
       />
@@ -68,6 +90,9 @@ export const AddressList: React.FC<AddressListProps> = ({
 const styles = StyleSheet.create({
   container: {
     width: '100%',
+  },
+  cardItemWrap: {
+    marginBottom: 10,
   },
   emptyContainer: {
     padding: 20,

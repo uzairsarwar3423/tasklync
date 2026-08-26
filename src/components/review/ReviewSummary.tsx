@@ -1,10 +1,10 @@
-import React, { useRef, useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, ViewStyle, Pressable } from 'react-native';
 import { ReviewSummaryData } from '../../types/review.types';
 import { ReviewStarRow } from './ReviewStarRow';
 import { RatingBarRow } from './RatingBarRow';
-import { colors } from '@design/colors';
-import { fontFamily as fonts } from '@design/typography';
+import { colors } from '../../design/colors';
+import { fontFamily as fonts } from '../../design/typography';
 
 interface ReviewSummaryProps {
   summary?: ReviewSummaryData | undefined;
@@ -39,136 +39,141 @@ export const ReviewSummary = ({
         <View style={styles.compactLeft}>
           <Text style={styles.compactRatingText}>{summary.avgRating.toFixed(1)}</Text>
           <ReviewStarRow rating={summary.avgRating} size="xs" />
-          <Text style={styles.compactCountText}>({summary.totalReviews})</Text>
         </View>
-        {onViewAll && (
-          <Pressable onPress={onViewAll} hitSlop={12}>
-            <Text style={styles.viewAllText}>See all {summary.totalReviews} →</Text>
-          </Pressable>
-        )}
+        <Text style={styles.compactTotalText}>
+          ({summary.totalReviews} reviews)
+        </Text>
       </View>
     );
   }
 
-  const shouldAnimate = animated || hasAnimated;
-
   return (
     <View style={[styles.container, style]} onLayout={onLayout}>
-      {/* Header */}
-      <View style={styles.headerRow}>
-        <Text style={styles.headerTitle}>Reviews</Text>
-        {onViewAll && summary.totalReviews > 0 && (
-          <Pressable onPress={onViewAll} hitSlop={12}>
-            <Text style={styles.viewAllText}>See all {summary.totalReviews} →</Text>
-          </Pressable>
-        )}
+      {/* 1. Top Aggregate Block */}
+      <View style={styles.topBlock}>
+        <View style={styles.ratingScoreCol}>
+          <Text style={styles.largeScoreText}>{summary.avgRating.toFixed(1)}</Text>
+          <ReviewStarRow rating={summary.avgRating} size="sm" />
+          <Text style={styles.totalReviewsText}>
+            Based on {summary.totalReviews} reviews
+          </Text>
+        </View>
+
+        {/* 2. Subcategory Rating Bars */}
+        <View style={styles.barsCol}>
+          {summary.avgPunctuality !== null && (
+            <RatingBarRow
+              label="Punctuality"
+              value={summary.avgPunctuality}
+              animated={animated}
+              animationDelay={0}
+            />
+          )}
+          {summary.avgQuality !== null && (
+            <RatingBarRow
+              label="Quality"
+              value={summary.avgQuality}
+              animated={animated}
+              animationDelay={60}
+            />
+          )}
+          {summary.avgCommunication !== null && (
+            <RatingBarRow
+              label="Communication"
+              value={summary.avgCommunication}
+              animated={animated}
+              animationDelay={120}
+            />
+          )}
+          {summary.avgValue !== null && (
+            <RatingBarRow
+              label="Value"
+              value={summary.avgValue}
+              animated={animated}
+              animationDelay={180}
+            />
+          )}
+        </View>
       </View>
 
-      {/* Overall Block */}
-      <View style={styles.overallBlock}>
-        <Text style={styles.overallNumber}>{summary.avgRating.toFixed(1)}</Text>
-        <ReviewStarRow rating={summary.avgRating} size="md" />
-        <Text style={styles.overallCount}>({summary.totalReviews} reviews)</Text>
-      </View>
-
-      <View style={styles.divider} />
-
-      {/* Breakdown */}
-      <View style={styles.breakdownBlock}>
-        <RatingBarRow
-          label="Punctuality"
-          value={summary.avgPunctuality}
-          animated={shouldAnimate}
-          animationDelay={0}
-        />
-        <RatingBarRow
-          label="Quality"
-          value={summary.avgQuality}
-          animated={shouldAnimate}
-          animationDelay={80}
-        />
-        <RatingBarRow
-          label="Communication"
-          value={summary.avgCommunication}
-          animated={shouldAnimate}
-          animationDelay={160}
-        />
-        <RatingBarRow
-          label="Value"
-          value={summary.avgValue}
-          animated={shouldAnimate}
-          animationDelay={240}
-        />
-      </View>
+      {/* 3. View All Button */}
+      {onViewAll && (
+        <Pressable onPress={onViewAll} hitSlop={8} style={styles.viewAllButton}>
+          <Text style={styles.viewAllText}>
+            See all {summary.totalReviews} reviews
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    paddingVertical: 16,
+    backgroundColor: colors.bgCard,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  topBlock: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  ratingScoreCol: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 100,
+  },
+  largeScoreText: {
+    fontFamily: fonts.poppins.bold,
+    fontSize: 32,
+    color: colors.textPrimary,
+    lineHeight: 38,
+  },
+  totalReviewsText: {
+    fontFamily: fonts.jakarta.regular,
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  barsCol: {
+    flex: 1,
+    gap: 6,
   },
   compactContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    height: 56,
-    paddingHorizontal: 16,
-    backgroundColor: colors.bgCard,
+    gap: 6,
   },
   compactLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 4,
   },
   compactRatingText: {
-    fontFamily: fonts.inter.bold,
-    fontSize: 16,
+    fontFamily: fonts.poppins.bold,
+    fontSize: 14,
     color: colors.textPrimary,
   },
-  compactCountText: {
+  compactTotalText: {
     fontFamily: fonts.jakarta.regular,
-    fontSize: 14,
+    fontSize: 12,
     color: colors.textMuted,
   },
-  headerRow: {
-    flexDirection: 'row',
+  viewAllButton: {
+    marginTop: 14,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  headerTitle: {
-    fontFamily: fonts.poppins.semiBold,
-    fontSize: 16,
-    color: colors.textPrimary,
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
   },
   viewAllText: {
     fontFamily: fonts.jakarta.semiBold,
     fontSize: 13,
-    color: colors.primary,
-  },
-  overallBlock: {
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  overallNumber: {
-    fontFamily: fonts.inter.bold,
-    fontSize: 36,
-    color: colors.textPrimary,
-    marginBottom: 4,
-  },
-  overallCount: {
-    fontFamily: fonts.jakarta.regular,
-    fontSize: 14,
-    color: colors.textMuted,
-    marginTop: 4,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginVertical: 16,
-  },
-  breakdownBlock: {
-    gap: 4,
+    color: colors.primaryDark,
   },
 });

@@ -1,16 +1,15 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { View, StyleSheet, Text, ViewStyle, Pressable } from 'react-native';
-import Animated, { useAnimatedStyle, withSpring, useSharedValue } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { WorkerReview } from '../../types/review.types';
 import { ReviewMetaRow } from './ReviewMetaRow';
 import { ReviewStarRow } from './ReviewStarRow';
 import { ReviewReplyBubble } from './ReviewReplyBubble';
 import { Chip } from '../ui/Chip';
-import { colors } from '@design/colors';
-import { fontFamily as fonts } from '@design/typography';
-import { radius } from '@design/radius';
-import { shadows } from '@design/shadows';
+import { colors } from '../../design/colors';
+import { fontFamily as fonts } from '../../design/typography';
+import { radius } from '../../design/radius';
+import { shadows } from '../../design/shadows';
 
 interface ReviewCardProps {
   review: WorkerReview;
@@ -19,12 +18,6 @@ interface ReviewCardProps {
   showWorkInfo?: boolean;
   style?: ViewStyle;
 }
-
-const springConfig = {
-  damping: 20,
-  stiffness: 90,
-  mass: 1,
-};
 
 export const ReviewCard = ({
   review,
@@ -38,142 +31,119 @@ export const ReviewCard = ({
 
   const toggleExpand = () => {
     if (!isTruncated && !isExpanded) return;
-    Haptics.selectionAsync();
-    setIsExpanded(!isExpanded);
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch {}
+    setIsExpanded((prev) => !prev);
+  };
+
+  const handleTextLayout = (e: any) => {
+    if (e.nativeEvent.lines.length > maxCommentLines) {
+      setIsTruncated(true);
+    }
   };
 
   return (
-    <Pressable 
-      onPress={toggleExpand} 
-      disabled={!isTruncated && !isExpanded}
-      style={({ pressed }) => [
-        styles.container, 
-        style,
-        pressed && (isTruncated || isExpanded) ? styles.pressed : null
-      ]}
-    >
+    <View style={[styles.card, style]}>
+      {/* 1. Review Meta (Avatar, Name, Verified, Date) */}
       <ReviewMetaRow
         avatarUrl={review.reviewerAvatar}
         reviewerName={review.reviewerName}
         date={review.createdAt}
         isVerified={review.isVerified}
-        style={styles.metaRow}
+        size="md"
       />
 
-      <View style={styles.starsRow}>
-        <ReviewStarRow rating={review.rating} size="sm" />
-        {showWorkInfo && review.bookingId && (
-          // In a real app we'd resolve the bookingId to a service name.
-          // For now just showing a static text to match the design or assuming it's available.
-          <Text style={styles.workInfoText} numberOfLines={1}>
-            Service Booked
-          </Text>
-        )}
-      </View>
+      {/* 2. Rating Star Breakdown */}
+      <ReviewStarRow
+        rating={review.rating}
+        punctuality={review.punctuality}
+        quality={review.quality}
+        communication={review.communication}
+        value={review.value}
+        style={styles.starRow}
+      />
 
-      {review.comment ? (
+      {/* 3. Review Comment */}
+      {review.comment && (
         <View style={styles.commentContainer}>
           <Text
             style={styles.commentText}
             numberOfLines={isExpanded ? undefined : maxCommentLines}
-            onTextLayout={(e) => {
-              if (e.nativeEvent.lines.length > maxCommentLines) {
-                setIsTruncated(true);
-              }
-            }}
+            onTextLayout={!isTruncated ? handleTextLayout : undefined}
           >
             {review.comment}
           </Text>
+
           {(isTruncated || isExpanded) && (
-            <Text style={styles.readMoreText}>
-              {isExpanded ? 'Show less ↑' : 'Read more →'}
-            </Text>
+            <Pressable
+              onPress={toggleExpand}
+              hitSlop={8}
+              style={styles.readMoreButton}
+            >
+              <Text style={styles.readMoreText}>
+                {isExpanded ? 'Show less' : 'Read more'}
+              </Text>
+            </Pressable>
           )}
         </View>
-      ) : (
-        <Text style={styles.emptyCommentText}>
-          No written review
-        </Text>
       )}
 
-      {showWorkInfo && (
-        <View style={styles.serviceTagContainer}>
-           <Chip 
-             label="Service Category" 
-             variant="filter" // or tag if it exists in Day 6
-             onPress={() => {}} 
-             style={styles.serviceTag}
-           />
+      {/* 4. Optional Service Info Chip */}
+      {showWorkInfo && review.serviceName && (
+        <View style={styles.serviceChipContainer}>
+          <Chip label={review.serviceName} size="sm" variant="tag" />
         </View>
       )}
 
+      {/* 5. Worker Reply Bubble */}
       {showReply && review.reply && (
         <ReviewReplyBubble
           reply={review.reply}
-          workerName="Worker" // Real app would use context or prop
           repliedAt={review.repliedAt}
+          workerName="Service Provider"
           style={styles.replyBubble}
         />
       )}
-    </Pressable>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  card: {
     backgroundColor: colors.bgCard,
-    borderRadius: radius.md,
-    padding: 14,
-    marginBottom: 10,
-    ...shadows.xs,
+    borderRadius: radius.lg,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.sm,
   },
-  pressed: {
-    opacity: 0.9,
-  },
-  metaRow: {
-    marginBottom: 10,
-  },
-  starsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  workInfoText: {
-    fontFamily: fonts.jakarta.regular,
-    fontSize: 12,
-    color: colors.textMuted,
+  starRow: {
+    marginTop: 12,
   },
   commentContainer: {
-    marginTop: 4,
+    marginTop: 10,
   },
   commentText: {
     fontFamily: fonts.jakarta.regular,
     fontSize: 14,
-    color: colors.textSecondary,
-    lineHeight: 21,
+    color: colors.textPrimary,
+    lineHeight: 22,
+  },
+  readMoreButton: {
+    marginTop: 4,
+    alignSelf: 'flex-start',
   },
   readMoreText: {
     fontFamily: fonts.jakarta.semiBold,
     fontSize: 13,
-    color: colors.primary,
-    marginTop: 4,
+    color: colors.primaryDark,
   },
-  emptyCommentText: {
-    fontFamily: fonts.jakarta.regular,
-    fontSize: 13,
-    color: colors.textMuted,
-    fontStyle: 'italic',
-    marginTop: 4,
-  },
-  serviceTagContainer: {
-    marginTop: 8,
+  serviceChipContainer: {
+    marginTop: 12,
     flexDirection: 'row',
   },
-  serviceTag: {
-    transform: [{ scale: 0.9 }],
-  },
   replyBubble: {
-    marginTop: 10,
+    marginTop: 14,
   },
 });

@@ -1,215 +1,200 @@
-import React, { useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  withSpring,
   withTiming,
+  interpolateColor,
 } from 'react-native-reanimated';
+import { PaymentMethod } from '../../types/payment.types';
+import { CardBrandIcon } from './CardBrandIcon';
+import { colors, palette, fontFamily, radius, spacing, shadows } from '../../design';
 import * as Haptics from 'expo-haptics';
-import { CreditCard, Check, Banknote, Smartphone } from 'lucide-react-native';
-import { SavedPaymentMethod } from '../../services/api/payment.api';
-import { AddressDefaultBadge } from '../address/AddressDefaultBadge';
-import { colors, palette, fontFamily } from '../../design';
 
 export interface PaymentMethodCardProps {
-  method: SavedPaymentMethod;
-  isSelected: boolean;
-  onSelect: (method: SavedPaymentMethod) => void;
+  method: PaymentMethod;
+  isNewlyAdded?: boolean;
+  onSetDefault?: (id: string) => void;
 }
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
   method,
-  isSelected,
-  onSelect,
+  isNewlyAdded = false,
+  onSetDefault,
 }) => {
-  const { id, type, brand, last4, expMonth, expYear, isDefault, holderName, title, subtitle } = method;
+  const { id, type, brand, title, subtitle, account_number, last4, exp_month, exp_year, is_default } = method;
 
-  const scale = useSharedValue(1);
+  // Highlight animation on freshly added item: 400ms transition from green-50 to white
+  const highlightProgress = useSharedValue(isNewlyAdded ? 1 : 0);
 
   useEffect(() => {
-    if (isSelected) {
-      scale.value = withSpring(1.02, { damping: 14, stiffness: 220 });
-    } else {
-      scale.value = withTiming(1.0, { duration: 150 });
+    if (isNewlyAdded) {
+      highlightProgress.value = 1;
+      highlightProgress.value = withTiming(0, { duration: 400 });
     }
-  }, [isSelected, scale]);
+  }, [isNewlyAdded, highlightProgress]);
 
-  const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onSelect(method);
+  const animatedStyle = useAnimatedStyle(() => {
+    if (!isNewlyAdded) return {};
+    const backgroundColor = interpolateColor(
+      highlightProgress.value,
+      [0, 1],
+      ['#FFFFFF', palette.green50]
+    );
+    return { backgroundColor };
+  });
+
+  const handleSetDefault = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    if (onSetDefault) {
+      onSetDefault(id);
+    }
   };
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
+  // Determine line 1 text (Inter Medium 15px)
+  const line1Text =
+    account_number ||
+    (last4 ? `•••• ${last4}` : title);
 
-  const isCash = id === 'CASH' || type === 'cash';
-  const isWallet = id === 'JAZZCASH' || type === 'wallet';
+  // Determine line 2 text (Inter Regular 13px or Jakarta Regular 13px)
+  const line2Text =
+    type === 'cash'
+      ? 'Pay directly after service completion'
+      : type === 'wallet'
+      ? `${brand === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'} Direct Account`
+      : exp_month && exp_year
+      ? `Expires ${String(exp_month).padStart(2, '0')}/${String(exp_year).slice(-2)}`
+      : subtitle;
 
-  const cardTitle = title
-    ? title
-    : isCash
-    ? 'Cash on Delivery'
-    : isWallet
-    ? 'JazzCash / EasyPaisa'
-    : `${(brand || 'Card').toUpperCase()} •••• ${last4 || '4242'}`;
-
-  const cardSubtitle = subtitle
-    ? subtitle
-    : isCash
-    ? 'Pay directly in cash after service completion'
-    : isWallet
-    ? 'Direct mobile wallet prompt'
-    : expMonth && expYear
-    ? `Expires ${String(expMonth).padStart(2, '0')}/${String(expYear).slice(-2)}${
-        holderName ? ` • ${holderName}` : ''
-      }`
-    : 'Online Payment';
-
-  const renderIcon = () => {
-    if (isCash) {
-      return <Banknote size={22} color={isSelected ? colors.primaryDark : palette.gray600} strokeWidth={2} />;
-    }
-    if (isWallet) {
-      return <Smartphone size={22} color={isSelected ? colors.primaryDark : palette.gray600} strokeWidth={2} />;
-    }
-    return <CreditCard size={20} color={isSelected ? colors.primaryDark : palette.gray600} strokeWidth={2} />;
-  };
+  const a11yAnnouncement = `${title}, ${line2Text}, ${is_default ? 'Default payment method' : ''}`;
 
   return (
-    <AnimatedPressable
-      onPress={handlePress}
+    <Animated.View
       style={[
-        styles.card,
-        isSelected ? styles.cardSelected : styles.cardUnselected,
+        styles.cardContainer,
+        is_default ? styles.defaultBorder : styles.regularBorder,
         animatedStyle,
       ]}
-      accessibilityRole="radio"
-      accessibilityLabel={`${cardTitle} ${isSelected ? 'selected' : ''}`}
-      accessibilityState={{ selected: isSelected }}
+      accessible={true}
+      accessibilityRole="none"
+      accessibilityLabel={a11yAnnouncement}
     >
-      <View style={styles.contentRow}>
-        {/* Brand Icon Circle */}
-        <View
-          style={[
-            styles.iconCircle,
-            isSelected ? styles.iconCircleSelected : styles.iconCircleUnselected,
-          ]}
-        >
-          {renderIcon()}
-        </View>
-
-        {/* Card Details */}
-        <View style={styles.textContainer}>
-          <View style={styles.titleRow}>
-            <Text style={styles.brandTitle} numberOfLines={1}>
-              {cardTitle}
-            </Text>
-            {isDefault && <AddressDefaultBadge />}
-          </View>
-          <Text style={styles.subText} numberOfLines={2}>
-            {cardSubtitle}
-          </Text>
-        </View>
-
-        {/* Radio Circle */}
-        <View
-          style={[
-            styles.radioOuter,
-            isSelected ? styles.radioOuterSelected : styles.radioOuterUnselected,
-          ]}
-        >
-          {isSelected && (
-            <View style={styles.radioInner}>
-              <Check size={12} color={palette.white} strokeWidth={3} />
-            </View>
-          )}
-        </View>
+      {/* Left: Brand Icon */}
+      <View style={styles.iconContainer}>
+        <CardBrandIcon brand={brand} size="md" />
       </View>
-    </AnimatedPressable>
+
+      {/* Middle: Data & Label */}
+      <View style={styles.contentContainer}>
+        <Text
+          style={styles.line1}
+          numberOfLines={1}
+          maxFontSizeMultiplier={1.3}
+        >
+          {line1Text}
+        </Text>
+        <Text
+          style={styles.line2}
+          numberOfLines={1}
+          maxFontSizeMultiplier={1.3}
+        >
+          {line2Text}
+        </Text>
+      </View>
+
+      {/* Right: Default Chip or Set as Default CTA */}
+      <View style={styles.actionContainer}>
+        {is_default ? (
+          <View style={styles.defaultChip}>
+            <Text style={styles.defaultChipText} maxFontSizeMultiplier={1.2}>
+              Default
+            </Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={handleSetDefault}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            accessibilityRole="button"
+            accessibilityLabel={`Set ${title} as default payment method`}
+            style={styles.setDefaultButton}
+          >
+            <Text style={styles.setDefaultText} maxFontSizeMultiplier={1.2}>
+              Set as default
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
-  card: {
-    padding: 16,
-    borderRadius: 16,
-    backgroundColor: palette.white,
-    marginBottom: 12,
-    shadowColor: palette.gray900,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 2,
-  },
-  cardUnselected: {
-    borderWidth: 1,
-    borderColor: palette.gray200,
-    shadowOpacity: 0.04,
-  },
-  cardSelected: {
-    borderWidth: 2,
-    borderColor: colors.primary,
-    backgroundColor: palette.green50,
-    shadowOpacity: 0.1,
-  },
-  contentRow: {
+  cardContainer: {
+    height: 72,
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.bgCard,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.base,
+    ...shadows.xs,
   },
-  iconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  regularBorder: {
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  defaultBorder: {
+    borderWidth: 1.5,
+    borderColor: palette.green500,
+  },
+  iconContainer: {
+    marginRight: spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
   },
-  iconCircleUnselected: {
-    backgroundColor: palette.gray100,
-  },
-  iconCircleSelected: {
-    backgroundColor: palette.green100,
-  },
-  textContainer: {
+  contentContainer: {
     flex: 1,
-    marginRight: 12,
+    justifyContent: 'center',
+    marginRight: spacing.sm,
   },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  brandTitle: {
-    fontFamily: fontFamily.inter.bold,
+  line1: {
+    fontFamily: fontFamily.inter.semiBold,
     fontSize: 15,
     lineHeight: 20,
     color: colors.textPrimary,
+    letterSpacing: 0.1,
   },
-  subText: {
+  line2: {
     fontFamily: fontFamily.inter.regular,
+    fontSize: 13,
+    lineHeight: 18,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  actionContainer: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  defaultChip: {
+    backgroundColor: palette.green100,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+  },
+  defaultChipText: {
+    fontFamily: fontFamily.jakarta.semiBold,
+    fontSize: 11,
+    color: palette.green800,
+    lineHeight: 15,
+  },
+  setDefaultButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  setDefaultText: {
+    fontFamily: fontFamily.jakarta.medium,
     fontSize: 12,
+    color: colors.primaryDark,
     lineHeight: 16,
-    color: colors.textSecondary,
-    marginTop: 3,
-  },
-  radioOuter: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioOuterUnselected: {
-    borderWidth: 2,
-    borderColor: palette.gray300,
-  },
-  radioOuterSelected: {
-    backgroundColor: colors.primary,
-  },
-  radioInner: {
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

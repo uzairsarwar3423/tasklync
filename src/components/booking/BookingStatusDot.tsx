@@ -1,46 +1,32 @@
-import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import { BookingStatus } from '../../types/booking.types';
+import { bookingStatusMap } from '../../utils/bookingStatusMap';
 
-interface BookingStatusDotProps {
-  status: string;
+export interface BookingStatusDotProps {
+  status: BookingStatus;
+  size?: number;
 }
 
-export function BookingStatusDot({ status }: BookingStatusDotProps) {
-  const opacity = useSharedValue(1);
+export const BookingStatusDot: React.FC<BookingStatusDotProps> = ({ status, size = 6 }) => {
+  const config = bookingStatusMap[status] || { color: '#6B7280' };
 
-  useEffect(() => {
-    if (status === 'IN_PROGRESS') {
-      opacity.value = withRepeat(
-        withSequence(
-          withTiming(0.4, { duration: 800 }),
-          withTiming(1, { duration: 800 })
-        ),
-        -1,
-        true
-      );
-    } else {
-      opacity.value = 1;
-    }
-  }, [status, opacity]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
-
-  if (status !== 'IN_PROGRESS') {
-    return <View style={styles.staticDot} />;
-  }
-
-  return <Animated.View style={[styles.staticDot, animatedStyle]} />;
-}
+  return (
+    <View
+      style={[
+        styles.dot,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          backgroundColor: config.color,
+        },
+      ]}
+    />
+  );
+};
 
 const styles = StyleSheet.create({
-  staticDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#FFFFFF',
+  dot: {
     marginRight: 6,
   },
 });

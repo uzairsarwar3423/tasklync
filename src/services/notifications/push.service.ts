@@ -188,4 +188,21 @@ export const pushService = {
       await Notifications.setBadgeCountAsync(Math.max(0, count));
     } catch {}
   },
+
+  /**
+   * Subscribes to device push token changes (rotations).
+   */
+  addPushTokenListener: (
+    callback: (token: Notifications.DevicePushToken | Notifications.ExpoPushToken | any) => void
+  ): Notifications.EventSubscription => {
+    return Notifications.addPushTokenListener((token) => {
+      try {
+        callback(token);
+      } catch (err) {
+        if (__DEV__) {
+          console.warn('[pushService] Push token listener callback error:', err);
+        }
+      }
+    });
+  },
 };

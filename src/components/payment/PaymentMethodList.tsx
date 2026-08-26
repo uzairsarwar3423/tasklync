@@ -1,15 +1,14 @@
 import { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { FlashList } from '@shopify/flash-list';
-import { SavedPaymentMethod } from '../../services/api/payment.api';
+import { PaymentMethod } from '../../types/payment.types';
 import { usePaymentMethods } from '../../hooks/usePaymentMethods';
-import { PaymentMethodCard } from './PaymentMethodCard';
-import { PaymentMethodSkeleton } from './PaymentMethodSkeleton';
+import { PaymentMethodPicker } from './PaymentMethodPicker';
+import { PaymentMethodCardSkeleton } from './PaymentMethodCardSkeleton';
 
 export interface PaymentMethodListProps {
   selectedMethodId: string | null;
-  onSelectMethod: (method: SavedPaymentMethod) => void;
-  extraMethods?: SavedPaymentMethod[];
+  onSelectMethod: (method: PaymentMethod) => void;
+  extraMethods?: PaymentMethod[];
 }
 
 export const PaymentMethodList: React.FC<PaymentMethodListProps> = ({
@@ -23,35 +22,28 @@ export const PaymentMethodList: React.FC<PaymentMethodListProps> = ({
   // Auto-select default card if none selected
   useEffect(() => {
     if (!selectedMethodId && methods.length > 0) {
-      const defaultMethod = methods.find((m) => m.isDefault) || methods[0];
-      onSelectMethod(defaultMethod);
+      const defaultMethod = methods.find((m) => m.is_default || m.isDefault) || methods[0];
+      if (defaultMethod) {
+        onSelectMethod(defaultMethod);
+      }
     }
   }, [methods, selectedMethodId, onSelectMethod]);
 
   if (isLoading) {
     return (
       <View style={styles.container}>
-        {Array.from({ length: 2 }).map((_, idx) => (
-          <PaymentMethodSkeleton key={`pm-skel-${idx}`} />
-        ))}
+        <PaymentMethodCardSkeleton />
+        <PaymentMethodCardSkeleton />
       </View>
     );
   }
 
   return (
     <View style={styles.container}>
-      <FlashList
-        data={methods}
-        estimatedItemSize={88}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <PaymentMethodCard
-            method={item}
-            isSelected={selectedMethodId === item.id}
-            onSelect={onSelectMethod}
-          />
-        )}
-        scrollEnabled={false}
+      <PaymentMethodPicker
+        methods={methods}
+        selectedId={selectedMethodId || methods[0]?.id || ''}
+        onSelect={onSelectMethod}
       />
     </View>
   );

@@ -1,6 +1,7 @@
 /**
  * Booking Service Customer API Types & Specification Interfaces
  * Aligned with BOOKING_SERVICE_CUSTOMER_API_SPECIFICATION.md (v2.0.0)
+ * Extended with Day 34 Invoice, Dispute, and Refund Policy models
  */
 
 export type BookingStatus =
@@ -21,6 +22,109 @@ export type ServiceType = 'ONE_TIME' | 'RECURRING';
 export type PriceType = 'hourly' | 'fixed';
 
 export type DisputeStatus = 'OPEN' | 'WORKER_RESPONDED' | 'RESOLVED' | 'REFUNDED' | 'REJECTED';
+
+/**
+ * Day 34: Fixed 5-Reason Union for Guided Conflict Resolution (Hick's Law)
+ */
+export type DisputeReason =
+  | 'work_not_completed'
+  | 'poor_quality'
+  | 'worker_no_show'
+  | 'overcharged'
+  | 'other';
+
+export interface DisputeReasonOption {
+  key: DisputeReason;
+  label: string;
+  description: string;
+}
+
+/**
+ * Day 34: Computed Cancellation & Refund Policy Shape
+ */
+export interface RefundPolicyResult {
+  percentage: number; // 0, 50, 90, 100
+  label: string; // e.g. "Full Refund (100%)", "90% Refund", "50% Refund", "No Refund"
+  headline: string; // e.g. "You'll receive a 90% refund"
+  reason: string; // Plain-language explanation
+  eligibleForRefund: boolean;
+  isDisputeOnly: boolean;
+  estimatedRefundAmount?: number;
+}
+
+/**
+ * Day 34: 3-Slot Evidence Upload State Machine
+ */
+export type EvidenceSlotStatus = 'idle' | 'picking' | 'uploading' | 'success' | 'error';
+
+export interface EvidenceSlotState {
+  id: string;
+  localUri?: string | null;
+  uploadedUrl?: string | null;
+  status: EvidenceSlotStatus;
+  progress: number;
+  error?: string | null;
+}
+
+/**
+ * Day 34: Invoice & Receipt Data Shapes (Discriminated Union)
+ */
+export interface InvoiceLineItemData {
+  id: string;
+  name: string;
+  description?: string | undefined;
+  quantity: number;
+  unit_price: number;
+  total_price: number;
+}
+
+export interface InvoicePaymentMethodData {
+  type: 'card' | 'wallet' | 'cash';
+  brand?: string | undefined;
+  last4?: string | undefined;
+  paid_at?: string | undefined;
+  status: 'PAID' | 'PENDING' | 'REFUNDED';
+}
+
+export interface StructuredInvoiceData {
+  kind: 'structured';
+  invoice_number: string;
+  issued_at: string;
+  due_date?: string | undefined;
+  booking_id: string;
+  customer: {
+    name: string;
+    phone?: string | undefined;
+    address?: string | undefined;
+  };
+  provider: {
+    name: string;
+    avatar_url?: string | null | undefined;
+    category?: string | undefined;
+    phone?: string | undefined;
+    tax_id?: string | undefined;
+  };
+  line_items: InvoiceLineItemData[];
+  subtotal: number;
+  platform_fee: number;
+  urgency_fee?: number | undefined;
+  discount?: number | undefined;
+  total: number;
+  currency: string;
+  payment_method: InvoicePaymentMethodData;
+  notes?: string | undefined;
+}
+
+export interface PdfInvoiceData {
+  kind: 'pdf';
+  invoice_number: string;
+  url: string;
+  issued_at: string;
+  total?: number | undefined;
+  currency?: string | undefined;
+}
+
+export type InvoiceData = StructuredInvoiceData | PdfInvoiceData;
 
 /**
  * 6.1 Price Estimate Query Parameters (GET /api/v1/bookings/estimate)
@@ -179,6 +283,8 @@ export interface CancelBookingData {
   cancellation_reason: string;
   cancelled_by: 'user' | 'worker';
   updated_at: string;
+  refund_amount?: number | undefined;
+  refund_percentage?: number | undefined;
 }
 
 /**
@@ -195,6 +301,7 @@ export interface ConfirmCompletionData {
  */
 export interface OpenDisputePayload {
   reason: string;
+  description?: string | undefined;
   evidence_urls?: string[] | undefined;
 }
 
@@ -205,9 +312,12 @@ export interface DisputeDetails {
   raised_against: string;
   status: DisputeStatus;
   reason: string;
+  description?: string | undefined;
   evidence_urls?: string[] | undefined;
   worker_response?: string | undefined;
   created_at: string;
+  resolved_at?: string | undefined;
+  resolution_notes?: string | undefined;
 }
 
 /**

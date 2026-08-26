@@ -1,3 +1,44 @@
+export type ReviewCategoryKey = 'punctuality' | 'quality' | 'communication' | 'value';
+
+export interface ReviewCategoryRatings {
+  punctuality?: number | undefined;
+  quality?: number | undefined;
+  communication?: number | undefined;
+  value?: number | undefined;
+}
+
+export interface ReviewFormState {
+  overallRating: number;
+  categoryRatings: Record<ReviewCategoryKey, number>;
+  comment: string;
+  canSubmit: boolean;
+  shouldShowCategorySection: boolean;
+}
+
+export interface ReviewSubmitPayload {
+  bookingId: string;
+  targetId: string;
+  targetType: 'worker' | 'service';
+  rating: number;
+  categories?: {
+    punctuality?: number | undefined;
+    quality?: number | undefined;
+    communication?: number | undefined;
+    value?: number | undefined;
+  } | undefined;
+  comment?: string | undefined;
+}
+
+export interface PendingReviewItem {
+  bookingId: string;
+  workerId: string;
+  workerName: string;
+  workerAvatar: string | null;
+  serviceName: string;
+  completedAt: string;
+  totalAmount?: number | undefined;
+}
+
 export interface WorkerReview {
   id: string;
   bookingId: string;
@@ -15,7 +56,7 @@ export interface WorkerReview {
   repliedAt: string | null; // ISO date
   createdAt: string; // ISO date
   isVerified: boolean; // verified purchase
-  serviceName?: string;
+  serviceName?: string | undefined;
 }
 
 export interface ReviewSummaryData {

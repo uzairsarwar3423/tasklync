@@ -1,12 +1,14 @@
 import { create } from 'zustand';
 import { createMMKV } from 'react-native-mmkv';
 import { Coordinates } from '../types/location.types';
+import { PlacePrediction } from '../types/address.types';
 import { getDistanceMeters } from '../utils/locationUtils';
 import { userApi } from '../services/api/user.api';
 import { useAuthStore } from './auth.store';
 
 const storage = createMMKV();
 const SYNC_DISTANCE_THRESHOLD_METERS = 100;
+const MAX_RECENT_SEARCHES = 5;
 
 interface LocationStoreState {
   permissionStatus: 'granted' | 'denied' | 'undetermined';
@@ -17,6 +19,11 @@ interface LocationStoreState {
   setCurrentCity: (city: string | null) => void;
   lastSyncedLocation: Coordinates | null;
   setLastSyncedLocation: (loc: Coordinates | null) => void;
+  lastPickedCoords: Coordinates | null;
+  setLastPickedCoords: (coords: Coordinates | null) => void;
+  recentSearches: PlacePrediction[];
+  addRecentSearch: (search: PlacePrediction) => void;
+  clearRecentSearches: () => void;
   syncLocationToBackend: (
     coords: Coordinates,
     addressLine?: string,
@@ -59,10 +66,34 @@ export const useLocationStore = create<LocationStoreState>((set, get) => ({
     }
     set({ lastSyncedLocation: loc });
   },
+  lastPickedCoords: null,
+  setLastPickedCoords: (coords) => {
+    if (coords) {
+      storage.set('last_picked_coords', JSON.stringify(coords));
+    } else {
+      storage.remove('last_picked_coords');
+    }
+    set({ lastPickedCoords: coords });
+  },
+  recentSearches: [],
+  addRecentSearch: (search) => {
+    const current = get().recentSearches;
+    const filtered = current.filter((item) => item.place_id !== search.place_id);
+    const updated = [search, ...filtered].slice(0, MAX_RECENT_SEARCHES);
+    try {
+      storage.set('recent_searches', JSON.stringify(updated));
+    } catch (_e) {}
+    set({ recentSearches: updated });
+  },
+  clearRecentSearches: () => {
+    try {
+      storage.remove('recent_searches');
+    } catch (_e) {}
+    set({ recentSearches: [] });
+  },
   syncLocationToBackend: async (coords, addressLine, city, country) => {
     const token = useAuthStore.getState().accessToken;
     if (!token) {
-      // User is unauthenticated; location will sync automatically once user logs in
       return;
     }
 
@@ -70,7 +101,6 @@ export const useLocationStore = create<LocationStoreState>((set, get) => ({
     if (lastSynced) {
       const distance = getDistanceMeters(lastSynced, coords);
       if (distance < SYNC_DISTANCE_THRESHOLD_METERS) {
-        // Less than 100m movement; skip database write to conserve bandwidth & DB writes
         return;
       }
     }
@@ -101,6 +131,8 @@ export const useLocationStore = create<LocationStoreState>((set, get) => ({
     const currentCity = storage.getString('current_city');
     const locationStr = storage.getString('current_location');
     const lastSyncedStr = storage.getString('last_synced_location');
+    const lastPickedStr = storage.getString('last_picked_coords');
+    const recentSearchesStr = storage.getString('recent_searches');
 
     let currentLocation: Coordinates | null = null;
     if (locationStr) {
@@ -116,11 +148,27 @@ export const useLocationStore = create<LocationStoreState>((set, get) => ({
       } catch (e) {}
     }
 
+    let lastPickedCoords: Coordinates | null = null;
+    if (lastPickedStr) {
+      try {
+        lastPickedCoords = JSON.parse(lastPickedStr);
+      } catch (e) {}
+    }
+
+    let recentSearches: PlacePrediction[] = [];
+    if (recentSearchesStr) {
+      try {
+        recentSearches = JSON.parse(recentSearchesStr);
+      } catch (e) {}
+    }
+
     set({
       permissionStatus: permissionStatus || 'undetermined',
       currentCity: currentCity || null,
       currentLocation,
       lastSyncedLocation,
+      lastPickedCoords,
+      recentSearches,
     });
   },
 }));

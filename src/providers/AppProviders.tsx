@@ -4,6 +4,7 @@ import { SocketProvider } from './SocketProvider';
 import { NotificationProvider } from './NotificationProvider';
 import { InAppBannerProvider } from '../components/feedback/InAppBannerProvider';
 import { ToastProvider } from './ToastProvider';
+import { NetworkProvider } from './NetworkProvider';
 
 export const AppProviders = ({ children }: { children: React.ReactNode }) => {
   return (
@@ -12,7 +13,9 @@ export const AppProviders = ({ children }: { children: React.ReactNode }) => {
         <InAppBannerProvider>
           <NotificationProvider>
             <ToastProvider>
-              {children}
+              <NetworkProvider>
+                {children}
+              </NetworkProvider>
             </ToastProvider>
           </NotificationProvider>
         </InAppBannerProvider>

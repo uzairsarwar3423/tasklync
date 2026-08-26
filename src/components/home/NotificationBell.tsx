@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Bell } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -14,7 +14,7 @@ import Animated, {
 import * as Haptics from 'expo-haptics';
 import { IconButton } from '../ui/Button/IconButton';
 import { Text } from '../ui/Text/Text';
-import { useNotificationStore } from '../../store/notification.store';
+import { useUnreadCount } from '../../hooks/useUnreadCount';
 import { colors, palette } from '../../design/colors';
 import { fontFamily } from '../../design/typography';
 
@@ -28,30 +28,40 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
   onPress,
 }) => {
   const router = useRouter();
-  const storeUnreadCount = useNotificationStore((s) => s.unreadCount);
-  const effectiveUnreadCount = propUnreadCount !== undefined ? propUnreadCount : storeUnreadCount;
+  const { unreadCount: hookUnreadCount } = useUnreadCount();
+  const effectiveUnreadCount = propUnreadCount !== undefined ? propUnreadCount : hookUnreadCount;
+
+  const prevCountRef = useRef<number>(effectiveUnreadCount);
 
   const rotation = useSharedValue(0);
   const badgeScale = useSharedValue(effectiveUnreadCount > 0 ? 1 : 0);
 
   useEffect(() => {
-    if (effectiveUnreadCount > 0) {
-      // Badge appearance animation
-      badgeScale.value = withSequence(
-        withTiming(1.2, { duration: 150 }),
-        withSpring(1.0, { damping: 12, stiffness: 100 })
-      );
+    const prevCount = prevCountRef.current;
+    prevCountRef.current = effectiveUnreadCount;
 
-      // Bell ring animation
-      rotation.value = withSequence(
-        withTiming(15, { duration: 100, easing: Easing.inOut(Easing.ease) }),
-        withRepeat(
-          withTiming(-15, { duration: 100, easing: Easing.inOut(Easing.ease) }),
-          3,
-          true
-        ),
-        withTiming(0, { duration: 100, easing: Easing.inOut(Easing.ease) })
-      );
+    if (effectiveUnreadCount > 0) {
+      if (prevCount !== effectiveUnreadCount) {
+        // Count increased or changed: Trigger expressive spring bounce + chime microinteraction
+        badgeScale.value = withSequence(
+          withTiming(1.25, { duration: 150 }),
+          withSpring(1.0, { damping: 12, stiffness: 150 })
+        );
+
+        if (effectiveUnreadCount > prevCount) {
+          rotation.value = withSequence(
+            withTiming(14, { duration: 90, easing: Easing.inOut(Easing.ease) }),
+            withRepeat(
+              withTiming(-14, { duration: 90, easing: Easing.inOut(Easing.ease) }),
+              3,
+              true
+            ),
+            withTiming(0, { duration: 90, easing: Easing.inOut(Easing.ease) })
+          );
+        }
+      } else {
+        badgeScale.value = 1;
+      }
     } else {
       badgeScale.value = withTiming(0, { duration: 150 });
     }

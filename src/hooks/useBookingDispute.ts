@@ -17,13 +17,15 @@ export function useBookingDispute(bookingId?: string | null) {
     mutationFn: async ({
       id,
       reason,
+      description,
       evidenceUrls,
     }: {
       id: string;
       reason: string;
+      description?: string | undefined;
       evidenceUrls?: string[] | undefined;
     }) => {
-      return await bookingApi.openDispute(id, reason, evidenceUrls);
+      return await bookingApi.openDispute(id, reason, description, evidenceUrls);
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['booking-dispute', variables.id] });

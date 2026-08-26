@@ -27,6 +27,8 @@ import { ReviewSummary } from '@components/review/ReviewSummary';
 import { ReviewCard } from '@components/review/ReviewCard';
 import { SectionDivider } from '@components/ui/Divider';
 import { ImageViewer } from '@components/common/ImageViewer';
+import { BlockWorkerSheet } from '../../src/components/worker/BlockWorkerSheet';
+import { useBlockWorker } from '../../src/hooks/useBlockWorker';
 import { getPersistedBookings } from '../../src/services/api/booking.api';
 
 import {
@@ -50,13 +52,22 @@ export default function WorkerProfileScreen() {
   
   const scrollY = useSharedValue(0);
   const [optionsVisible, setOptionsVisible] = useState(false);
+  const [blockSheetVisible, setBlockSheetVisible] = useState(false);
 
   const [viewerVisible, setViewerVisible] = useState(false);
   const [viewerStartIndex, setViewerStartIndex] = useState(0);
 
+  const blockWorkerMutation = useBlockWorker();
+
   const { worker, skills, services, isLoading, isError, refetch } = useWorkerProfile(id || '');
   const { reviews: previewReviews, summary } = useWorkerReviews(id || '');
   const { images: portfolioImages } = useWorkerPortfolio(id || '');
+
+  const hasActiveBooking = Boolean(
+    getPersistedBookings().find(
+      (b) => b.worker_id === id && (b.status === 'ACCEPTED' || b.status === 'IN_PROGRESS' || b.status === 'PENDING')
+    )
+  );
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -101,8 +112,8 @@ export default function WorkerProfileScreen() {
 
   const handleBlock = () => {
     setOptionsVisible(false);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    Alert.alert('Block Worker', `You have blocked ${worker?.name || 'this worker'}. They will no longer appear in your search results.`);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setBlockSheetVisible(true);
   };
 
   const handleChat = () => {
@@ -330,6 +341,20 @@ export default function WorkerProfileScreen() {
         isVisible={viewerVisible}
         onClose={() => setViewerVisible(false)}
       />
+
+      {worker && (
+        <BlockWorkerSheet
+          visible={blockSheetVisible}
+          workerId={worker.id}
+          workerName={worker.name}
+          hasActiveBooking={hasActiveBooking}
+          onClose={() => setBlockSheetVisible(false)}
+          onBlock={async (workerId, reason) => {
+            await blockWorkerMutation.mutateAsync({ workerId, reason });
+          }}
+          isLoading={blockWorkerMutation.isPending}
+        />
+      )}
     </SafeAreaView>
   );
 }

@@ -38,11 +38,13 @@ export function BookingCard({ booking }: BookingCardProps) {
         } as any);
         break;
       case 'review':
-        if (booking.worker_id) {
-          router.push(`/worker/${booking.worker_id}/reviews` as any);
-        } else {
-          router.push(`/booking/${booking.id}` as any);
-        }
+        router.push(`/booking/${booking.id}/review` as any);
+        break;
+      case 'dispute':
+        router.push(`/booking/${booking.id}/dispute` as any);
+        break;
+      case 'invoice':
+        router.push(`/booking/${booking.id}/invoice` as any);
         break;
       case 'book_again':
         router.push('/(tabs)' as any);

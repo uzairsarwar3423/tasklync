@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { useAuthStore } from '../../store/auth.store';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.tasklync.pk/api/v1';
+declare const process: any;
+
+const API_URL = process?.env?.EXPO_PUBLIC_API_URL || 'https://api.tasklync.pk/api/v1';
 
 const generateRequestId = (): string => {
   return 'req-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now();

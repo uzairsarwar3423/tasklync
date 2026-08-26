@@ -1,11 +1,9 @@
-import React from 'react';
 import { View, StyleSheet, Text, ViewStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { ShieldCheck } from 'lucide-react-native';
 import { formatDistanceToNow, format, parseISO, differenceInDays } from 'date-fns';
-import { colors } from '@design/colors';
-import { fontFamily as fonts } from '@design/typography';
-import { radius } from '@design/radius';
+import { colors } from '../../design/colors';
+import { fontFamily as fonts } from '../../design/typography';
 
 interface ReviewMetaRowProps {
   avatarUrl: string | null;
@@ -38,29 +36,36 @@ export const ReviewMetaRow = ({
   const formatDate = (dateString: string) => {
     try {
       const parsedDate = parseISO(dateString);
-      const daysDiff = differenceInDays(new Date(), parsedDate);
-      
-      if (daysDiff < 30) {
+      const days = differenceInDays(new Date(), parsedDate);
+      if (days < 30) {
         return formatDistanceToNow(parsedDate, { addSuffix: true });
       }
       return format(parsedDate, 'MMM d, yyyy');
-    } catch (e) {
+    } catch {
       return dateString;
     }
   };
 
   return (
     <View style={[styles.container, style]}>
-      {/* Avatar */}
+      {/* Left Avatar */}
       {avatarUrl ? (
         <Image
           source={{ uri: avatarUrl }}
-          style={[styles.avatar, { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }]}
+          style={[
+            styles.avatar,
+            { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 },
+          ]}
           contentFit="cover"
-          cachePolicy="memory-disk"
+          transition={200}
         />
       ) : (
-        <View style={[styles.fallbackAvatar, { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 }]}>
+        <View
+          style={[
+            styles.fallbackAvatar,
+            { width: avatarSize, height: avatarSize, borderRadius: avatarSize / 2 },
+          ]}
+        >
           <Text style={[styles.fallbackText, { fontSize: avatarSize * 0.4 }]}>
             {getInitials(reviewerName)}
           </Text>
@@ -70,12 +75,16 @@ export const ReviewMetaRow = ({
       {/* Center Details */}
       <View style={styles.centerCol}>
         <View style={styles.nameRow}>
-          <Text style={[styles.nameText, { fontSize: nameSize }]} numberOfLines={1}>
+          <Text
+            style={[styles.nameText, { fontSize: nameSize }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
             {reviewerName}
           </Text>
           {isVerified && (
             <View style={styles.verifiedBadge}>
-              <ShieldCheck size={10} color={colors.primary} />
+              <ShieldCheck size={12} color={colors.primaryDark} strokeWidth={2.5} />
               <Text style={styles.verifiedText}>Verified</Text>
             </View>
           )}
@@ -94,10 +103,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatar: {
-    backgroundColor: colors.bgSecondary,
+    backgroundColor: colors.bgSection,
   },
   fallbackAvatar: {
-    backgroundColor: colors.bgSecondary,
+    backgroundColor: colors.bgSection,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -108,27 +117,30 @@ const styles = StyleSheet.create({
   centerCol: {
     flex: 1,
     marginLeft: 10,
-    justifyContent: 'center',
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
+    gap: 6,
   },
   nameText: {
-    fontFamily: fonts.poppins.semiBold,
+    fontFamily: fonts.jakarta.semiBold,
     color: colors.textPrimary,
   },
   verifiedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 6,
-    gap: 2,
+    backgroundColor: colors.bgSuccess,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    gap: 3,
   },
   verifiedText: {
-    fontFamily: fonts.jakarta.regular,
+    fontFamily: fonts.jakarta.medium,
     fontSize: 10,
-    color: colors.primary,
+    color: colors.primaryDark,
   },
   dateText: {
     fontFamily: fonts.inter.regular,

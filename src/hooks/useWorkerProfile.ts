@@ -3,6 +3,7 @@ import { workerApi } from '../services/api/worker.api';
 import { WorkerPublicProfile, WorkerSkill, WorkerServiceOffering } from '../types/worker.types';
 import { WorkerReview } from '../types/review.types';
 import { PaginatedResponse } from '../types/api.types';
+import { localStorage } from '../services/storage/local.storage';
 
 const MOCK_PROFILES: Record<string, WorkerPublicProfile> = {
   w1: {
@@ -262,19 +263,36 @@ export const useWorkerProfile = (workerId: string) => {
     queryFn: async () => {
       if (workerId.startsWith('w')) {
         const mockProfile = MOCK_PROFILES[workerId];
-        if (mockProfile) return mockProfile;
+        if (mockProfile) {
+          localStorage.cacheWorkerProfile(workerId, mockProfile);
+          return mockProfile;
+        }
         throw new Error('Worker profile not found');
       }
       try {
-        return await workerApi.getWorkerProfile(workerId);
+        const result = await workerApi.getWorkerProfile(workerId);
+        if (result) {
+          localStorage.cacheWorkerProfile(workerId, result);
+        }
+        return result;
       } catch (err) {
+        const cached = localStorage.getCachedWorkerProfile<WorkerPublicProfile>(workerId);
+        if (cached?.data) return cached.data;
         const mockProfile = MOCK_PROFILES[workerId];
         if (mockProfile) return mockProfile;
         throw err;
       }
     },
+    initialData: () => {
+      const cached = localStorage.getCachedWorkerProfile<WorkerPublicProfile>(workerId);
+      return cached?.data;
+    },
+    initialDataUpdatedAt: () => {
+      const cached = localStorage.getCachedWorkerProfile<WorkerPublicProfile>(workerId);
+      return cached?.cachedAt;
+    },
     enabled: !!workerId,
-    staleTime: 300_000,
+    staleTime: 5 * 60 * 1000,
   });
 
   const skillsQuery = useWorkerSkills(workerId);
@@ -290,6 +308,7 @@ export const useWorkerProfile = (workerId: string) => {
 
   return {
     worker: profileQuery.data,
+    dataUpdatedAt: profileQuery.dataUpdatedAt,
     skills: skillsQuery.skills.length > 0 ? skillsQuery.skills : (profileQuery.data?.skills || []),
     services,
     isLoading: profileQuery.isLoading,

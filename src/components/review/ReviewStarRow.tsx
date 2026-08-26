@@ -1,11 +1,14 @@
-import React from 'react';
 import { View, StyleSheet, Text, TextStyle, ViewStyle } from 'react-native';
 import { Svg, Path, Defs, ClipPath, Rect, G } from 'react-native-svg';
-import { colors } from '@design/colors';
-import { fontFamily as fonts } from '@design/typography';
+import { colors } from '../../design/colors';
+import { fontFamily as fonts } from '../../design/typography';
 
-interface ReviewStarRowProps {
+export interface ReviewStarRowProps {
   rating: number; // 1-5
+  punctuality?: number | null | undefined;
+  quality?: number | null | undefined;
+  communication?: number | null | undefined;
+  value?: number | null | undefined;
   size?: 'xs' | 'sm' | 'md' | 'lg';
   showNumber?: boolean;
   numberStyle?: TextStyle;

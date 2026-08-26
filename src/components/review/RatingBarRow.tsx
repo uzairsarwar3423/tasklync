@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { View, StyleSheet, Text, ViewStyle } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -6,9 +6,9 @@ import Animated, {
   withDelay,
   withSpring,
 } from 'react-native-reanimated';
-import { colors } from '@design/colors';
-import { fontFamily as fonts } from '@design/typography';
-import { radius } from '@design/radius';
+import { colors } from '../../design/colors';
+import { fontFamily as fonts } from '../../design/typography';
+import { radius } from '../../design/radius';
 
 interface RatingBarRowProps {
   label: string;
@@ -38,46 +38,39 @@ export const RatingBarRow = ({
   style,
 }: RatingBarRowProps) => {
   const targetPercent = value !== null ? (value / maxValue) * 100 : 0;
-  const widthPercent = useSharedValue(0);
+  const progress = useSharedValue(animated ? 0 : targetPercent);
 
   useEffect(() => {
     if (animated) {
-      widthPercent.value = withDelay(
+      progress.value = withDelay(
         animationDelay,
         withSpring(targetPercent, springConfig)
       );
     } else {
-      widthPercent.value = targetPercent;
+      progress.value = targetPercent;
     }
-  }, [animated, targetPercent, animationDelay, widthPercent]);
+  }, [animated, animationDelay, targetPercent, progress]);
 
-  const animatedStyle = useAnimatedStyle(() => {
+  const fillStyle = useAnimatedStyle(() => {
     return {
-      width: `${widthPercent.value}%`,
+      width: `${progress.value}%`,
     };
   });
 
   return (
     <View style={[styles.container, style]}>
-      {/* Label */}
-      <Text style={styles.labelText} numberOfLines={1}>
+      <Text style={styles.label} numberOfLines={1}>
         {label}
       </Text>
 
-      {/* Bar Track */}
       <View style={[styles.track, { backgroundColor: trackColor }]}>
         <Animated.View
-          style={[
-            styles.fill,
-            { backgroundColor: fillColor },
-            animatedStyle,
-          ]}
+          style={[styles.fill, { backgroundColor: fillColor }, fillStyle]}
         />
       </View>
 
-      {/* Score */}
       <Text style={styles.scoreText}>
-        {value !== null ? value.toFixed(1) : '—'}
+        {value !== null ? value.toFixed(1) : '-'}
       </Text>
     </View>
   );
@@ -87,12 +80,12 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4,
+    height: 24,
   },
-  labelText: {
-    width: 110,
-    fontFamily: fonts.jakarta.regular,
-    fontSize: 13,
+  label: {
+    width: 100,
+    fontFamily: fonts.jakarta.medium,
+    fontSize: 12,
     color: colors.textSecondary,
   },
   track: {
@@ -100,20 +93,17 @@ const styles = StyleSheet.create({
     height: 6,
     borderRadius: radius.pill,
     overflow: 'hidden',
-    position: 'relative',
+    marginHorizontal: 10,
   },
   fill: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
+    height: '100%',
     borderRadius: radius.pill,
   },
   scoreText: {
-    width: 30,
-    fontFamily: fonts.inter.medium,
-    fontSize: 13,
-    color: colors.textSecondary,
+    width: 24,
     textAlign: 'right',
+    fontFamily: fonts.inter.semiBold,
+    fontSize: 12,
+    color: colors.textPrimary,
   },
 });

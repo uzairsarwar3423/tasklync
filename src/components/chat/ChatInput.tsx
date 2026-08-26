@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   TextInput,
@@ -8,6 +8,7 @@ import {
   Modal,
   Text,
   Alert,
+  Keyboard,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -49,7 +50,23 @@ export const ChatInput = React.memo(function ChatInput({
   const [text, setText] = useState<string>('');
   const [inputHeight, setInputHeight] = useState<number>(40);
   const [isMediaModalVisible, setIsMediaModalVisible] = useState<boolean>(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState<boolean>(false);
   const insets = useSafeAreaInsets();
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => setIsKeyboardVisible(true)
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setIsKeyboardVisible(false)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // Send button animation progress (0: empty/disabled, 1: has text/active)
   const sendProgress = useSharedValue(0);
@@ -154,7 +171,7 @@ export const ChatInput = React.memo(function ChatInput({
 
   return (
     <>
-      <View style={[styles.wrapper, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <View style={[styles.wrapper, { paddingBottom: isKeyboardVisible ? 10 : Math.max(insets.bottom, 12) }]}>
         <View style={styles.container}>
           {/* Attachment Button (44px touch target) */}
           <Pressable

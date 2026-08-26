@@ -1,23 +1,26 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, RefreshControl, Pressable, Platform } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, View, Text, RefreshControl, Pressable, Platform, Modal } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
-import { ArrowLeft, SlidersHorizontal } from 'lucide-react-native';
+import { ArrowLeft, SlidersHorizontal, Check } from 'lucide-react-native';
 
 import { useWorkerReviews } from '../../../src/hooks/useWorkerReviews';
 import { ReviewSummary } from '../../../src/components/review/ReviewSummary';
 import { ReviewCard } from '../../../src/components/review/ReviewCard';
 import { SkeletonReviewCard } from '../../../src/components/ui/Skeleton';
-// If ActionSheet is available, we would import it here, otherwise we'll mock it for now.
-// import { ActionSheet } from '../../../src/components/ui/ActionSheet';
 import { ReviewSortOption } from '../../../src/types';
 
-import { colors } from '@design/colors';
-import { shadows } from '@design/shadows';
-import { fontFamily as fonts } from '@design/typography';
+import { colors } from '../../../src/design/colors';
+import { shadows } from '../../../src/design/shadows';
+import { fontFamily as fonts } from '../../../src/design/typography';
 
-const AnyFlashList = FlashList as any;
+const SORT_OPTIONS: Array<{ key: ReviewSortOption; label: string }> = [
+  { key: 'recent', label: 'Most Recent' },
+  { key: 'highest', label: 'Highest Rated' },
+  { key: 'lowest', label: 'Lowest Rated' },
+  { key: 'verified', label: 'Verified Bookings Only' },
+];
 
 export default function WorkerReviewsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -123,11 +126,10 @@ export default function WorkerReviewsScreen() {
       </View>
 
       {/* FlashList */}
-      <AnyFlashList
+      <FlashList
         data={reviews}
         renderItem={renderItem}
         keyExtractor={(item: any) => item.id}
-        estimatedItemSize={140}
         onEndReached={hasNextPage ? loadMore : null}
         onEndReachedThreshold={0.6}
         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
@@ -143,6 +145,40 @@ export default function WorkerReviewsScreen() {
           />
         }
       />
+
+      {/* Sort Modal */}
+      <Modal
+        visible={isSortOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsSortOpen(false)}
+      >
+        <Pressable style={styles.modalOverlay} onPress={() => setIsSortOpen(false)}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Sort Reviews</Text>
+            {SORT_OPTIONS.map((opt) => (
+              <Pressable
+                key={opt.key}
+                style={styles.sortOptionRow}
+                onPress={() => {
+                  setSortBy(opt.key);
+                  setIsSortOpen(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.sortOptionText,
+                    sortBy === opt.key && styles.sortOptionTextActive,
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+                {sortBy === opt.key && <Check size={18} color={colors.primaryDark} />}
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -151,7 +187,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
-    backgroundColor: '#FAFAFA', // colors.bgApp
+    backgroundColor: '#FAFAFA',
     overflow: 'hidden',
   },
   header: {
@@ -181,7 +217,7 @@ const styles = StyleSheet.create({
     zIndex: 9,
   },
   stickySummary: {
-    // Styles inside ReviewSummary compact already handle it mostly
+    // handled inside ReviewSummary
   },
   listContent: {
     paddingHorizontal: 16,
@@ -208,5 +244,40 @@ const styles = StyleSheet.create({
     fontFamily: fonts.jakarta.regular,
     fontSize: 13,
     color: colors.textMuted,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: colors.bgCard,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 20,
+    paddingBottom: 36,
+  },
+  modalTitle: {
+    fontFamily: fonts.poppins.semiBold,
+    fontSize: 18,
+    color: colors.textPrimary,
+    marginBottom: 16,
+  },
+  sortOptionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  sortOptionText: {
+    fontFamily: fonts.jakarta.medium,
+    fontSize: 15,
+    color: colors.textPrimary,
+  },
+  sortOptionTextActive: {
+    fontFamily: fonts.jakarta.semiBold,
+    color: colors.primaryDark,
   },
 });

@@ -12,7 +12,7 @@ import { useBookingEstimate } from '../../src/hooks/useBookingEstimate';
 import { useBookingDetails } from '../../src/hooks/useBookingDetails';
 import { usePaymentMethods } from '../../src/hooks/usePaymentMethods';
 import { usePayment } from '../../src/hooks/usePayment';
-import { SavedPaymentMethod } from '../../src/services/api/payment.api';
+import { PaymentMethod } from '../../src/types/payment.types';
 
 // Components
 import { BookingFooterCTA } from '../../src/components/booking/BookingFooterCTA';
@@ -44,17 +44,17 @@ export default function PaymentScreen() {
   const { methods } = usePaymentMethods();
 
   // Selected payment method state
-  const [selectedMethod, setSelectedMethod] = useState<SavedPaymentMethod | null>(
-    methods.find((m) => m.isDefault) || methods[0] || null
+  const [selectedMethod, setSelectedMethod] = useState<PaymentMethod | null>(
+    methods.find((m) => m.is_default || m.isDefault) || methods[0] || null
   );
 
   // Custom added cards list
-  const [customCards, setCustomCards] = useState<SavedPaymentMethod[]>([]);
+  const [customCards, setCustomCards] = useState<PaymentMethod[]>([]);
 
   // Process payment hook
   const { processPayment, isLoading } = usePayment();
 
-  const handleSelectMethod = (method: SavedPaymentMethod) => {
+  const handleSelectMethod = (method: PaymentMethod) => {
     setSelectedMethod(method);
   };
 
@@ -62,7 +62,7 @@ export default function PaymentScreen() {
     bottomSheetRef.current?.open();
   };
 
-  const handleAddCustomCard = (newCard: SavedPaymentMethod) => {
+  const handleAddCustomCard = (newCard: any) => {
     setCustomCards((prev) => [newCard, ...prev]);
     setSelectedMethod(newCard);
   };

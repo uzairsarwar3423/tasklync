@@ -11,6 +11,7 @@ import { usePushRegistration } from '../hooks/usePushRegistration';
 import { useInAppBanner } from '../components/feedback/InAppBannerProvider';
 import { notificationApi } from '../services/api/notification.api';
 import { chatSoundService } from '../services/audio/chatSound.service';
+import { queryClient } from '../config/queryClient';
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -54,26 +55,53 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       })
       .catch(() => {});
 
-    // 1.4 Initial Unread Count Hydration (Page 1)
+    // 1.4 Flush Cold Start Queue once router and navigation tree mount
+    const flushTimer = setTimeout(() => {
+      notificationQueue.flush((targetPath) => {
+        try {
+          router.push(targetPath as any);
+        } catch {
+          router.push('/notifications' as any);
+        }
+      });
+    }, 400);
+
+    // 1.5 Initial Unread Count Hydration (Page 1)
     if (authState === 'authenticated') {
       notificationApi
         .getNotifications(null, 1)
         .then((res) => {
           if (res?.meta?.unread_count !== undefined) {
             setUnreadCount(res.meta.unread_count);
+            queryClient.setQueryData(['notifications', 'unread-count'], res.meta.unread_count);
           }
         })
         .catch(() => {});
     }
-  }, [authState, setPermissionStatus, setUnreadCount]);
 
-  // 2. Auth State Sync (Login Register / Logout Cleanup)
+    return () => {
+      clearTimeout(flushTimer);
+    };
+  }, [authState, router, setPermissionStatus, setUnreadCount]);
+
+  // 2. Auth State Sync & Push Token Rotation Listener
   useEffect(() => {
     if (authState === 'authenticated' && currentUserId) {
       register().catch(() => {});
     } else if (authState === 'unauthenticated') {
       unregister().catch(() => {});
     }
+
+    // Subscribe to push token rotations
+    const tokenSub = pushService.addPushTokenListener(async (tokenData) => {
+      if (tokenData?.data && authState === 'authenticated') {
+        await notificationApi.registerPushToken(String(tokenData.data)).catch(() => {});
+      }
+    });
+
+    return () => {
+      tokenSub.remove();
+    };
   }, [authState, currentUserId, register, unregister]);
 
   // 3. Setup Foreground & Response Listeners
@@ -89,6 +117,10 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         const category = String(data.type || data.category || 'default');
 
         incrementUnread();
+
+        // Reactively invalidate notifications queries without aggressive polling
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
 
         // Play receive sound if incoming event is a chat message
         if (category.includes('chat') || category.includes('message')) {
@@ -168,13 +200,17 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           })
           .catch(() => {});
 
-        // Refresh unread counter
+        // Refresh unread counter & feed
         if (authState === 'authenticated') {
+          queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
+          queryClient.invalidateQueries({ queryKey: ['notifications'] });
+
           notificationApi
             .getNotifications(null, 1)
             .then((res) => {
               if (res?.meta?.unread_count !== undefined) {
                 setUnreadCount(res.meta.unread_count);
+                queryClient.setQueryData(['notifications', 'unread-count'], res.meta.unread_count);
               }
             })
             .catch(() => {});

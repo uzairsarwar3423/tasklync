@@ -1,142 +1,154 @@
-import React, { useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-} from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
-import { Home, Briefcase, MapPin, Check } from 'lucide-react-native';
-import { BookingAddress } from '../../store/bookingDraft.store';
-import { AddressDefaultBadge } from './AddressDefaultBadge';
-import { colors, palette, fontFamily } from '../../design';
+import { Check } from 'lucide-react-native';
+import { Address } from '../../types/address.types';
+import { labelToIcon } from '../../utils/address';
+import { DefaultAddressBadge } from './DefaultAddressBadge';
+import { colors, palette, fontFamily, fontSize } from '../../design';
 
 export interface AddressCardProps {
-  address: BookingAddress;
-  isSelected: boolean;
-  onSelect: (address: BookingAddress) => void;
+  address: Address;
+  onPress?: ((address: Address) => void) | undefined;
+  onLongPress?: ((address: Address) => void) | undefined;
+  isSelected?: boolean | undefined;
+  onSelect?: ((address: any) => void) | undefined;
 }
-
-const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export const AddressCard: React.FC<AddressCardProps> = ({
   address,
+  onPress,
+  onLongPress,
   isSelected,
   onSelect,
 }) => {
-  const { label, street, unit, city, isDefault } = address;
+  const { label, custom_label, address_line, city, is_default } = address as any;
+  const displayLabel = custom_label || label || 'Address';
+  const IconComponent = labelToIcon(label);
 
-  const scale = useSharedValue(1);
-
-  useEffect(() => {
-    if (isSelected) {
-      scale.value = withSpring(1.02, { damping: 14, stiffness: 220 });
-    } else {
-      scale.value = withTiming(1.0, { duration: 150 });
-    }
-  }, [isSelected, scale]);
+  const isSelectionMode = isSelected !== undefined;
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    onSelect(address);
+    if (onSelect) {
+      onSelect(address);
+    } else if (onPress) {
+      onPress(address);
+    }
   };
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  // Render appropriate icon based on address label
-  const renderIcon = () => {
-    const iconColor = isSelected ? colors.primaryDark : palette.gray600;
-    const lowerLabel = (label || '').toLowerCase();
-
-    if (lowerLabel.includes('home')) {
-      return <Home size={18} color={iconColor} strokeWidth={2.2} />;
+  const handleLongPress = () => {
+    if (onLongPress) {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      onLongPress(address);
     }
-    if (lowerLabel.includes('office') || lowerLabel.includes('work')) {
-      return <Briefcase size={18} color={iconColor} strokeWidth={2.2} />;
-    }
-    return <MapPin size={18} color={iconColor} strokeWidth={2.2} />;
   };
+
+  const street = address_line || (address as any).street || '';
+  const fullAddressLine = [street, city].filter(Boolean).join(', ');
+  const a11yLabel = `${displayLabel}, ${fullAddressLine}${
+    is_default ? ', Default address' : ''
+  }${isSelectionMode && isSelected ? ', selected' : ''}`;
 
   return (
-    <AnimatedPressable
+    <Pressable
       onPress={handlePress}
-      style={[
+      onLongPress={handleLongPress}
+      delayLongPress={400}
+      style={({ pressed }) => [
         styles.card,
-        isSelected ? styles.cardSelected : styles.cardUnselected,
-        animatedStyle,
+        isSelectionMode && isSelected ? styles.cardSelected : styles.cardUnselected,
+        pressed && styles.cardPressed,
       ]}
-      accessibilityRole="radio"
-      accessibilityLabel={`${label || 'Address'}, ${street}, ${city} ${
-        isSelected ? 'selected' : ''
-      }`}
-      accessibilityState={{ selected: isSelected }}
+      accessibilityRole={isSelectionMode ? 'radio' : 'button'}
+      accessibilityState={isSelectionMode ? { selected: isSelected } : undefined}
+      accessibilityLabel={a11yLabel}
+      accessibilityHint={
+        isSelectionMode
+          ? 'Double tap to select this address'
+          : 'Double tap to edit address. Long press for options.'
+      }
     >
       <View style={styles.contentRow}>
-        {/* Icon Circle */}
+        {/* Left: 40px Icon Circle with Tinted Background */}
         <View
           style={[
             styles.iconCircle,
-            isSelected ? styles.iconCircleSelected : styles.iconCircleUnselected,
+            isSelectionMode && isSelected ? styles.iconCircleSelected : styles.iconCircleUnselected,
           ]}
         >
-          {renderIcon()}
+          <IconComponent
+            size={20}
+            color={isSelectionMode && isSelected ? colors.primaryDark : palette.gray600}
+            strokeWidth={2.2}
+          />
         </View>
 
-        {/* Text Container */}
+        {/* Middle: 2-Line Text Block */}
         <View style={styles.textContainer}>
-          <View style={styles.labelRow}>
-            <Text style={styles.labelTitle}>{label || 'Saved Address'}</Text>
-            {isDefault && <AddressDefaultBadge />}
-          </View>
-          <Text style={styles.streetText} numberOfLines={2}>
-            {street}
-            {unit ? `, ${unit}` : ''}
+          <Text
+            style={styles.labelTitle}
+            numberOfLines={1}
+            maxFontSizeMultiplier={1.3}
+          >
+            {displayLabel}
           </Text>
-          <Text style={styles.cityText}>{city}</Text>
+          <Text
+            style={styles.addressSubtitle}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+            maxFontSizeMultiplier={1.3}
+          >
+            {fullAddressLine}
+          </Text>
         </View>
 
-        {/* Radio Circle */}
-        <View
-          style={[
-            styles.radioOuter,
-            isSelected ? styles.radioOuterSelected : styles.radioOuterUnselected,
-          ]}
-        >
-          {isSelected && (
-            <View style={styles.radioInner}>
-              <Check size={12} color={palette.white} strokeWidth={3} />
-            </View>
-          )}
-        </View>
+        {/* Right Section */}
+        {isSelectionMode ? (
+          <View
+            style={[
+              styles.radioOuter,
+              isSelected ? styles.radioOuterSelected : styles.radioOuterUnselected,
+            ]}
+          >
+            {isSelected && <Check size={12} color={palette.white} strokeWidth={3} />}
+          </View>
+        ) : (
+          <View style={styles.rightContainer}>
+            {is_default ? <DefaultAddressBadge /> : <View style={styles.emptyBadgeSpacer} />}
+          </View>
+        )}
       </View>
-    </AnimatedPressable>
+    </Pressable>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    padding: 16,
+    height: 76,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     borderRadius: 16,
     backgroundColor: palette.white,
-    marginBottom: 12,
+    justifyContent: 'center',
     shadowColor: palette.gray900,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
   },
   cardUnselected: {
     borderWidth: 1,
     borderColor: palette.gray200,
-    shadowOpacity: 0.04,
   },
   cardSelected: {
     borderWidth: 2,
     borderColor: colors.primary,
     backgroundColor: palette.green50,
-    shadowOpacity: 0.1,
+  },
+  cardPressed: {
+    backgroundColor: palette.gray50,
+    borderColor: palette.gray300,
+    transform: [{ scale: 0.99 }],
   },
   contentRow: {
     flexDirection: 'row',
@@ -148,46 +160,45 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 14,
+    marginRight: 12,
   },
   iconCircleUnselected: {
-    backgroundColor: palette.gray100,
+    backgroundColor: palette.green50,
   },
   iconCircleSelected: {
     backgroundColor: palette.green100,
   },
   textContainer: {
     flex: 1,
-    marginRight: 12,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
   },
   labelTitle: {
-    fontFamily: fontFamily.poppins.semiBold,
+    fontFamily: fontFamily.jakarta.semiBold,
     fontSize: 15,
     lineHeight: 20,
     color: colors.textPrimary,
   },
-  streetText: {
+  addressSubtitle: {
     fontFamily: fontFamily.jakarta.regular,
-    fontSize: 13,
+    fontSize: fontSize.body2,
     lineHeight: 18,
     color: colors.textSecondary,
-    marginTop: 3,
-  },
-  cityText: {
-    fontFamily: fontFamily.jakarta.medium,
-    fontSize: 11,
-    lineHeight: 15,
-    color: colors.textMuted,
     marginTop: 2,
   },
+  rightContainer: {
+    minWidth: 54,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+  },
+  emptyBadgeSpacer: {
+    width: 1,
+    height: 1,
+  },
   radioOuter: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -197,9 +208,5 @@ const styles = StyleSheet.create({
   },
   radioOuterSelected: {
     backgroundColor: colors.primary,
-  },
-  radioInner: {
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });

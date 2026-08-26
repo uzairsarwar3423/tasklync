@@ -28,7 +28,7 @@ export const SkeletonReviewSummary = () => {
         {[1, 2, 3, 4].map((i) => (
           <View key={i} style={styles.barRow}>
             <Skeleton width={80} height={13} style={{ marginRight: 30 }} />
-            <Skeleton flex={1} height={6} borderRadius={3} />
+            <Skeleton height={6} borderRadius={3} style={{ flex: 1 }} />
             <Skeleton width={30} height={13} style={{ marginLeft: 8 }} />
           </View>
         ))}
@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: '#E2E8F0', // colors.border
+    backgroundColor: '#E2E8F0',
     marginVertical: 16,
   },
   breakdownBlock: {
