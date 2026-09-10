@@ -1,5 +1,4 @@
 import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
-import * as Haptics from 'expo-haptics';
 import { Home, Building2, MapPin } from 'lucide-react-native';
 import { colors, palette, fontFamily, radius } from '../../design';
 
@@ -31,7 +30,6 @@ export const AddressLabelChips: React.FC<AddressLabelChipsProps> = ({
     (!['Home', 'Office'].includes(selectedLabel) && Boolean(selectedLabel));
 
   const handleSelect = (id: 'Home' | 'Office' | 'Other') => {
-    Haptics.selectionAsync();
     onSelectLabel(id);
   };
 

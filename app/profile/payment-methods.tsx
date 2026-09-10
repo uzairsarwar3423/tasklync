@@ -22,7 +22,6 @@ import {
   PaymentEmptyState,
 } from '../../src/components/payment';
 import { colors, palette, fontFamily, fontSize, spacing, shadows } from '../../src/design';
-import * as Haptics from 'expo-haptics';
 
 export default function PaymentMethodsScreen() {
   const router = useRouter();
@@ -42,7 +41,6 @@ export default function PaymentMethodsScreen() {
   const [newlyAddedId, setNewlyAddedId] = useState<string | null>(null);
 
   const handleBack = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     router.back();
   };
 

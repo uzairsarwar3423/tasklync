@@ -12,7 +12,6 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { useCartStore } from '../../store/cart.store';
 import { WorkerConflictModal } from './WorkerConflictModal';
 import { colors } from '../../design/colors';
@@ -75,12 +74,6 @@ export const AddToCartButton: FC<AddToCartButtonProps> = ({
   const countOpacity = useSharedValue(count > 0 ? 1 : 0);
   const addTextOpacity = useSharedValue(count > 0 ? 0 : 1);
 
-  const triggerHaptic = (hapticStyle: any) => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(hapticStyle).catch(() => {});
-    }
-  };
-
   useEffect(() => {
     if (count > 0) {
       widthVal.value = withTiming(targetActiveWidth, { duration: 120 });
@@ -117,7 +110,6 @@ export const AddToCartButton: FC<AddToCartButtonProps> = ({
       return;
     }
 
-    triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
     if (onAdd) onAdd();
   };
 
@@ -126,7 +118,6 @@ export const AddToCartButton: FC<AddToCartButtonProps> = ({
 
     if (count > 0) {
       updateQuantity(serviceId, count - 1);
-      triggerHaptic(Haptics.ImpactFeedbackStyle.Light);
       if (onRemove) onRemove();
     }
   };
@@ -151,7 +142,6 @@ export const AddToCartButton: FC<AddToCartButtonProps> = ({
       return;
     }
 
-    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     if (onAdd) onAdd();
   };
 
@@ -168,7 +158,6 @@ export const AddToCartButton: FC<AddToCartButtonProps> = ({
       workerCategory,
       isVerified,
     });
-    triggerHaptic(Haptics.ImpactFeedbackStyle.Medium);
     if (onAdd) onAdd();
   };
 

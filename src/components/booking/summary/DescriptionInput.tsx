@@ -6,7 +6,6 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { MessageSquare, ChevronDown, ChevronUp } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors, palette, fontFamily } from '../../../design';
 
 export interface DescriptionInputProps {
@@ -22,7 +21,6 @@ export const DescriptionInput: React.FC<DescriptionInputProps> = ({
   const heightProgress = useSharedValue(value ? 1 : 0);
 
   const toggleExpand = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const nextState = !isExpanded;
     setIsExpanded(nextState);
     heightProgress.value = withSpring(nextState ? 1 : 0, {
@@ -75,12 +73,16 @@ export const DescriptionInput: React.FC<DescriptionInputProps> = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: palette.white,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: palette.gray200,
-    padding: 14,
-    marginHorizontal: 20,
-    marginBottom: 12,
+    borderColor: palette.gray100,
+    padding: 16,
+    marginBottom: 14,
+    shadowColor: palette.gray900,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
   },
   headerRow: {
     flexDirection: 'row',

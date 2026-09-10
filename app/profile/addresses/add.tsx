@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -10,7 +10,6 @@ import {
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 
 import { AddressPickerMap, AddressPickerMapRef } from '../../../src/components/address/AddressPickerMap';
 import { AddressSearchInput } from '../../../src/components/address/AddressSearchInput';
@@ -96,8 +95,13 @@ export default function AddEditAddressScreen() {
     ? addresses.find((a) => a.id === editingAddressId)
     : undefined;
 
-  // Initial region setup
+  // Initial region setup (run once on mount)
+  const hasInitializedRef = useRef(false);
+
   useEffect(() => {
+    if (hasInitializedRef.current) return;
+    hasInitializedRef.current = true;
+
     if (isEditMode && existingAddress) {
       const editRegion: MapRegion = {
         latitude: existingAddress.lat,
@@ -139,7 +143,6 @@ export default function AddEditAddressScreen() {
   );
 
   const handleBack = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     Keyboard.dismiss();
     router.back();
   };
@@ -236,14 +239,12 @@ export default function AddEditAddressScreen() {
         }
       }
 
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
       // Smooth exit back to address list or booking
       setTimeout(() => {
         router.back();
       }, 180);
     } catch (_err) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert(
         'Save Failed',
         "Couldn't save address. Please check your connection and try again."

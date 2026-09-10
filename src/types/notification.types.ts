@@ -33,6 +33,13 @@ export type NotificationTemplateKey =
 
 export type NotificationPermissionStatus = 'undetermined' | 'granted' | 'denied';
 
+export interface DetailedNotificationPermission {
+  status: NotificationPermissionStatus;
+  granted: boolean;
+  canAskAgain: boolean;
+  expires?: 'never' | number | undefined;
+}
+
 export type NotificationFilter = 'all' | 'unread';
 
 export interface NotificationItem {

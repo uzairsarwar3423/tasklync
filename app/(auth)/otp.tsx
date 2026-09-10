@@ -3,7 +3,6 @@ import { View, StyleSheet, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MessageSquare, ChevronLeft } from 'lucide-react-native';
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 
 import { Screen } from '@components/layout/Screen';
 import { Text } from '@components/ui/Text';
@@ -53,7 +52,6 @@ export default function OTPScreen() {
   };
 
   const handleResend = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (phone) {
       sendOtp(phone);
     }

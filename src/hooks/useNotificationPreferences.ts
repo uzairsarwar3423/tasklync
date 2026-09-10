@@ -4,7 +4,6 @@ import { createMMKV } from 'react-native-mmkv';
 import { notificationApi } from '../services/api/notification.api';
 import { NotificationPreferences, NotificationPrefKey } from '../types/settings.types';
 import { CategoryPreference, NotificationCategory } from '../types/notification.types';
-import * as Haptics from 'expo-haptics';
 
 const storage = createMMKV({ id: 'tasklync_settings_storage' });
 const PREFS_STORAGE_KEY = 'notification_preferences_cache';
@@ -104,7 +103,6 @@ export function useNotificationPreferences() {
   // 4. Optimistic toggle handler
   const togglePreference = useCallback(
     (key: NotificationPrefKey) => {
-      Haptics.selectionAsync().catch(() => {});
 
       const current = queryClient.getQueryData<NotificationPreferences>(PREFS_QUERY_KEY) || preferences;
       let nextState: NotificationPreferences;

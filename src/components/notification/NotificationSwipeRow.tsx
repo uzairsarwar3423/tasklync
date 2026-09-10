@@ -11,7 +11,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Check, Trash2, MailOpen } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { NotificationItem } from '../../types/notification.types';
 
 const ACTION_WIDTH = 72;
@@ -67,9 +66,6 @@ export const NotificationSwipeRow: React.FC<NotificationSwipeRowProps> = ({
   }, [item.id, onDelete]);
 
   const handleDeletePress = useCallback(() => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    } catch {}
 
     isDeleting.value = true;
     rowOpacity.value = withTiming(0, { duration: 150 });
@@ -81,9 +77,6 @@ export const NotificationSwipeRow: React.FC<NotificationSwipeRowProps> = ({
   }, [isDeleting, rowOpacity, rowHeight, triggerDelete]);
 
   const handleMarkReadPress = useCallback(() => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch {}
 
     closeRow();
     if (onMarkRead) {

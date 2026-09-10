@@ -15,7 +15,6 @@ import { X, Smartphone, CreditCard, Check } from 'lucide-react-native';
 import { AddPaymentMethodType, AddWalletDTO, AddCardDTO } from '../../types/payment.types';
 import { SecurePaymentNotice } from './SecurePaymentNotice';
 import { colors, palette, fontFamily, fontSize, radius, spacing, shadows } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface AddCardSheetProps {
   visible: boolean;
@@ -130,10 +129,8 @@ export const AddCardSheet: React.FC<AddCardSheetProps> = ({
         });
       }
 
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       handleClose();
     } catch (err: any) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
       setErrorMsg(err?.message || 'Failed to add payment method. Please check details.');
     }
   };
@@ -185,7 +182,6 @@ export const AddCardSheet: React.FC<AddCardSheetProps> = ({
                   selectedType === 'jazzcash' && styles.typeTabActive,
                 ]}
                 onPress={() => {
-                  Haptics.selectionAsync().catch(() => {});
                   setSelectedType('jazzcash');
                 }}
               >
@@ -210,7 +206,6 @@ export const AddCardSheet: React.FC<AddCardSheetProps> = ({
                   selectedType === 'easypaisa' && styles.typeTabActive,
                 ]}
                 onPress={() => {
-                  Haptics.selectionAsync().catch(() => {});
                   setSelectedType('easypaisa');
                 }}
               >
@@ -235,7 +230,6 @@ export const AddCardSheet: React.FC<AddCardSheetProps> = ({
                   selectedType === 'card' && styles.typeTabActive,
                 ]}
                 onPress={() => {
-                  Haptics.selectionAsync().catch(() => {});
                   setSelectedType('card');
                 }}
               >
@@ -364,7 +358,6 @@ export const AddCardSheet: React.FC<AddCardSheetProps> = ({
               activeOpacity={0.8}
               style={styles.checkboxRow}
               onPress={() => {
-                Haptics.selectionAsync().catch(() => {});
                 setIsDefault(!isDefault);
               }}
             >

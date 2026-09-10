@@ -1,7 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text, Pressable, ViewStyle, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { Clock } from 'lucide-react-native';
 import { ServicePriceTag } from '../service/ServicePriceTag';
@@ -49,7 +48,6 @@ export const WorkerServiceRow: React.FC<WorkerServiceRowProps> = ({
   };
 
   const handleRowPress = () => {
-    Haptics.selectionAsync();
     router.push({
       pathname: `/service/${service.id}`,
       params: { workerId },
@@ -57,7 +55,6 @@ export const WorkerServiceRow: React.FC<WorkerServiceRowProps> = ({
   };
 
   const handleQuotePress = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert(
       'Get Quote',
       `Would you like to chat with ${workerName || 'the provider'} to get a custom quote for ${service.serviceName}?`,

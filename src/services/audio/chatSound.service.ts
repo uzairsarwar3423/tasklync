@@ -1,5 +1,4 @@
 import { createAudioPlayer, setAudioModeAsync, AudioPlayer } from 'expo-audio';
-import * as Haptics from 'expo-haptics';
 import { Platform, AppState } from 'react-native';
 
 // Sound assets required via Metro bundler
@@ -176,14 +175,6 @@ class ChatSoundService {
       if (__DEV__) {
         console.warn(`[ChatSoundService] Error playing ${playerType} sound:`, err);
       }
-      // Haptic fallback if native audio hardware is restricted
-      try {
-        Haptics.impactAsync(
-          playerType === 'send'
-            ? Haptics.ImpactFeedbackStyle.Light
-            : Haptics.ImpactFeedbackStyle.Medium
-        ).catch(() => {});
-      } catch {}
     }
   }
 

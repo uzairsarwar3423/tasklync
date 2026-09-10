@@ -11,21 +11,28 @@ import Animated, {
   Easing,
   withRepeat,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { IconButton } from '../ui/Button/IconButton';
 import { Text } from '../ui/Text/Text';
 import { useUnreadCount } from '../../hooks/useUnreadCount';
 import { colors, palette } from '../../design/colors';
 import { fontFamily } from '../../design/typography';
 
-interface NotificationBellProps {
+export interface NotificationBellProps {
   unreadCount?: number;
   onPress?: () => void;
+  variant?: 'badge' | 'dot';
+  size?: number;
+  iconSize?: number;
+  showDot?: boolean;
 }
 
 export const NotificationBell: React.FC<NotificationBellProps> = ({
   unreadCount: propUnreadCount,
   onPress,
+  variant = 'badge',
+  size = 40,
+  iconSize = 22,
+  showDot,
 }) => {
   const router = useRouter();
   const { unreadCount: hookUnreadCount } = useUnreadCount();
@@ -76,9 +83,6 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
   }));
 
   const handlePress = () => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch {}
     if (onPress) {
       onPress();
     } else {
@@ -86,33 +90,46 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({
     }
   };
 
-  const displayCount = effectiveUnreadCount > 99 ? '99+' : effectiveUnreadCount.toString();
+  const isDotVariant = variant === 'dot';
+  const hasIndicator = showDot !== undefined ? showDot : effectiveUnreadCount > 0;
+  const displayCount = effectiveUnreadCount > 99 ? '99+' : `${effectiveUnreadCount}`;
 
   return (
-    <View>
+    <View style={styles.container}>
       <Animated.View style={bellStyle}>
         <IconButton
           icon={Bell}
-          iconSize={22}
+          iconSize={iconSize}
           color={colors.textPrimary}
           bg="transparent"
           bgPressed="rgba(0,0,0,0.05)"
           onPress={handlePress}
-          size={40}
+          size={size}
           accessibilityLabel={`Notifications, ${effectiveUnreadCount} unread`}
         />
       </Animated.View>
 
-      {effectiveUnreadCount > 0 && (
-        <Animated.View style={[styles.badge, badgeStyle]} pointerEvents="none">
-          <Text style={styles.badgeText}>{displayCount}</Text>
-        </Animated.View>
+      {isDotVariant ? (
+        hasIndicator && (
+          <Animated.View style={[styles.dotBadge, badgeStyle]} pointerEvents="none" />
+        )
+      ) : (
+        effectiveUnreadCount > 0 && (
+          <Animated.View style={[styles.badge, badgeStyle]} pointerEvents="none">
+            <Text style={styles.badgeText}>{displayCount}</Text>
+          </Animated.View>
+        )
       )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  container: {
+    position: 'relative',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   badge: {
     position: 'absolute',
     top: 6,
@@ -126,6 +143,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 2,
+  },
+  dotBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: palette.danger,
+    borderWidth: 1.5,
+    borderColor: colors.bgApp,
   },
   badgeText: {
     fontFamily: fontFamily.inter.bold,

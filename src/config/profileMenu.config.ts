@@ -74,8 +74,8 @@ export const PROFILE_MENU_SECTIONS: ProfileMenuSectionConfig[] = [
     ],
   },
   {
-    id: 'section-danger',
-    sectionTitle: 'Privacy & Danger Zone',
+    id: 'section-privacy',
+    sectionTitle: 'Privacy & Safety',
     items: [
       {
         id: 'blocked-workers',
@@ -83,14 +83,6 @@ export const PROFILE_MENU_SECTIONS: ProfileMenuSectionConfig[] = [
         label: 'Blocked Service Providers',
         subtitle: 'Manage hidden professionals and blocked list',
         route: '/profile/blocked-workers',
-      },
-      {
-        id: 'delete-account',
-        icon: 'Trash2',
-        label: 'Delete Account',
-        subtitle: 'Permanently remove your account and data',
-        action: 'delete_account',
-        tone: 'danger',
       },
     ],
   },

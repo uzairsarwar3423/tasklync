@@ -20,7 +20,7 @@ export function EmptyBookingsActive() {
   return (
     <Animated.View style={[styles.container, animatedStyle]}>
       <View style={styles.iconContainer}>
-        <Calendar size={48} color="#9CA3AF" />
+        <Calendar size={48} strokeWidth={1.35} color="#9CA3AF" />
       </View>
       <Text style={styles.title}>No active bookings</Text>
       <Text style={styles.description}>You don't have any upcoming or ongoing services right now.</Text>

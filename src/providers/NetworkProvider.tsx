@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useRef, useCallback } from 'react';
-import * as Haptics from 'expo-haptics';
 import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import { useOfflineQueue } from '../hooks/useOfflineQueue';
 import { OfflineBanner } from '../components/feedback/OfflineBanner';
@@ -28,9 +27,6 @@ export const NetworkProvider: React.FC<{ children: React.ReactNode }> = ({
   const handleFailedItems = useCallback(
     (failedItems: QueuedRequest[]) => {
       // Audited Section 8 Rule: Haptic fires ONLY on failed-after-retry (user attention required)
-      try {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      } catch {}
 
       const count = failedItems.length;
       const message =

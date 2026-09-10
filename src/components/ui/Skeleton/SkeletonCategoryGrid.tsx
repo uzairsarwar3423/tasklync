@@ -1,23 +1,25 @@
-import { View, StyleSheet } from 'react-native';
+import { StyleSheet, ScrollView } from 'react-native';
 import { SkeletonCategoryCard } from './SkeletonCategoryCard';
-import { layout } from '../../../design/spacing';
 
 export const SkeletonCategoryGrid = () => {
   return (
-    <View style={styles.grid}>
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      bounces={false}
+      contentContainerStyle={styles.container}
+    >
       {[...Array(6)].map((_, index) => (
         <SkeletonCategoryCard key={`skeleton-cat-${index}`} />
       ))}
-    </View>
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    paddingHorizontal: layout.screenPaddingH,
-    paddingTop: 12,
+  container: {
+    paddingHorizontal: 34,
+    gap: 22,
+    paddingVertical: 4,
   },
 });

@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { ChevronRight } from 'lucide-react-native';
 
 import { colors } from '../../design/colors';
@@ -36,7 +35,6 @@ export const WorkerCard: React.FC<WorkerCardProps> = ({ worker }) => {
   };
 
   const handlePress = () => {
-    Haptics.selectionAsync();
     router.push(`/worker/${worker.id}` as any);
   };
 

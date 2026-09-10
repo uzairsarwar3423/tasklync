@@ -41,7 +41,11 @@ export function BookingActions({ status, onAction }: BookingActionsProps) {
             ]}
             onPress={() => onAction(actionConfig.action)}
           >
-            <Text style={[styles.text, textStyle]}>
+            <Text 
+              style={[styles.text, textStyle]}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
               {actionConfig.label}
             </Text>
           </Pressable>

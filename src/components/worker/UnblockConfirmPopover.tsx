@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { colors, palette, fontFamily, fontSize, radius, spacing, shadows } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface UnblockConfirmPopoverProps {
   visible: boolean;
@@ -26,12 +25,10 @@ export const UnblockConfirmPopover: React.FC<UnblockConfirmPopoverProps> = ({
   isLoading = false,
 }) => {
   const handleConfirm = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     onConfirm();
   };
 
   const handleCancel = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     onCancel();
   };
 

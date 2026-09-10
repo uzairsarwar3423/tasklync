@@ -3,7 +3,6 @@ import { StyleSheet, View, Pressable, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import { CategoryFilterChips } from './CategoryFilterChips';
 import { MapSearchBar } from './MapSearchBar';
 import { colors } from '../../design/colors';
@@ -19,9 +18,6 @@ export const MapTopBar: FC<MapTopBarProps> = ({
   const router = useRouter();
 
   const handleBack = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     if (router.canGoBack()) {
       router.back();
     } else {

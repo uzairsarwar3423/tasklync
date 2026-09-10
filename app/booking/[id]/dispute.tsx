@@ -14,7 +14,6 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, CheckCircle2, ShieldCheck, Clock, AlertCircle } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 
 import { useBookingDetails } from '../../../src/hooks/useBookingDetails';
 import { useDispute } from '../../../src/hooks/useDispute';
@@ -89,9 +88,6 @@ export default function DisputeScreen() {
 
       try {
         setLocalError(null);
-        try {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-        } catch {}
 
         await openDispute({
           bookingId: targetId,
@@ -184,7 +180,7 @@ export default function DisputeScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.flexOne}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <View style={[styles.container, { paddingTop: Math.max(insets.top, 12) }]}>
         <StatusBar barStyle="dark-content" backgroundColor={colors.bgCard} />

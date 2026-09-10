@@ -1,5 +1,4 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import * as Haptics from 'expo-haptics';
 import { Check } from 'lucide-react-native';
 import { Address } from '../../types/address.types';
 import { labelToIcon } from '../../utils/address';
@@ -28,7 +27,6 @@ export const AddressCard: React.FC<AddressCardProps> = ({
   const isSelectionMode = isSelected !== undefined;
 
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (onSelect) {
       onSelect(address);
     } else if (onPress) {
@@ -38,7 +36,6 @@ export const AddressCard: React.FC<AddressCardProps> = ({
 
   const handleLongPress = () => {
     if (onLongPress) {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       onLongPress(address);
     }
   };
@@ -127,27 +124,26 @@ const styles = StyleSheet.create({
     height: 76,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    borderRadius: 16,
+    borderRadius: 18,
     backgroundColor: palette.white,
     justifyContent: 'center',
     shadowColor: palette.gray900,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 3,
-    elevation: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
   },
   cardUnselected: {
     borderWidth: 1,
-    borderColor: palette.gray200,
+    borderColor: palette.gray100,
   },
   cardSelected: {
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: colors.primary,
     backgroundColor: palette.green50,
   },
   cardPressed: {
     backgroundColor: palette.gray50,
-    borderColor: palette.gray300,
     transform: [{ scale: 0.99 }],
   },
   contentRow: {

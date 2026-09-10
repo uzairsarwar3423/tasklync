@@ -14,7 +14,6 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, Share2, FileText, Download, ExternalLink, ShieldCheck } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 
 import { useInvoice } from '../../../src/hooks/useInvoice';
 import { InvoiceHeader } from '../../../src/components/booking/InvoiceHeader';
@@ -52,7 +51,6 @@ export default function InvoiceScreen() {
     if (!invoice) return;
 
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
 
       if (invoice.kind === 'pdf') {
         await Share.share({
@@ -79,7 +77,6 @@ export default function InvoiceScreen() {
 
   const handleOpenPdfUrl = useCallback(async (url: string) => {
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       const canOpen = await Linking.canOpenURL(url);
       if (canOpen) {
         await Linking.openURL(url);

@@ -8,7 +8,6 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../design/colors';
 import { typography } from '../../design/typography';
 import { springConfig } from '../../design/animations';
@@ -45,9 +44,6 @@ export const ProceedFooter: FC<ProceedFooterProps> = ({
   const handleProceed = () => {
     if (!isEnabled) return;
 
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    }
 
     if (onProceed) {
       onProceed();

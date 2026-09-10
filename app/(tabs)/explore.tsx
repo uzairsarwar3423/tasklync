@@ -1,9 +1,7 @@
-import React, { useRef } from 'react';
-import { View, StyleSheet, Text, ActivityIndicator, ScrollView, Pressable } from 'react-native';
+import { useRef } from 'react';
+import { View, StyleSheet, Text, ScrollView, Pressable } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import Animated, { useSharedValue } from 'react-native-reanimated';
-import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSharedValue } from 'react-native-reanimated';
 import { SearchHeader } from '../../src/components/home/SearchHeader';
 import { BottomSheet, BottomSheetRef } from '../../src/components/layout/BottomSheet';
 import { FilterSheetContent } from '../../src/components/search/FilterSheetContent';
@@ -11,6 +9,7 @@ import { RecentSearchesSection } from '../../src/components/search/RecentSearche
 import { WorkerSearchCard } from '../../src/components/worker/WorkerSearchCard';
 import { SkeletonWorkerSearchCard } from '../../src/components/ui/Skeleton';
 import { ChipGroup, Chip } from '../../src/components/ui/Chip';
+import { ErrorState } from '../../src/components/feedback/ErrorState';
 import { useSearch } from '../../src/hooks/useSearch';
 import { useRecentSearches } from '../../src/hooks/useRecentSearches';
 import { colors } from '../../src/design/colors';
@@ -19,8 +18,6 @@ import { DEFAULT_FILTERS } from '../../src/types/search.types';
 import { Search, X } from 'lucide-react-native';
 
 export default function ExploreScreen() {
-  const router = useRouter();
-  const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
   const filterSheetRef = useRef<BottomSheetRef>(null);
 
@@ -36,6 +33,8 @@ export default function ExploreScreen() {
     total,
     isLoading,
     isLoadingMore,
+    isError,
+    refetch,
     hasMore,
     loadMore,
     clearSearch,
@@ -47,12 +46,6 @@ export default function ExploreScreen() {
     removeSearch,
     clearAll,
   } = useRecentSearches();
-
-  const handleSearchSubmit = () => {
-    if (query.length >= 2) {
-      addSearch(query);
-    }
-  };
 
   const handleRecentSearchSelect = (term: string) => {
     setQuery(term);
@@ -252,6 +245,15 @@ export default function ExploreScreen() {
                     <SkeletonWorkerSearchCard key={i} />
                   ))}
                 </View>
+              ) : isError ? (
+                <ErrorState
+                  type="error"
+                  title="Couldn't load workers"
+                  subtitle="Please check your internet connection and try again."
+                  onRetry={refetch}
+                  retryButtonText="Retry"
+                  style={{ paddingVertical: 40 }}
+                />
               ) : (
                 renderEmptyResults()
               )

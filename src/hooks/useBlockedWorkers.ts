@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createMMKV } from 'react-native-mmkv';
 import { apiClient } from '../services/api/client';
 import { BlockedWorker } from '../types/moderation.types';
-import * as Haptics from 'expo-haptics';
 
 const storage = createMMKV({ id: 'tasklync_moderation_storage' });
 const BLOCKED_WORKERS_KEY = 'blocked_workers_cache';
@@ -90,7 +89,6 @@ export function useBlockedWorkers() {
       queryClient.invalidateQueries({ queryKey: ['workers'] });
       queryClient.invalidateQueries({ queryKey: ['search-workers'] });
 
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     },
   });
 
@@ -115,7 +113,6 @@ export function useBlockedWorkers() {
     queryClient.invalidateQueries({ queryKey: ['workers'] });
     queryClient.invalidateQueries({ queryKey: ['search-workers'] });
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
   }, [lastUnblockedWorker, blockedWorkers, queryClient]);
 
   const dismissToast = useCallback(() => {

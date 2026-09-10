@@ -12,7 +12,6 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../../design/colors';
 import { typography } from '../../../design/typography';
 import { shadows } from '../../../design/shadows';
@@ -66,9 +65,6 @@ export const TabToggle: React.FC<TabToggleProps> = ({
 
   const handlePress = (value: string) => {
     if (disabled) return;
-    if (Platform.OS !== 'web') {
-      Haptics.selectionAsync().catch(() => {});
-    }
     onChange(value);
   };
 

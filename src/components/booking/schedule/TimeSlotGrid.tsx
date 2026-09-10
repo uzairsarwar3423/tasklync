@@ -1,15 +1,17 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { SlotInfo } from '../../../hooks/useWorkerSlots';
 import { TimeSlotChip } from './TimeSlotChip';
 import { TimeSlotSkeleton } from './TimeSlotSkeleton';
-import { colors, palette, fontFamily } from '../../../design';
+import { colors, palette, fontFamily, radius } from '../../../design';
 
 export interface TimeSlotGridProps {
   slots: SlotInfo[];
   isLoading: boolean;
   selectedTimeSlot: string | null;
   onSelectSlot: (timeStr: string) => void;
+  isError?: boolean;
+  onRetry?: () => void;
 }
 
 export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
@@ -17,12 +19,14 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
   isLoading,
   selectedTimeSlot,
   onSelectSlot,
+  isError = false,
+  onRetry,
 }) => {
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
         <Text style={styles.sectionTitle}>Available Time Slots</Text>
-        {!isLoading && slots.length > 0 && (
+        {!isLoading && !isError && slots.length > 0 && (
           <Text style={styles.slotCountText}>
             {slots.filter((s) => s.available).length} available
           </Text>
@@ -34,6 +38,30 @@ export const TimeSlotGrid: React.FC<TimeSlotGridProps> = ({
           Array.from({ length: 6 }).map((_, idx) => (
             <TimeSlotSkeleton key={`slot-skel-${idx}`} />
           ))
+        ) : isError ? (
+          <View style={styles.emptySlotBox}>
+            <Text style={styles.emptySlotText}>Couldn't load available slots</Text>
+            <Text style={styles.emptySlotSub}>
+              Please check your internet connection and try again.
+            </Text>
+            {onRetry && (
+              <Pressable
+                style={({ pressed }) => [styles.retryBtn, pressed && styles.retryBtnPressed]}
+                onPress={onRetry}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel="Retry loading slots"
+              >
+                <Text 
+                  style={styles.retryBtnText}
+                  numberOfLines={1}
+                  ellipsizeMode="tail"
+                >
+                  Retry
+                </Text>
+              </Pressable>
+            )}
+          </View>
         ) : slots.length > 0 ? (
           slots.map((slot) => (
             <TimeSlotChip
@@ -106,5 +134,28 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: 16,
+  },
+  retryBtn: {
+    marginTop: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: radius.pill,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+  },
+  retryBtnPressed: {
+    opacity: 0.8,
+  },
+  retryBtnText: {
+    fontFamily: fontFamily.jakarta.semiBold,
+    fontSize: 12,
+    lineHeight: 16,
+    color: palette.white,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+    alignSelf: 'center',
   },
 });

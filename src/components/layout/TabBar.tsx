@@ -1,8 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Pressable, Platform, Dimensions, LayoutChangeEvent } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, StyleSheet, Pressable, Dimensions, LayoutChangeEvent } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -10,9 +9,11 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { Home, Search, Calendar, User, CalendarCheck, UserCheck } from 'lucide-react-native';
+import { Home, Search, Calendar, User, CalendarCheck, UserCheck, MessageSquare, MessageSquareText } from 'lucide-react-native';
 import { colors } from '../../design/colors';
 import { fontFamily } from '../../design/typography';
+import { useChatUnreadStore } from '../../store/chatUnread.store';
+import { TabBadge } from './TabBadge';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -27,6 +28,7 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
   const insets = useSafeAreaInsets();
   const [containerWidth, setContainerWidth] = useState(SCREEN_WIDTH - 40);
   const activeIndex = useSharedValue(state.index);
+  const unreadMessageCount = useChatUnreadStore((s) => s.unreadCount);
 
   useEffect(() => {
     activeIndex.value = withSpring(state.index, SPRING_CONFIG);
@@ -58,6 +60,7 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const isFocused = state.index === index;
+          const badgeCount = route.name === 'messages' ? unreadMessageCount : 0;
 
           const onPress = () => {
             const event = navigation.emit({
@@ -68,7 +71,6 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
 
             if (!isFocused && !event.defaultPrevented) {
               // Haptic feedback for physical engagement
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               navigation.navigate(route.name);
             }
           };
@@ -83,6 +85,8 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
                 return <Search {...iconProps} />;
               case 'bookings':
                 return isFocused ? <CalendarCheck {...iconProps} /> : <Calendar {...iconProps} />;
+              case 'messages':
+                return isFocused ? <MessageSquareText {...iconProps} /> : <MessageSquare {...iconProps} />;
               case 'profile':
                 return isFocused ? <UserCheck {...iconProps} /> : <User {...iconProps} />;
               default:
@@ -99,7 +103,11 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
               onPress={onPress}
               style={styles.tab}
             >
-              <TabIcon isFocused={isFocused} label={options.title || route.name}>
+              <TabIcon
+                isFocused={isFocused}
+                label={options.title || route.name}
+                badgeCount={badgeCount}
+              >
                 {renderIcon}
               </TabIcon>
             </Pressable>
@@ -110,7 +118,7 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
   );
 };
 
-const TabIcon = ({ isFocused, label, children }: any) => {
+const TabIcon = ({ isFocused, label, children, badgeCount = 0 }: any) => {
   const scale = useSharedValue(isFocused ? 1 : 1);
   const translateY = useSharedValue(isFocused ? -2 : 0);
 
@@ -149,10 +157,14 @@ const TabIcon = ({ isFocused, label, children }: any) => {
 
   return (
     <View style={styles.iconContainer}>
-      <Animated.View style={iconStyle}>
-        {children(isFocused ? colors.primaryDark : colors.textMuted)}
+      <Animated.View style={[iconStyle, styles.animatedWrapper]}>
+        <View style={styles.iconWrapper}>
+          {children(isFocused ? colors.primaryDark : colors.textMuted)}
+          {badgeCount > 0 && <TabBadge count={badgeCount} />}
+        </View>
       </Animated.View>
       <Animated.Text
+        numberOfLines={1}
         style={[
           styles.label,
           { color: isFocused ? colors.primaryDark : colors.textMuted },
@@ -188,10 +200,23 @@ const styles = StyleSheet.create({
     height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
   },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'visible',
+  },
+  animatedWrapper: {
+    overflow: 'visible',
+  },
+  iconWrapper: {
+    width: 28,
+    height: 28,
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'visible',
   },
   label: {
     fontFamily: fontFamily.jakarta.semiBold,

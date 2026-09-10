@@ -1,9 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, Text, ViewStyle } from 'react-native';
-import { OnlineBadge } from '../ui/Badge/OnlineBadge';
-import { colors } from '../../design/colors';
-import { radius } from '../../design/radius';
-import { typography } from '../../design/typography';
+import { Zap, Clock, ChevronRight } from 'lucide-react-native';
+import { fontFamily } from '../../design/typography';
 import { WorkerAvailabilityStatus } from '../../types/worker.types';
 
 interface WorkerAvailabilityCardProps {
@@ -18,71 +16,77 @@ export const WorkerAvailabilityCard: React.FC<WorkerAvailabilityCardProps> = ({
   status,
   availableUntil = null,
   nextAvailable = null,
-  avgResponseMins,
+  avgResponseMins = 30,
   style,
 }) => {
-  const getCardStyle = () => {
-    switch (status) {
-      case 'AVAILABLE':
-        return {
-          containerBg: colors.bgSuccess || '#F0FDF4',
-          borderColor: colors.primaryBorder || '#BBF7D0',
-          dotStatus: 'online' as const,
-          titleColor: colors.online || '#16A34A',
-          title: 'Available now',
-          subtitle: `Until ${availableUntil || '6:00 PM'} · Responds in ~${avgResponseMins} min`,
-        };
-      case 'BUSY':
-        return {
-          containerBg: '#FEF3C7', // Amber light
-          borderColor: colors.busy || '#D97706',
-          dotStatus: 'busy' as const,
-          titleColor: '#D97706',
-          title: 'On a job',
-          subtitle: 'Usually free in 1-2 hours · Responds in ~15 min',
-        };
-      case 'PAUSED':
-        return {
-          containerBg: colors.bgSection || '#F3F4F6',
-          borderColor: colors.border || '#E5E7EB',
-          dotStatus: 'offline' as const,
-          titleColor: colors.textMuted || '#6B7280',
-          title: 'Paused',
-          subtitle: 'Accepting bookings from Thursday',
-        };
-      case 'OFFLINE':
-      default:
-        return {
-          containerBg: colors.bgSection || '#F3F4F6',
-          borderColor: colors.border || '#E5E7EB',
-          dotStatus: 'offline' as const,
-          titleColor: colors.textMuted || '#6B7280',
-          title: 'Offline',
-          subtitle: `Available ${nextAvailable || 'tomorrow at 9:00 AM'}`,
-        };
+  const isAvailable = status === 'AVAILABLE';
+  const isBusy = status === 'BUSY';
+
+  const getTheme = () => {
+    if (isAvailable) {
+      return {
+        bg: '#F0FDF4',
+        border: '#DCFCE7',
+        iconBg: '#DCFCE7',
+        iconColor: '#16A34A',
+        titleColor: '#15803D',
+        title: 'Available now',
+        subtitle: avgResponseMins > 0 ? `Usually responds within ${avgResponseMins} minutes` : 'Ready for new bookings',
+      };
     }
+    if (isBusy) {
+      return {
+        bg: '#FEF3C7',
+        border: '#FDE68A',
+        iconBg: '#FDE68A',
+        iconColor: '#D97706',
+        titleColor: '#B45309',
+        title: 'Currently on a job',
+        subtitle: 'Currently serving another booking',
+      };
+    }
+    return {
+      bg: '#F8FAFC',
+      border: '#E2E8F0',
+      iconBg: '#E2E8F0',
+      iconColor: '#64748B',
+      titleColor: '#475569',
+      title: 'Offline',
+      subtitle: nextAvailable ? `Available ${nextAvailable}` : 'Currently offline',
+    };
   };
 
-  const config = getCardStyle();
+  const theme = getTheme();
 
   return (
     <View
       style={[
         styles.container,
         {
-          backgroundColor: config.containerBg,
-          borderColor: config.borderColor,
+          backgroundColor: theme.bg,
+          borderColor: theme.border,
         },
         style,
       ]}
     >
-      <View style={styles.header}>
-        <OnlineBadge status={config.dotStatus} size={8} style={styles.dot} />
-        <Text style={[styles.title, { color: config.titleColor }]}>
-          {config.title}
-        </Text>
+      <View style={styles.leftGroup}>
+        <View style={[styles.iconBox, { backgroundColor: theme.iconBg }]}>
+          {isAvailable ? (
+            <Zap size={16} color={theme.iconColor} fill={theme.iconColor} />
+          ) : (
+            <Clock size={16} color={theme.iconColor} />
+          )}
+        </View>
+
+        <View style={styles.textGroup}>
+          <Text style={[styles.title, { color: theme.titleColor }]}>
+            {theme.title}
+          </Text>
+          <Text style={styles.subtitle}>{theme.subtitle}</Text>
+        </View>
       </View>
-      <Text style={styles.subtitle}>{config.subtitle}</Text>
+
+      <ChevronRight size={18} color={theme.iconColor} strokeWidth={2.2} />
     </View>
   );
 };
@@ -90,26 +94,39 @@ export const WorkerAvailabilityCard: React.FC<WorkerAvailabilityCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     borderWidth: 1,
-    borderRadius: radius.md,
-    padding: 12,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
     width: '100%',
-  },
-  header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    justifyContent: 'space-between',
   },
-  dot: {
-    marginRight: 8,
+  leftGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 10,
+  },
+  iconBox: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  textGroup: {
+    flex: 1,
   },
   title: {
-    fontFamily: typography.fontFamily.jakarta.semiBold,
-    fontSize: 13,
+    fontFamily: fontFamily.jakarta.bold,
+    fontSize: 14,
+    marginBottom: 2,
   },
   subtitle: {
-    fontFamily: typography.fontFamily.jakarta.regular,
-    fontSize: 12,
-    color: colors.textMuted || '#6B7280',
-    paddingLeft: 16, // offset dot
+    fontFamily: fontFamily.jakarta.regular,
+    fontSize: 12.5,
+    color: '#64748B',
   },
 });

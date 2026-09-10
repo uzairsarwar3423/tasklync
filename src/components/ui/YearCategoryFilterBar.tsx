@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { ChevronDown, Check, X } from 'lucide-react-native';
 import { colors, palette, fontFamily, fontSize, radius, spacing, shadows } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface YearCategoryFilterBarProps {
   selectedYear: number | 'all';
@@ -45,23 +44,19 @@ export const YearCategoryFilterBar: React.FC<YearCategoryFilterBarProps> = ({
   const categoryLabel = activeCategoryObj ? activeCategoryObj.name : 'All Categories';
 
   const handleOpenYear = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setActiveModal('year');
   };
 
   const handleOpenCategory = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setActiveModal('category');
   };
 
   const handleSelectYear = (year: number | 'all') => {
-    Haptics.selectionAsync().catch(() => {});
     onYearChange(year);
     setActiveModal(null);
   };
 
   const handleSelectCategory = (catId: string) => {
-    Haptics.selectionAsync().catch(() => {});
     onCategoryChange(catId);
     setActiveModal(null);
   };
@@ -116,7 +111,6 @@ export const YearCategoryFilterBar: React.FC<YearCategoryFilterBarProps> = ({
           <TouchableOpacity
             activeOpacity={0.7}
             onPress={() => {
-              Haptics.selectionAsync().catch(() => {});
               onYearChange('all');
               onCategoryChange('all');
             }}

@@ -12,7 +12,6 @@ import {
 import { X, ShieldAlert, Check, AlertCircle } from 'lucide-react-native';
 import { BlockReason, BlockReasonOption } from '../../types/moderation.types';
 import { colors, palette, fontFamily, fontSize, radius, spacing, shadows } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface BlockWorkerSheetProps {
   visible: boolean;
@@ -44,7 +43,6 @@ export const BlockWorkerSheet: React.FC<BlockWorkerSheetProps> = ({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleSelectReason = (reason: BlockReason) => {
-    Haptics.selectionAsync().catch(() => {});
     setSelectedReason((prev) => (prev === reason ? null : reason));
     setErrorMsg(null);
   };
@@ -53,10 +51,8 @@ export const BlockWorkerSheet: React.FC<BlockWorkerSheetProps> = ({
     if (isLoading) return;
     try {
       await onBlock(workerId, selectedReason || undefined);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       onClose();
     } catch (err: any) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
       setErrorMsg(err?.message || 'Failed to block worker. Please try again.');
     }
   };

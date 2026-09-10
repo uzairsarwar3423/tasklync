@@ -61,9 +61,10 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
         transparent={true}
         animationType="slide" // Native OS smooth slide animation
         onRequestClose={handleClose}
+        statusBarTranslucent={true}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalContainer}
         >
           {/* Fully transparent backdrop, no gray dimming */}

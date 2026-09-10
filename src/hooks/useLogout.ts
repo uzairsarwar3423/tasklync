@@ -7,7 +7,6 @@ import { useLocationStore } from '../store/location.store';
 import { usePushRegistration } from './usePushRegistration';
 import { socketService } from '../services/socket/socket.service';
 import { createMMKV } from 'react-native-mmkv';
-import * as Haptics from 'expo-haptics';
 
 const userStorage = createMMKV({ id: 'tasklync_user_profile_storage' });
 const bookingsStorage = createMMKV({ id: 'tasklync_bookings_storage' });
@@ -35,7 +34,6 @@ export function useLogout() {
     setIsLoggingOut(true);
 
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
 
       // 1. Disconnect WebSockets and unregister push notifications while session token is valid
       try {

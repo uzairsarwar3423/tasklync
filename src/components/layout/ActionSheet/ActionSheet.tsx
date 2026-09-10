@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
 import { BottomSheet, BottomSheetRef } from '../BottomSheet';
 import { colors } from '../../../design/colors';
 import { typography } from '../../../design/typography';
-import * as Haptics from 'expo-haptics';
 
 export interface ActionItem {
   label: string;
@@ -39,20 +38,11 @@ export const ActionSheet: React.FC<ActionSheetProps> = ({
 
   const handleActionPress = (action: ActionItem) => {
     if (action.variant === 'disabled') return;
-    
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(
-        action.variant === 'danger' ? Haptics.ImpactFeedbackStyle.Medium : Haptics.ImpactFeedbackStyle.Light
-      ).catch(() => {});
-    }
     action.onPress();
     sheetRef.current?.close(); // Assuming action tap closes sheet. Optional but typical.
   };
 
   const handleCancel = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     onClose();
   };
 

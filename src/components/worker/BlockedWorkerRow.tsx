@@ -4,7 +4,6 @@ import { User } from 'lucide-react-native';
 import { BlockedWorker } from '../../types/moderation.types';
 import { UnblockConfirmPopover } from './UnblockConfirmPopover';
 import { colors, palette, fontFamily, fontSize, radius, spacing } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface BlockedWorkerRowProps {
   worker: BlockedWorker;
@@ -36,7 +35,6 @@ export const BlockedWorkerRow: React.FC<BlockedWorkerRowProps> = ({
   const formattedBlockedDate = formatDate(worker.blocked_at);
 
   const handleUnblockPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     setPopoverVisible(true);
   };
 

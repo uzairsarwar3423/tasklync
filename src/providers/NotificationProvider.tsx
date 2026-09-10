@@ -21,42 +21,72 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const authState = useAuthStore((s) => s.authState);
   const currentUserId = useAuthStore((s) => s.user?.id);
   const setPermissionStatus = useNotificationStore((s) => s.setPermissionStatus);
+  const setCanAskAgain = useNotificationStore((s) => s.setCanAskAgain);
   const setUnreadCount = useNotificationStore((s) => s.setUnreadCount);
   const incrementUnread = useNotificationStore((s) => s.incrementUnread);
 
   const foregroundSubRef = useRef<Notifications.EventSubscription | null>(null);
   const responseSubRef = useRef<Notifications.EventSubscription | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  const isInitializedRef = useRef<boolean>(false);
 
-  // 1. Initial Cold Start Setup (Channels + Initial Permission + Cold Start Tap Detection)
+  // 1. One-time Bootstrap Lifecycle: Channels, Initial Permission Prompt (Android 13+ & iOS), and Cold Start Launch
   useEffect(() => {
-    // 1.1 Apply Android notification channels & iOS categories asynchronously
-    pushService.registerNotificationChannels().catch(() => {});
+    if (isInitializedRef.current) return;
+    isInitializedRef.current = true;
 
-    // 1.2 Check initial permission state
-    pushService
-      .getPermissionStatus()
-      .then((status) => {
-        setPermissionStatus(status);
-      })
-      .catch(() => {});
+    let isMounted = true;
 
-    // 1.3 Check for killed-app cold launch tap
-    pushService
-      .getLastNotificationResponse()
-      .then((response) => {
-        if (response) {
+    const bootstrapNotifications = async () => {
+      // 1.1 Pre-register Android notification channels & iOS categories idempotently
+      await pushService.registerNotificationChannels().catch(() => {});
+
+      // 1.2 Evaluate permission state: On Android 13+ first launch or iOS, request runtime permission
+      try {
+        const detail = await pushService.getDetailedPermissionStatus();
+        let status = detail.status;
+
+        if (status === 'undetermined') {
+          // Native system dialog for Android 13+ POST_NOTIFICATIONS & iOS APNs
+          status = await pushService.requestPermission();
+          const refreshedDetail = await pushService.getDetailedPermissionStatus();
+          if (isMounted) {
+            setCanAskAgain(refreshedDetail.canAskAgain);
+          }
+        } else if (isMounted) {
+          setCanAskAgain(detail.canAskAgain);
+        }
+
+        if (isMounted) {
+          setPermissionStatus(status);
+          if (status === 'granted' && useAuthStore.getState().authState === 'authenticated') {
+            register().catch(() => {});
+          }
+        }
+      } catch (err) {
+        if (__DEV__) {
+          console.warn('[NotificationProvider] Permission bootstrap error:', err);
+        }
+      }
+
+      // 1.3 Check for killed-app cold launch tap
+      try {
+        const response = await pushService.getLastNotificationResponse();
+        if (response && isMounted) {
           const rawData = response.notification?.request?.content?.data || {};
           const targetPath = resolveNotificationRoute(rawData as any);
           if (targetPath) {
             notificationQueue.enqueue(targetPath);
           }
         }
-      })
-      .catch(() => {});
+      } catch {}
+    };
+
+    bootstrapNotifications();
 
     // 1.4 Flush Cold Start Queue once router and navigation tree mount
     const flushTimer = setTimeout(() => {
+      if (!isMounted) return;
       notificationQueue.flush((targetPath) => {
         try {
           router.push(targetPath as any);
@@ -66,8 +96,18 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       });
     }, 400);
 
-    // 1.5 Initial Unread Count Hydration (Page 1)
-    if (authState === 'authenticated') {
+    return () => {
+      isMounted = false;
+      clearTimeout(flushTimer);
+    };
+  }, [router, setPermissionStatus, setCanAskAgain, register]);
+
+  // 2. Auth State Sync & Push Token Rotation Listener
+  useEffect(() => {
+    if (authState === 'authenticated' && currentUserId) {
+      register().catch(() => {});
+
+      // Initial Unread Count Hydration (Page 1)
       notificationApi
         .getNotifications(null, 1)
         .then((res) => {
@@ -77,24 +117,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           }
         })
         .catch(() => {});
-    }
-
-    return () => {
-      clearTimeout(flushTimer);
-    };
-  }, [authState, router, setPermissionStatus, setUnreadCount]);
-
-  // 2. Auth State Sync & Push Token Rotation Listener
-  useEffect(() => {
-    if (authState === 'authenticated' && currentUserId) {
-      register().catch(() => {});
     } else if (authState === 'unauthenticated') {
       unregister().catch(() => {});
     }
 
     // Subscribe to push token rotations
     const tokenSub = pushService.addPushTokenListener(async (tokenData) => {
-      if (tokenData?.data && authState === 'authenticated') {
+      if (tokenData?.data && useAuthStore.getState().authState === 'authenticated') {
         await notificationApi.registerPushToken(String(tokenData.data)).catch(() => {});
       }
     });
@@ -102,9 +131,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     return () => {
       tokenSub.remove();
     };
-  }, [authState, currentUserId, register, unregister]);
+  }, [authState, currentUserId, register, unregister, setUnreadCount]);
 
-  // 3. Setup Foreground & Response Listeners
+  // 3. Foreground Notification & Background Response Listeners
   useEffect(() => {
     // 3.1 Foreground Listener (App Open) -> Show In-App Banner & Increment Unread Badge
     foregroundSubRef.current = pushService.addForegroundListener((notification) => {
@@ -118,13 +147,13 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
         incrementUnread();
 
-        // Reactively invalidate notifications queries without aggressive polling
+        // Reactively invalidate notifications queries
         queryClient.invalidateQueries({ queryKey: ['notifications'] });
         queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
 
         // Play receive sound if incoming event is a chat message
         if (category.includes('chat') || category.includes('message')) {
-          const senderId = (data.sender_id || data.senderId) ? String(data.sender_id || data.senderId) : undefined;
+          const senderId = data.sender_id || data.senderId ? String(data.sender_id || data.senderId) : undefined;
           const messageId = String(data.message_id || data.messageId || data.id || notification.request.identifier || '');
           chatSoundService
             .playReceiveSound(
@@ -140,7 +169,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
           title,
           body,
           category,
-          deepLink: (data.deep_link || data.deepLink) ? String(data.deep_link || data.deepLink) : undefined,
+          deepLink: data.deep_link || data.deepLink ? String(data.deep_link || data.deepLink) : undefined,
           data,
         });
       } catch (e) {
@@ -182,26 +211,28 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     };
   }, [router, showBanner, incrementUnread, currentUserId]);
 
-  // 4. AppState Foreground Listener (Self-healing & Permission Revocation Detection)
+  // 4. AppState Foreground Listener (Self-healing & Permission Revocation / Grant Detection)
   useEffect(() => {
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (
         appStateRef.current.match(/inactive|background/) &&
         nextAppState === 'active'
       ) {
-        // App returned to foreground: re-check permissions
+        // App returned to active foreground: re-sync permission state
         pushService
-          .getPermissionStatus()
-          .then((status) => {
-            setPermissionStatus(status);
-            if (status === 'granted' && authState === 'authenticated') {
+          .getDetailedPermissionStatus()
+          .then((detail) => {
+            setPermissionStatus(detail.status);
+            setCanAskAgain(detail.canAskAgain);
+
+            if (detail.status === 'granted' && useAuthStore.getState().authState === 'authenticated') {
               register().catch(() => {});
             }
           })
           .catch(() => {});
 
-        // Refresh unread counter & feed
-        if (authState === 'authenticated') {
+        // Refresh unread counter & feed if authenticated
+        if (useAuthStore.getState().authState === 'authenticated') {
           queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
           queryClient.invalidateQueries({ queryKey: ['notifications'] });
 
@@ -221,7 +252,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
     const sub = AppState.addEventListener('change', handleAppStateChange);
     return () => sub.remove();
-  }, [authState, register, setPermissionStatus, setUnreadCount]);
+  }, [register, setPermissionStatus, setCanAskAgain, setUnreadCount]);
 
   return <>{children}</>;
 }

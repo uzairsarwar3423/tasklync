@@ -8,7 +8,6 @@ import {
   Text,
 } from 'react-native';
 import { Search, X, Edit3 } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors, palette, fontFamily, radius, fontSize, shadows } from '../../design';
 
 export interface AddressSearchInputProps {
@@ -31,13 +30,11 @@ export const AddressSearchInput: React.FC<AddressSearchInputProps> = ({
   const inputRef = useRef<TextInput | null>(null);
 
   const handleClear = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onClear();
     inputRef.current?.focus();
   };
 
   const handleManualPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (onManualAddressPress) {
       onManualAddressPress();
     }

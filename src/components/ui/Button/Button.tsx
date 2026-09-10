@@ -7,13 +7,12 @@ import Animated, {
   withTiming,
   interpolateColor
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
-
 import { colors } from '@design/colors';
 import { layout, spacing } from '@design/spacing';
 import { radius } from '@design/radius';
 import { springConfig } from '@design/animations';
 import { fontFamily } from '@design/typography';
+import { getOpticalStrokeWidth } from '@design/iconography';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedText = Animated.createAnimatedComponent(Animated.Text);
@@ -32,9 +31,11 @@ export interface ButtonProps {
   loading?: boolean;
   icon?: React.ElementType; // Accept LucideIcon component
   iconPosition?: 'left' | 'right';
+  iconStrokeWidth?: number;
   fullWidth?: boolean;
   style?: ViewStyle;
   haptic?: HapticFeedbackType;
+  numberOfLines?: number;
 }
 
 export const Button = ({
@@ -46,22 +47,15 @@ export const Button = ({
   loading = false,
   icon: Icon,
   iconPosition = 'left',
+  iconStrokeWidth,
   fullWidth = true,
   style,
-  haptic = 'medium',
+  haptic = 'none',
+  numberOfLines = 1,
 }: ButtonProps) => {
   const scale = useSharedValue(1.0);
   const isPressed = useSharedValue(false);
   const [fixedWidth, setFixedWidth] = useState<number | null>(null);
-
-  const getHapticMethod = (type: HapticFeedbackType) => {
-    switch (type) {
-      case 'light': return Haptics.ImpactFeedbackStyle.Light;
-      case 'medium': return Haptics.ImpactFeedbackStyle.Medium;
-      case 'heavy': return Haptics.ImpactFeedbackStyle.Heavy;
-      default: return null;
-    }
-  };
 
   const handlePressIn = useCallback(() => {
     if (disabled || loading) return;
@@ -77,18 +71,8 @@ export const Button = ({
 
   const handlePress = useCallback(() => {
     if (disabled || loading) return;
-    
-    if (haptic !== 'none') {
-      const hapticStyle = getHapticMethod(haptic);
-      if (hapticStyle) {
-        Haptics.impactAsync(hapticStyle);
-      } else if (variant === 'text') {
-        Haptics.selectionAsync(); // text variant uses selection
-      }
-    }
-    
     onPress();
-  }, [disabled, loading, haptic, variant, onPress]);
+  }, [disabled, loading, onPress]);
 
   const onLayout = useCallback((event: LayoutChangeEvent) => {
     if (!loading && fixedWidth === null) {
@@ -102,13 +86,15 @@ export const Button = ({
       height: layout.primaryButtonH,
       paddingHorizontal: spacing.lg,
       fontSize: 16,
+      lineHeight: 22,
       iconSize: 18,
       gap: spacing.sm,
     },
     md: {
       height: layout.secondaryButtonH,
-      paddingHorizontal: spacing.md + spacing.sm, // 18px
+      paddingHorizontal: spacing.md + spacing.sm, // 20px
       fontSize: 14,
+      lineHeight: 20,
       iconSize: 16,
       gap: spacing.sm - 2, // 6px
     },
@@ -116,6 +102,7 @@ export const Button = ({
       height: layout.compactButtonH,
       paddingHorizontal: spacing.md + 2, // 14px
       fontSize: 13,
+      lineHeight: 18,
       iconSize: 14,
       gap: spacing.xs + 1, // 5px
     },
@@ -194,6 +181,7 @@ export const Button = ({
     justifyContent: 'center',
     flexDirection: 'row',
     width: fullWidth ? '100%' : undefined,
+    alignSelf: fullWidth ? 'stretch' : 'center',
     borderWidth: variant === 'secondary' ? 1.5 : 0,
     borderColor: variant === 'secondary' ? colorConfig.border : 'transparent',
     opacity: (colorConfig as any).opacity || 1,
@@ -213,12 +201,15 @@ export const Button = ({
   const renderContent = () => {
     const textElement = (
       <AnimatedText
+        numberOfLines={numberOfLines}
+        ellipsizeMode="tail"
         style={[
           styles.text,
           { 
             color: colorConfig.text, 
             fontFamily: fontFam, 
-            fontSize: sizeStyles.fontSize 
+            fontSize: sizeStyles.fontSize,
+            lineHeight: sizeStyles.lineHeight,
           },
           animatedTextStyle
         ]}
@@ -227,14 +218,23 @@ export const Button = ({
       </AnimatedText>
     );
 
-    const iconElement = Icon ? (
+    if (!Icon) {
+      return (
+        <View style={styles.contentRow}>
+          {textElement}
+        </View>
+      );
+    }
+
+    const iconElement = (
       <AnimatedView style={animatedTextStyle}>
         <Icon 
           size={sizeStyles.iconSize} 
           color={colorConfig.text} 
+          strokeWidth={iconStrokeWidth ?? getOpticalStrokeWidth(sizeStyles.iconSize, 'refined')}
         />
       </AnimatedView>
-    ) : null;
+    );
 
     return (
       <View style={[styles.contentRow, { gap: sizeStyles.gap }]}>
@@ -272,10 +272,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
   },
   text: {
-    includeFontPadding: false,
+    textAlign: 'center',
     textAlignVertical: 'center',
+    includeFontPadding: false,
+    alignSelf: 'center',
   },
   spinnerContainer: {
     alignItems: 'center',

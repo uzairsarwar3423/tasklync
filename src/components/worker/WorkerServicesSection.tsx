@@ -44,21 +44,11 @@ export const WorkerServicesSection: React.FC<WorkerServicesSectionProps> = ({
     );
   }
 
-  // If no custom service offerings returned, synthesize a primary service offering from worker stats
-  const displayServices: WorkerServiceOffering[] =
-    services && services.length > 0
-      ? services
-      : [
-          {
-            id: `fallback-${workerId}`,
-            serviceName: workerCategory ? `General ${workerCategory} Service` : 'General Home Service',
-            serviceNameUr: null,
-            customPrice: startingPrice || 500,
-            priceType: 'fixed',
-            isCustom: false,
-            notes: 'Includes standard diagnostic & service',
-          },
-        ];
+  if (!services || services.length === 0) {
+    return null;
+  }
+
+  const displayServices = services;
 
   return (
     <View style={[styles.container, style]}>

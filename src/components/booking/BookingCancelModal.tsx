@@ -14,7 +14,6 @@ import { BookingDetails } from '../../types/booking.types';
 import { useCancelBooking } from '../../hooks/useCancelBooking';
 import { RefundPolicyNotice } from './RefundPolicyNotice';
 import { colors, palette, fontFamily, fontSize, radius, spacing } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface BookingCancelModalProps {
   visible: boolean;
@@ -51,7 +50,6 @@ export const BookingCancelModal: React.FC<BookingCancelModalProps> = ({
 
   const handleConfirmCancel = async () => {
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
       const finalReason = selectedReason === 'Other reasons' && customReason.trim()
         ? customReason.trim()
         : selectedReason;

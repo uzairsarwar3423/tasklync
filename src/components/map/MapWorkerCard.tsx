@@ -7,7 +7,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Star, MapPin, Clock } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import { WorkerNearby } from '../../types/worker.types';
 import { WorkerMarkerBadge } from './WorkerMarkerBadge';
 import { colors } from '../../design/colors';
@@ -46,16 +45,10 @@ export const MapWorkerCard: FC<MapWorkerCardProps> = ({
   };
 
   const handleCardPress = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     onPressCard(worker);
   };
 
   const handleBookPress = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    }
     if (onPressBook) {
       onPressBook(worker);
     } else {

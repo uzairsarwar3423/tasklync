@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { bookingApi } from '../services/api/booking.api';
 import { DisputeDetails, DisputeReason } from '../types/booking.types';
-import * as Haptics from 'expo-haptics';
 
 export interface OpenDisputeArgs {
   bookingId: string;
@@ -33,9 +32,6 @@ export function useDispute(bookingId?: string | null) {
       return await bookingApi.openDispute(targetId, finalReason, finalDesc, evidenceUrls);
     },
     onSuccess: (_, variables) => {
-      try {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      } catch {}
 
       queryClient.invalidateQueries({ queryKey: ['booking-dispute', variables.bookingId] });
       queryClient.invalidateQueries({ queryKey: ['booking-details', variables.bookingId] });

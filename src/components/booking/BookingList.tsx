@@ -1,5 +1,6 @@
 import React, { useCallback, useRef } from 'react';
 import { StyleSheet, View, RefreshControl } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FlashList, ListRenderItemInfo } from '@shopify/flash-list';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 import { BookingDetails } from '../../types/booking.types';
@@ -8,16 +9,19 @@ import { BookingCardSkeleton } from './BookingCardSkeleton';
 import { EmptyBookingsActive } from '../feedback/EmptyState/EmptyBookingsActive';
 import { EmptyBookingsPast } from '../feedback/EmptyState/EmptyBookingsPast';
 import { EmptyBookingsCancelled } from '../feedback/EmptyState/EmptyBookingsCancelled';
+import { ErrorState } from '../feedback/ErrorState';
 import { TabType } from '../../hooks/useBookingsList';
 
 interface BookingListProps {
   bookings: BookingDetails[];
   isLoading: boolean;
+  isError?: boolean;
   activeTab: TabType;
   onRefresh: () => void;
 }
 
-export function BookingList({ bookings, isLoading, activeTab, onRefresh }: BookingListProps) {
+export function BookingList({ bookings, isLoading, isError = false, activeTab, onRefresh }: BookingListProps) {
+  const insets = useSafeAreaInsets();
   const isFirstMount = useRef(true);
 
   // After first render of items, it's no longer first mount for stagger
@@ -52,6 +56,19 @@ export function BookingList({ bookings, isLoading, activeTab, onRefresh }: Booki
       );
     }
 
+    if (isError) {
+      return (
+        <ErrorState
+          type="error"
+          title="Couldn't load bookings"
+          subtitle="Please check your internet connection or try again."
+          onRetry={onRefresh}
+          retryButtonText="Retry"
+          style={styles.errorStateContainer}
+        />
+      );
+    }
+
     if (activeTab === 'ACTIVE') return <EmptyBookingsActive />;
     if (activeTab === 'PAST') return <EmptyBookingsPast />;
     return <EmptyBookingsCancelled />;
@@ -64,7 +81,10 @@ export function BookingList({ bookings, isLoading, activeTab, onRefresh }: Booki
         renderItem={renderItem}
         keyExtractor={(item: BookingDetails) => item.id}
         estimatedItemSize={210}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: Math.max(insets.bottom, 16) + 96 },
+        ]}
         ListEmptyComponent={renderEmptyComponent}
         refreshControl={
           <RefreshControl 
@@ -89,5 +109,9 @@ const styles = StyleSheet.create({
   },
   skeletonContainer: {
     paddingTop: 8,
+  },
+  errorStateContainer: {
+    paddingVertical: 40,
+    paddingHorizontal: 20,
   },
 });

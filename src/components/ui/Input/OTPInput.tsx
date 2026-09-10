@@ -12,7 +12,6 @@ import Animated, {
   withSequence,
   withDelay
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 
 import { colors } from '@design/colors';
 import { radius } from '@design/radius';
@@ -61,7 +60,6 @@ export const OTPInput = ({
   // Handle Error Shake
   useEffect(() => {
     if (error) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       shakeX.value = withSequence(
         ...shakeSequence.map(x => withTiming(x, { duration: 45 }))
       );
@@ -77,7 +75,6 @@ export const OTPInput = ({
   // Handle Success Cascade Bounce
   useEffect(() => {
     if (success) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       scales.forEach((scale, index) => {
         scale.value = withDelay(
           index * 40,
@@ -98,7 +95,6 @@ export const OTPInput = ({
     if (sanitized.length > 1) {
       const extracted = sanitized.slice(0, length);
       onChange(extracted);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
       if (extracted.length === length && onComplete) {
         onComplete(extracted);
@@ -121,7 +117,6 @@ export const OTPInput = ({
         withSpring(1.06, springConfig.bouncy),
         withSpring(1.0, springConfig.bouncy)
       );
-      Haptics.selectionAsync();
 
       // Advance
       if (index < length - 1) {
@@ -140,14 +135,12 @@ export const OTPInput = ({
         const newValue = value.split('');
         newValue[index] = '';
         onChange(newValue.join(''));
-        Haptics.selectionAsync();
       } else if (index > 0) {
         // Move to previous box and clear it
         inputRefs.current[index - 1]?.focus();
         const newValue = value.split('');
         newValue[index - 1] = '';
         onChange(newValue.join(''));
-        Haptics.selectionAsync();
       }
     }
   };

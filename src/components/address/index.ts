@@ -10,3 +10,4 @@ export * from './AddressSearchInput';
 export * from './AddressSearchResultsList';
 export * from './AddressPickerMap';
 export * from './AddressConfirmSheet';
+export * from './MapErrorBoundary';

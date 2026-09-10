@@ -5,7 +5,6 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { CalendarDayItem } from '../../../hooks/useCalendarMonth';
 import { colors, palette, fontFamily } from '../../../design';
 
@@ -40,7 +39,6 @@ export const CalendarDayCell: React.FC<CalendarDayCellProps> = ({
 
   const handlePress = () => {
     if (isDisabled) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onSelect(dateStr);
   };
 

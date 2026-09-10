@@ -1,7 +1,9 @@
 import { useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import { AlertCircle, RefreshCw } from 'lucide-react-native';
 import { BookingAddress, useBookingDraftStore } from '../../store/bookingDraft.store';
+import { Address } from '../../types/address.types';
 import { useAddresses } from '../../hooks/useAddresses';
 import { AddressCard } from './AddressCard';
 import { AddressCardSkeleton } from './AddressCardSkeleton';
@@ -12,11 +14,13 @@ export interface AddressListProps {
   onSelectAddress: (address: BookingAddress) => void;
 }
 
+const AnyFlashList = FlashList as any;
+
 export const AddressList: React.FC<AddressListProps> = ({
   selectedAddressId,
   onSelectAddress,
 }) => {
-  const { addresses, isLoading } = useAddresses();
+  const { addresses, isLoading, isError, refetch } = useAddresses();
   const setAddressStore = useBookingDraftStore((s) => s.setAddress);
 
   // Auto-select default address if no address is selected yet
@@ -47,6 +51,27 @@ export const AddressList: React.FC<AddressListProps> = ({
     );
   }
 
+  if (isError) {
+    return (
+      <View style={styles.errorContainer}>
+        <AlertCircle size={20} color={palette.danger} />
+        <View style={styles.errorTextWrap}>
+          <Text style={styles.errorTitle}>Couldn&apos;t load addresses</Text>
+          <Text style={styles.errorSubtitle}>Please check your connection and retry</Text>
+        </View>
+        <Pressable
+          onPress={() => refetch()}
+          style={styles.retryBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Retry loading addresses"
+        >
+          <RefreshCw size={14} color={colors.primary} />
+          <Text style={styles.retryText}>Retry</Text>
+        </Pressable>
+      </View>
+    );
+  }
+
   if (addresses.length === 0) {
     return (
       <View style={styles.emptyContainer}>
@@ -58,11 +83,11 @@ export const AddressList: React.FC<AddressListProps> = ({
 
   return (
     <View style={styles.container}>
-      <FlashList
+      <AnyFlashList
         data={addresses}
         estimatedItemSize={76}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
+        keyExtractor={(item: Address) => item.id}
+        renderItem={({ item }: { item: Address }) => (
           <View style={styles.cardItemWrap}>
             <AddressCard
               address={item}
@@ -114,5 +139,46 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
     textAlign: 'center',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+    gap: 10,
+  },
+  errorTextWrap: {
+    flex: 1,
+  },
+  errorTitle: {
+    fontFamily: fontFamily.poppins.semiBold,
+    fontSize: 14,
+    color: palette.gray900,
+  },
+  errorSubtitle: {
+    fontFamily: fontFamily.jakarta.regular,
+    fontSize: 12,
+    color: palette.gray600,
+    marginTop: 2,
+  },
+  retryBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  retryText: {
+    fontFamily: fontFamily.jakarta.semiBold,
+    fontSize: 12,
+    color: colors.primary,
   },
 });

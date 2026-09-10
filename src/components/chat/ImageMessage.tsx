@@ -19,7 +19,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { RotateCcw, X, ZoomIn } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
 import { Message } from '../../types/chat.types';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -81,9 +80,6 @@ export const ImageMessage = React.memo(function ImageMessage({
 
   const handleImagePress = useCallback(() => {
     if (isUploading || isFailed || !imageUri) return;
-    try {
-      Haptics.selectionAsync();
-    } catch {}
     if (onPress) {
       onPress(imageUri);
     } else {
@@ -94,9 +90,6 @@ export const ImageMessage = React.memo(function ImageMessage({
   const handleRetryPress = useCallback(() => {
     const targetId = message.temp_id || message.id;
     if (targetId && onRetry) {
-      try {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      } catch {}
       onRetry(targetId);
     }
   }, [message.temp_id, message.id, onRetry]);

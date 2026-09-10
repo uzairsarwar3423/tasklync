@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { stripeService, DEFAULT_PAYMENT_METHODS } from '../services/payments/stripe.service';
 import { PaymentMethod, AddWalletDTO, AddCardDTO } from '../types/payment.types';
-import * as Haptics from 'expo-haptics';
 
 export const PAYMENT_METHODS_QUERY_KEY = ['payment-methods'];
 
@@ -146,7 +145,6 @@ export function usePaymentMethods() {
       await stripeService.setDefaultPaymentMethod(id);
     },
     onMutate: async (defaultId) => {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
       await queryClient.cancelQueries({ queryKey: PAYMENT_METHODS_QUERY_KEY });
       const prev = queryClient.getQueryData<PaymentMethod[]>(PAYMENT_METHODS_QUERY_KEY) || DEFAULT_PAYMENT_METHODS;
 

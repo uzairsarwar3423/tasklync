@@ -16,14 +16,12 @@ import {
   RateAppRow,
 } from '../../src/components/support';
 import { colors, palette, fontFamily, fontSize, radius, spacing, shadows } from '../../src/design';
-import * as Haptics from 'expo-haptics';
 
 export default function SupportScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   const handleBack = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     router.back();
   };
 

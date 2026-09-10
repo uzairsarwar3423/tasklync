@@ -7,7 +7,6 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { WorkerPortfolioImage } from '../../types/review.types';
 import { radius } from '@design/radius';
 
@@ -58,7 +57,6 @@ export const PortfolioCell = ({
   };
 
   const handlePress = () => {
-    Haptics.selectionAsync();
     onPress(index);
   };
 

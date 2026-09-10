@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { View, StyleSheet, Text, ViewStyle, Pressable } from 'react-native';
-import * as Haptics from 'expo-haptics';
 import { WorkerReview } from '../../types/review.types';
 import { ReviewMetaRow } from './ReviewMetaRow';
 import { ReviewStarRow } from './ReviewStarRow';
@@ -31,9 +30,6 @@ export const ReviewCard = ({
 
   const toggleExpand = () => {
     if (!isTruncated && !isExpanded) return;
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch {}
     setIsExpanded((prev) => !prev);
   };
 

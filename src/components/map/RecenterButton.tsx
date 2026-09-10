@@ -6,7 +6,6 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { Navigation } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../design/colors';
 import { springConfig } from '../../design/animations';
 
@@ -35,9 +34,6 @@ export const RecenterButton: FC<RecenterButtonProps> = ({
   }, [visible, scale, opacity]);
 
   const handlePress = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     onRecenter();
   };
 

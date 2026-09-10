@@ -4,7 +4,6 @@ import { BottomSheet, BottomSheetRef } from '../layout/BottomSheet/BottomSheet';
 import { StripeCardForm } from './StripeCardForm';
 import { SaveCardCheckbox } from './SaveCardCheckbox';
 import { colors, palette, fontFamily } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface AddCardBottomSheetProps {
   onAddCard: (cardDetails: any) => void;
@@ -23,7 +22,6 @@ export const AddCardBottomSheet = forwardRef<BottomSheetRef, AddCardBottomSheetP
 
     const handleSave = () => {
       if (!isComplete) return;
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
       const newMethod = {
         id: `pm_new_${Date.now()}`,

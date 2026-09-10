@@ -1,73 +1,75 @@
 import React from 'react';
-import { StyleSheet, View, Text, Pressable, ViewStyle } from 'react-native';
-import { Star } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
-import { colors } from '../../design/colors';
-import { radius } from '../../design/radius';
-import { typography } from '../../design/typography';
+import { StyleSheet, View, Text, ViewStyle } from 'react-native';
+import { Award, CheckCircle2, Clock, MapPin } from 'lucide-react-native';
+import { fontFamily } from '../../design/typography';
 
-interface WorkerStatsProps {
-  rating: number;
-  totalReviews: number;
-  totalJobs: number;
-  avgResponseMins: number;
-  onRatingPress?: () => void;
+export interface WorkerStatsProps {
+  yearsExperience?: number;
+  totalJobs?: number;
+  avgResponseMins?: number;
+  distanceLabel?: string;
   style?: ViewStyle;
 }
 
 export const WorkerStats: React.FC<WorkerStatsProps> = ({
-  rating,
-  totalReviews,
-  totalJobs,
+  yearsExperience,
+  totalJobs = 0,
   avgResponseMins,
-  onRatingPress,
+  distanceLabel,
   style,
 }) => {
-  const handleRatingPress = () => {
-    Haptics.selectionAsync();
-    if (onRatingPress) {
-      onRatingPress();
-    }
-  };
+  const expDisplay = typeof yearsExperience === 'number' && yearsExperience > 0
+    ? `${yearsExperience}+ ${yearsExperience === 1 ? 'yr' : 'yrs'}`
+    : '< 1 yr';
 
-  // Render yellow stars dynamically
-  const renderStars = () => {
-    return (
-      <View style={styles.starRow}>
-        <Star size={10} color="#EAB308" fill="#EAB308" />
-        <Star size={10} color="#EAB308" fill="#EAB308" style={styles.starSpacing} />
-        <Star size={10} color="#EAB308" fill="#EAB308" style={styles.starSpacing} />
-      </View>
-    );
-  };
+  const responseDisplay = typeof avgResponseMins === 'number' && avgResponseMins > 0
+    ? `~${avgResponseMins} min`
+    : 'Quick';
 
-  const formattedRating = typeof rating === 'number' ? rating.toFixed(1) : '5.0';
+  const rangeDisplay = distanceLabel?.trim() || 'Nearby';
 
   return (
     <View style={[styles.container, style]}>
-      {/* Cell 1: Rating */}
-      <Pressable onPress={handleRatingPress} style={styles.cell}>
-        <Text style={styles.valueText}>{formattedRating}</Text>
-        {renderStars()}
-        <Text style={styles.labelText}>Rating ({totalReviews || 0})</Text>
-      </Pressable>
-
-      {/* Cell 2: Completed Jobs */}
-      <View style={[styles.cell, styles.middleBorder]}>
-        <View style={styles.valueWithUnit}>
-          <Text style={styles.valueText}>{totalJobs || 0}</Text>
-          <Text style={styles.unitText}>jobs</Text>
-        </View>
-        <Text style={styles.labelText}>Completed</Text>
+      {/* Col 1: Experience */}
+      <View style={styles.col}>
+        <Award size={18} color="#16A34A" strokeWidth={2.2} style={styles.icon} />
+        <Text style={styles.valueText}>
+          {expDisplay}
+        </Text>
+        <Text style={styles.labelText}>Experience</Text>
       </View>
 
-      {/* Cell 3: Average Response Time */}
-      <View style={styles.cell}>
-        <View style={styles.valueWithUnit}>
-          <Text style={styles.valueText}>~{avgResponseMins || 15}</Text>
-          <Text style={styles.unitText}>min</Text>
-        </View>
-        <Text style={styles.labelText}>Response</Text>
+      <View style={styles.divider} />
+
+      {/* Col 2: Jobs Done */}
+      <View style={styles.col}>
+        <CheckCircle2 size={18} color="#16A34A" strokeWidth={2.2} style={styles.icon} />
+        <Text style={styles.valueText}>
+          {totalJobs}
+        </Text>
+        <Text style={styles.labelText}>Jobs Done</Text>
+      </View>
+
+      <View style={styles.divider} />
+
+      {/* Col 3: Response Time */}
+      <View style={styles.col}>
+        <Clock size={18} color="#16A34A" strokeWidth={2.2} style={styles.icon} />
+        <Text style={styles.valueText}>
+          {responseDisplay}
+        </Text>
+        <Text style={styles.labelText}>Response Time</Text>
+      </View>
+
+      <View style={styles.divider} />
+
+      {/* Col 4: Service Range */}
+      <View style={styles.col}>
+        <MapPin size={18} color="#16A34A" strokeWidth={2.2} style={styles.icon} />
+        <Text style={styles.valueText} numberOfLines={1}>
+          {rangeDisplay}
+        </Text>
+        <Text style={styles.labelText}>Service Range</Text>
       </View>
     </View>
   );
@@ -76,52 +78,40 @@ export const WorkerStats: React.FC<WorkerStatsProps> = ({
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    backgroundColor: colors.bgSection || '#F9FAFB',
-    borderRadius: radius.md,
-    overflow: 'hidden',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border || '#E5E7EB',
+    borderColor: '#F1F5F9',
+    paddingVertical: 14,
+    paddingHorizontal: 6,
     width: '100%',
   },
-  cell: {
+  col: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 14,
+    paddingHorizontal: 2,
   },
-  middleBorder: {
-    borderLeftWidth: 1,
-    borderRightWidth: 1,
-    borderColor: colors.border || '#E5E7EB',
+  divider: {
+    width: 1,
+    height: 28,
+    backgroundColor: '#E2E8F0',
   },
-  valueText: {
-    fontFamily: typography.fontFamily.inter.bold,
-    fontSize: 20,
-    color: colors.textPrimary || '#0F172A',
-  },
-  valueWithUnit: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  unitText: {
-    fontFamily: typography.fontFamily.jakarta.regular,
-    fontSize: 11,
-    color: colors.textMuted || '#6B7280',
-    marginLeft: 2,
-  },
-  starRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
+  icon: {
     marginBottom: 4,
   },
-  starSpacing: {
-    marginLeft: 2,
+  valueText: {
+    fontFamily: fontFamily.jakarta.bold,
+    fontSize: 13.5,
+    color: '#0F172A',
+    textAlign: 'center',
   },
   labelText: {
-    fontFamily: typography.fontFamily.jakarta.regular,
+    fontFamily: fontFamily.jakarta.medium,
     fontSize: 11,
-    color: colors.textMuted || '#6B7280',
+    color: '#64748B',
     marginTop: 2,
+    textAlign: 'center',
   },
 });

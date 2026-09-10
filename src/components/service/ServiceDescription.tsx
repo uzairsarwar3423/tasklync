@@ -8,7 +8,6 @@ import {
 } from 'react-native';
 import { Clock, Check, X } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import { Service } from '../../types/category.types';
 import { colors } from '../../design/colors';
 import { typography } from '../../design/typography';
@@ -42,9 +41,6 @@ export const ServiceDescription: React.FC<ServiceDescriptionProps> = ({
   ];
 
   const handleToggleReadMore = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.selectionAsync().catch(() => {});
-    }
     setExpanded(!expanded);
   };
 

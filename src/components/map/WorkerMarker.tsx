@@ -1,7 +1,6 @@
 import { FC } from 'react';
 import { StyleSheet, View, Image, Text, Platform } from 'react-native';
 import { Marker } from 'react-native-maps';
-import * as Haptics from 'expo-haptics';
 import { WorkerNearby } from '../../types/worker.types';
 import { WorkerMarkerBadge } from './WorkerMarkerBadge';
 import { colors } from '../../design/colors';
@@ -24,9 +23,6 @@ export const WorkerMarker: FC<WorkerMarkerProps> = ({
   if (!lat || !lng) return null;
 
   const handlePress = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     onSelect(worker);
   };
 

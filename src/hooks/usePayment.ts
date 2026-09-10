@@ -15,13 +15,17 @@ export function usePayment() {
         setError('Please select a payment method.');
         return false;
       }
+      if (!bookingId || bookingId.startsWith('b-') || bookingId.startsWith('TL-')) {
+        setError('No valid booking reference found for payment.');
+        return false;
+      }
 
       setIsLoading(true);
       setError(null);
 
       try {
         const res = await paymentApi.initiatePayment({
-          booking_id: bookingId || 'b01c2d3e-4f56-7890-abcd-ef1234567890',
+          booking_id: bookingId,
           payment_method_id: methodId,
           amount,
           currency: 'PKR',

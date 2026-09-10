@@ -14,7 +14,6 @@ import {
 import { groupNotificationsByDate } from '../utils/groupByDate';
 import { useNotificationStore } from '../store/notification.store';
 import { UNREAD_COUNT_QUERY_KEY } from './useUnreadCount';
-import * as Haptics from 'expo-haptics';
 
 export const NOTIFICATIONS_QUERY_KEY = 'notifications';
 
@@ -296,26 +295,17 @@ export function useNotifications() {
 
   const markRead = useCallback(
     (id: string) => {
-      try {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      } catch {}
       markReadMutation.mutate(id);
     },
     [markReadMutation]
   );
 
   const markAllRead = useCallback(() => {
-    try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {}
     markAllReadMutation.mutate();
   }, [markAllReadMutation]);
 
   const deleteNotification = useCallback(
     (id: string) => {
-      try {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      } catch {}
       deleteNotificationMutation.mutate(id);
     },
     [deleteNotificationMutation]
@@ -330,6 +320,8 @@ export function useNotifications() {
     setActiveFilter,
     isLoading: query.isLoading,
     isFetchingNextPage: query.isFetchingNextPage,
+    isError: query.isError,
+    error: query.error,
     isRefreshing,
     hasNextPage: !!query.hasNextPage,
     fetchNextPage: query.fetchNextPage,

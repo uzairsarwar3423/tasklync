@@ -4,6 +4,7 @@ import { socketService } from '../services/socket/socket.service';
 import { SocketContext } from '../hooks/useSocket';
 import { useAuthStore } from '../store/auth.store';
 import { useSocketStore } from '../store/socket.store';
+import { useChatUnreadStore } from '../store/chatUnread.store';
 import { useAppState } from '../hooks/useAppState';
 
 interface SocketProviderProps {
@@ -61,6 +62,33 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
       unsubscribe();
     };
   }, []);
+
+  // 6: Global real-time listener for incoming messages to increment TabBar badge
+  useEffect(() => {
+    if (!accessToken) return;
+
+    const handleGlobalMessage = (data: any) => {
+      const bId = data?.booking_id || data?.bookingId || data?.room_id || data?.roomId;
+      const senderType = data?.sender_type || data?.senderType;
+      const senderId = data?.sender_id || data?.senderId;
+      const currentUserId = useAuthStore.getState().user?.id;
+      const isFromOther = senderType === 'worker' || (senderId && senderId !== currentUserId);
+
+      if (bId && isFromOther) {
+        useChatUnreadStore.getState().incrementUnread(bId);
+      }
+    };
+
+    const unsub1 = socketService.on('message_received', handleGlobalMessage);
+    const unsub2 = socketService.on('chat:message_received', handleGlobalMessage);
+    const unsub3 = socketService.on('new_message', handleGlobalMessage);
+
+    return () => {
+      unsub1();
+      unsub2();
+      unsub3();
+    };
+  }, [accessToken]);
 
   return (
     <SocketContext.Provider value={socketService}>

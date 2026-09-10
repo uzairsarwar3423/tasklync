@@ -6,7 +6,6 @@ import Animated, {
   withTiming,
   withSpring,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { SlotInfo } from '../../../hooks/useWorkerSlots';
 import { colors, palette, fontFamily } from '../../../design';
 
@@ -37,7 +36,6 @@ export const TimeSlotChip: React.FC<TimeSlotChipProps> = ({
 
   const handlePress = () => {
     if (!available) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onSelect(timeStr);
   };
 
@@ -89,16 +87,21 @@ const styles = StyleSheet.create({
   },
   chip: {
     height: 44,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 8,
     flexDirection: 'row',
   },
   chipAvailable: {
-    backgroundColor: palette.iceGray,
+    backgroundColor: palette.white,
     borderWidth: 1,
-    borderColor: palette.softGray,
+    borderColor: palette.gray200,
+    shadowColor: palette.gray900,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   chipSelected: {
     backgroundColor: colors.primary,
@@ -107,7 +110,7 @@ const styles = StyleSheet.create({
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.25,
-    shadowRadius: 5,
+    shadowRadius: 6,
     elevation: 3,
   },
   chipUnavailable: {

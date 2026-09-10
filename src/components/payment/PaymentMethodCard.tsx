@@ -9,7 +9,6 @@ import Animated, {
 import { PaymentMethod } from '../../types/payment.types';
 import { CardBrandIcon } from './CardBrandIcon';
 import { colors, palette, fontFamily, radius, spacing, shadows } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface PaymentMethodCardProps {
   method: PaymentMethod;
@@ -45,7 +44,6 @@ export const PaymentMethodCard: React.FC<PaymentMethodCardProps> = ({
   });
 
   const handleSetDefault = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     if (onSetDefault) {
       onSetDefault(id);
     }

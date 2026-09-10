@@ -21,7 +21,6 @@ import {
   AlertCircle,
   RefreshCw,
 } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 
 import { useAddresses } from '../../src/hooks/useAddresses';
 import { AddressCard } from '../../src/components/address/AddressCard';
@@ -58,12 +57,10 @@ export default function SavedAddressesScreen() {
   const [actionSheetAddress, setActionSheetAddress] = useState<Address | null>(null);
 
   const handleBack = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.back();
   };
 
   const handleAddNew = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push({
       pathname: '/profile/addresses/add',
       params: { mode: 'add' },
@@ -90,7 +87,6 @@ export default function SavedAddressesScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               await deleteAddress(address.id);
             } catch (_err) {
               Alert.alert('Error', "Couldn't delete address. Tap retry.");
@@ -105,7 +101,6 @@ export default function SavedAddressesScreen() {
     setActionSheetAddress(null);
     if (address.is_default) return;
     try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await setDefaultAddress(address.id);
     } catch (_err) {
       Alert.alert('Error', 'Failed to update default address.');

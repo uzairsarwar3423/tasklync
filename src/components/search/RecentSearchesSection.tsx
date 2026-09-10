@@ -1,7 +1,6 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Search, X } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../design/colors';
 import { typography } from '../../design/typography';
 
@@ -20,12 +19,6 @@ export const RecentSearchesSection: React.FC<RecentSearchesSectionProps> = ({
 }) => {
   if (!searches || searches.length === 0) return null;
 
-  const triggerHaptic = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
-  };
-
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Recent Searches</Text>
@@ -38,7 +31,6 @@ export const RecentSearchesSection: React.FC<RecentSearchesSectionProps> = ({
             pressed && styles.rowPressed,
           ]}
           onPress={() => {
-            triggerHaptic();
             onSelect(term);
           }}
         >
@@ -62,7 +54,6 @@ export const RecentSearchesSection: React.FC<RecentSearchesSectionProps> = ({
       <Pressable
         style={styles.clearAllBtn}
         onPress={() => {
-          triggerHaptic();
           onClearAll();
         }}
         hitSlop={8}

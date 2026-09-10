@@ -26,7 +26,9 @@ export function useBookingsList(activeTab: TabType) {
       // Fetch real customer bookings from backend API / persistent cache
       const response = await bookingApi.listBookings({ page: 1, limit: 50 });
       const rawData = response?.data || [];
-      const bookingsList = Array.isArray(rawData) ? rawData : [];
+      const bookingsList = (Array.isArray(rawData) ? rawData : []).filter(
+        (b) => b && b.id && typeof b.id === 'string' && !b.id.startsWith('b-') && !b.id.startsWith('TL-')
+      );
 
       // Initial pass: ensure category names and worker names are formatted
       const normalizedBookings: BookingDetails[] = bookingsList.map((b) => ({

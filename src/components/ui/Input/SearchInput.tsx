@@ -17,9 +17,8 @@ import { Search, X } from 'lucide-react-native';
 import { colors } from '../../../design/colors';
 import { typography } from '../../../design/typography';
 import { springConfig, timingConfig } from '../../../design/animations';
-import * as Haptics from 'expo-haptics';
 
-interface SearchInputProps {
+export interface SearchInputProps {
   value: string;
   onChangeText: (text: string) => void;
   onClear: () => void;
@@ -28,6 +27,7 @@ interface SearchInputProps {
   autoFocus?: boolean;
   editable?: boolean;
   style?: ViewStyle;
+  height?: number;
 }
 
 const AnimatedView = Animated.createAnimatedComponent(View);
@@ -42,6 +42,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   autoFocus = true,
   editable = true,
   style,
+  height = 56,
 }) => {
   const inputRef = useRef<RNTextInput>(null);
   const [isFocused, setIsFocused] = useState(autoFocus);
@@ -67,7 +68,6 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   }, [isFocused, focusProgress]);
 
   const handleClear = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onClear();
     // Keep focus
     inputRef.current?.focus();
@@ -84,16 +84,6 @@ export const SearchInput: React.FC<SearchInputProps> = ({
     };
   });
 
-  const iconAnimatedProps = useAnimatedStyle(() => {
-    return {
-      color: interpolateColor(
-        focusProgress.value,
-        [0, 1],
-        [colors.textMuted, colors.primary]
-      ),
-    };
-  });
-
   const clearButtonAnimatedStyle = useAnimatedStyle(() => {
     return {
       opacity: xOpacity.value,
@@ -102,14 +92,17 @@ export const SearchInput: React.FC<SearchInputProps> = ({
   });
 
   return (
-    <AnimatedView style={[styles.container, containerAnimatedStyle, style]}>
+    <AnimatedView
+      style={[
+        styles.container,
+        { height, minHeight: height },
+        containerAnimatedStyle,
+        style,
+      ]}
+    >
       <Animated.View style={[styles.iconContainer]}>
-         {/* Since Lucide icons can't be easily animated with color directly via Reanimated in this setup without worklets wrapper,
-             we'll just use state or simple style if needed.
-             For full fidelity, we'll swap color in JS thread or use a wrapper.
-             Here we'll keep it simple: */}
         <Search
-          size={18}
+          size={height >= 52 ? 20 : 18}
           color={isFocused ? colors.primary : colors.textMuted}
         />
       </Animated.View>
@@ -125,7 +118,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         onSubmitEditing={onSubmitEditing}
-        style={styles.input}
+        style={[styles.input, { height: '100%' }]}
         selectionColor={colors.primary}
         returnKeyType="search"
         keyboardType="default"
@@ -148,7 +141,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    height: 48,
+    height: 56,
     flex: 1,
     backgroundColor: colors.bgInput,
     borderRadius: 100, // pill
@@ -156,13 +149,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   iconContainer: {
-    paddingLeft: 14,
-    paddingRight: 8,
+    paddingLeft: 16,
+    paddingRight: 10,
   },
   input: {
     flex: 1,
     fontFamily: typography.fontFamily.jakarta.regular,
-    fontSize: 15,
+    fontSize: 15.5,
     color: colors.textPrimary,
     paddingVertical: 0, // fix Android vertical alignment
   },

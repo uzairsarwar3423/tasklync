@@ -6,7 +6,6 @@ import Animated, {
   useAnimatedScrollHandler,
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
 
 import { useWorkerProfile } from '@hooks/useWorkerProfile';
 import { useWorkerReviews } from '@hooks/useWorkerReviews';
@@ -86,7 +85,6 @@ export default function WorkerProfileScreen() {
   const handleShare = async () => {
     if (!worker) return;
     try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       await Share.share({
         message: `Check out ${worker.name} on Tasklync! Providing expert home services.`,
         url: `https://tasklync.com/worker/${worker.id}`,
@@ -106,18 +104,15 @@ export default function WorkerProfileScreen() {
 
   const handleReport = () => {
     setOptionsVisible(false);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     Alert.alert('Report Worker', 'Thank you for reporting. Our safety team will review this profile immediately.');
   };
 
   const handleBlock = () => {
     setOptionsVisible(false);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setBlockSheetVisible(true);
   };
 
   const handleChat = () => {
-    Haptics.selectionAsync();
     const existing = getPersistedBookings().find(
       (b) => b.worker_id === id && (b.status === 'ACCEPTED' || b.status === 'IN_PROGRESS' || b.status === 'PENDING')
     );
@@ -140,7 +135,6 @@ export default function WorkerProfileScreen() {
   };
 
   const handleBookNow = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert('Book Now', `Proceed to checkout with ${worker?.name || 'worker'}?`);
   };
 

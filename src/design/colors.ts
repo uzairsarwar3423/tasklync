@@ -13,7 +13,8 @@ export const palette = {
 
   // Neutrals
   white: '#FFFFFF',
-  zenWhite: '#FAFAFA', // bgApp
+  zenWhite: '#F6F7F9', // bgApp canvas
+  canvasGray: '#F6F7F9', // #F6F7F9 universal app canvas
   lowGray: '#F8F9FA', // bgSection
   iceGray: '#F4F5F7', // bgInput
   mintHaze: '#EFF0F3', // bgSkeleton
@@ -51,7 +52,8 @@ export const colors = {
   primaryBorder: palette.green200,
 
   // Backgrounds
-  bgApp: palette.zenWhite,
+  bgApp: palette.canvasGray, // #F6F7F9 universal app background
+  bgHome: palette.canvasGray, // #F6F7F9
   bgCard: palette.white,
   bgInput: palette.iceGray,
   bgSection: palette.lowGray,

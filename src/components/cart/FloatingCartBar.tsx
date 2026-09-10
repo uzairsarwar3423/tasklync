@@ -9,7 +9,6 @@ import Animated, {
 import { ShoppingBag, ArrowRight } from 'lucide-react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
 import { useCartStore } from '../../store/cart.store';
 import { useCartTotals } from '../../hooks/useCartTotals';
 import { colors } from '../../design/colors';
@@ -77,9 +76,6 @@ export const FloatingCartBar: FC<FloatingCartBarProps> = ({
   };
 
   const handleOpenCart = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     router.push('/cart' as any);
   };
 

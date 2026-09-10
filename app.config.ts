@@ -1,5 +1,10 @@
 import { ExpoConfig, ConfigContext } from 'expo/config';
 
+const GOOGLE_MAPS_API_KEY =
+  process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ||
+  process.env.GOOGLE_MAPS_KEY ||
+  'AIzaSyAacbf9vAzo8hluo0LbBx9Cz55CyuP9iPU';
+
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: 'Tasklync',
@@ -31,13 +36,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     package: 'com.tasklync.user',
     versionCode: 1,
     googleServicesFile: './google-services.json',
+    // 'pan' mode: Android pans the entire layout up when keyboard opens.
+    // This is the correct pairing with KeyboardAvoidingView behavior='height'.
+    // 'resize' (default) shrinks the root view which causes layout jitter
+    // and breaks SafeAreaView bottom insets on many Android OEMs.
+    softwareKeyboardLayoutMode: 'pan',
     adaptiveIcon: {
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundColor: '#16A34A',
     },
     config: {
       googleMaps: {
-        apiKey: process.env.GOOGLE_MAPS_KEY || '',
+        apiKey: GOOGLE_MAPS_API_KEY,
       },
     },
     permissions: [
@@ -91,7 +101,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   },
   extra: {
     apiBaseUrl: process.env.API_BASE_URL,
-    googleMapsKey: process.env.GOOGLE_MAPS_KEY,
+    googleMapsKey: GOOGLE_MAPS_API_KEY,
     stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
     eas: {
       projectId: process.env.EAS_PROJECT_ID || '90b1f7d5-14e1-4cf6-9035-b1beb8832a36',

@@ -17,7 +17,7 @@ export function EmptyBookingsPast() {
   return (
     <Animated.View style={[styles.container, animatedStyle]}>
       <View style={styles.iconContainer}>
-        <Archive size={48} color="#9CA3AF" />
+        <Archive size={48} strokeWidth={1.35} color="#9CA3AF" />
       </View>
       <Text style={styles.title}>No past bookings yet</Text>
       <Text style={styles.description}>Your completed services will appear here for easy reference and re-booking.</Text>

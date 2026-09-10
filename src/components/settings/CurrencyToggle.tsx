@@ -7,7 +7,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { CurrencyCode } from '../../types/settings.types';
 import { colors, palette, fontFamily, radius } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface CurrencyToggleProps {
   value: CurrencyCode;
@@ -37,7 +36,6 @@ export const CurrencyToggle: React.FC<CurrencyToggleProps> = ({ value, onChange 
 
   const handleSelect = (curr: CurrencyCode) => {
     if (curr !== value) {
-      Haptics.selectionAsync().catch(() => {});
       onChange(curr);
     }
   };

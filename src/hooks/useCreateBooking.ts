@@ -30,13 +30,26 @@ export function useCreateBooking() {
   } = useBookingDraftStore();
 
   const submit = useCallback(async (): Promise<{ booking: BookingDetails | null; error: string | null }> => {
+    if (!token) {
+      const err = 'Please sign in to confirm and place your booking.';
+      setError(err);
+      return { booking: null, error: err };
+    }
+
     const serviceIds = cartItems.map((i) => i.serviceId);
-    let workerId = draftWorkerId || cartWorker?.id;
+    const rawWorkerId = draftWorkerId || cartWorker?.id;
+
+    // Validate that worker is not a mock worker ID
+    if (typeof rawWorkerId === 'string' && (rawWorkerId.startsWith('w') || rawWorkerId.startsWith('mock'))) {
+      const err = 'Selected professional is not valid. Please choose an active verified professional.';
+      setError(err);
+      return { booking: null, error: err };
+    }
 
     // Validate workerId to standard RFC4122 UUID v4
-    if (!isValidUUID(workerId)) {
-      workerId = CANONICAL_FALLBACK_UUIDS.WORKER_DEFAULT;
-    }
+    const workerId: string = isValidUUID(rawWorkerId)
+      ? rawWorkerId
+      : CANONICAL_FALLBACK_UUIDS.WORKER_DEFAULT;
 
     if (cartItems.length === 0 && !cartWorker) {
       const err = 'Your cart is empty. Please select services first.';

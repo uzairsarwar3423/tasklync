@@ -8,6 +8,8 @@ class SocketService {
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   /** Token used for the current socket instance — avoids redundant reconnects */
   private currentToken: string | null = null;
+  /** Persisted event listeners to survive socket creation and reconnection */
+  private listeners = new Map<string, Set<(payload: any) => void>>();
 
   // ─── Public API ────────────────────────────────────────────────────────────
 
@@ -60,6 +62,13 @@ class SocketService {
     });
 
     this.attachInternalListeners();
+
+    // Re-attach all registered listeners to the new socket instance
+    this.listeners.forEach((handlers, event) => {
+      handlers.forEach((handler) => {
+        this.socket?.on(event, handler);
+      });
+    });
   }
 
   /**
@@ -93,11 +102,14 @@ class SocketService {
    * Returns an unsubscribe function for easy cleanup.
    */
   public on(event: string, handler: (payload: any) => void): () => void {
-    if (!this.socket) {
-      console.warn(`[SocketService] .on('${event}') called before socket exists.`);
-      return () => {};
+    if (!this.listeners.has(event)) {
+      this.listeners.set(event, new Set());
     }
-    this.socket.on(event, handler);
+    this.listeners.get(event)!.add(handler);
+
+    if (this.socket) {
+      this.socket.on(event, handler);
+    }
     return () => this.off(event, handler);
   }
 
@@ -105,6 +117,7 @@ class SocketService {
    * Unsubscribes a specific event handler.
    */
   public off(event: string, handler: (payload: any) => void): void {
+    this.listeners.get(event)?.delete(handler);
     this.socket?.off(event, handler);
   }
 

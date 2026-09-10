@@ -1,6 +1,5 @@
 import React from 'react';
 import { View, Text, Switch, StyleSheet } from 'react-native';
-import * as Haptics from 'expo-haptics';
 import { Zap } from 'lucide-react-native';
 import { UrgentPriceBadge } from './UrgentPriceBadge';
 import { colors, palette, fontFamily } from '../../../design';
@@ -15,7 +14,6 @@ export const UrgentToggleRow: React.FC<UrgentToggleRowProps> = ({
   onToggle,
 }) => {
   const handleValueChange = (value: boolean) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onToggle(value);
   };
 
@@ -58,15 +56,15 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginHorizontal: 20,
     marginVertical: 14,
-    padding: 14,
+    padding: 16,
     backgroundColor: palette.white,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: palette.gray200,
+    borderColor: palette.gray100,
     shadowColor: palette.gray900,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
     elevation: 2,
   },
   leftContainer: {

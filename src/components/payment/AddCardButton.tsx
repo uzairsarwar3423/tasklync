@@ -1,7 +1,6 @@
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { Plus } from 'lucide-react-native';
 import { colors, fontFamily, fontSize, radius, spacing, shadows } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface AddCardButtonProps {
   onPress: () => void;
@@ -13,7 +12,6 @@ export const AddCardButton: React.FC<AddCardButtonProps> = ({
   label = '+ Add New Payment Method',
 }) => {
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     onPress();
   };
 

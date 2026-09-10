@@ -3,7 +3,6 @@ import { PaymentMethod } from '../../types/payment.types';
 import { CardBrandIcon } from './CardBrandIcon';
 import { colors, palette, fontFamily, radius, spacing, shadows } from '../../design';
 import { Check } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 
 export interface PaymentMethodPickerProps {
   methods: PaymentMethod[];
@@ -17,7 +16,6 @@ export const PaymentMethodPicker: React.FC<PaymentMethodPickerProps> = ({
   onSelect,
 }) => {
   const handleSelect = (method: PaymentMethod) => {
-    Haptics.selectionAsync().catch(() => {});
     onSelect(method);
   };
 

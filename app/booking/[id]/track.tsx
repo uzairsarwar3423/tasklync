@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { colors } from '../../../src/design/colors';
 
 export default function BookingTrackScreen() {
   const router = useRouter();
@@ -26,7 +27,7 @@ export default function BookingTrackScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.bgApp,
     alignItems: 'center',
     justifyContent: 'center',
   },

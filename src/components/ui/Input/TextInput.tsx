@@ -17,7 +17,6 @@ import Animated, {
   interpolateColor,
   interpolate
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 
 import { colors } from '@design/colors';
 import { layout, spacing } from '@design/spacing';
@@ -73,7 +72,6 @@ export const TextInput = React.forwardRef<RNTextInput, TextInputProps>(({
   useEffect(() => {
     if (error && !prevError.current) {
       // Error appeared
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       shakeX.value = withSequence(
         ...shakeSequence.map(x => withTiming(x, { duration: 45 }))
       );

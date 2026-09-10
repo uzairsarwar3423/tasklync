@@ -9,7 +9,6 @@ import {
   Alert,
 } from 'react-native';
 import * as Location from 'expo-location';
-import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
 import { MapPin, Navigation, Check } from 'lucide-react-native';
 
@@ -61,7 +60,6 @@ export const AddAddressBottomSheet = forwardRef<
   }));
 
   const handleUseGPS = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsLocating(true);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -106,7 +104,6 @@ export const AddAddressBottomSheet = forwardRef<
     }
 
     setIsSaving(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     const addressText = street.trim();
     const addressCity = city.trim() || 'Lahore';

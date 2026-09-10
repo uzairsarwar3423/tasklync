@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, Pressable, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../design/colors';
 import { typography } from '../../design/typography';
 import { springConfig } from '../../design/animations';
@@ -18,7 +17,6 @@ export const WorkerBio: React.FC<WorkerBioProps> = ({ bio, style }) => {
   const [fullHeight, setFullHeight] = useState(0);
 
   const handleToggle = () => {
-    Haptics.selectionAsync();
     setExpanded(!expanded);
   };
 

@@ -1,4 +1,4 @@
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams } from 'expo-router';
 
@@ -14,10 +14,11 @@ import { SuccessCTAGroup } from '../../src/components/booking/success/SuccessCTA
 
 export default function SuccessScreen() {
   const params = useLocalSearchParams<{ bookingId?: string }>();
-  const bookingId = params.bookingId || `TL-${Math.floor(100000 + Math.random() * 900000)}`;
+  const bookingId = params.bookingId || '';
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right', 'bottom']}>
+      <StatusBar barStyle="dark-content" backgroundColor={palette.zenWhite} />
       <View style={styles.container}>
         <ScrollView
           style={styles.scrollView}
@@ -48,11 +49,11 @@ export default function SuccessScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: palette.white,
+    backgroundColor: palette.zenWhite,
   },
   container: {
     flex: 1,
-    backgroundColor: palette.white,
+    backgroundColor: palette.zenWhite,
   },
   scrollView: {
     flex: 1,

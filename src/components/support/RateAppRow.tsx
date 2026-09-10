@@ -1,11 +1,9 @@
 import { View, Text, TouchableOpacity, StyleSheet, Linking, Platform } from 'react-native';
 import { Star, ChevronRight } from 'lucide-react-native';
 import { colors, palette, fontFamily, spacing } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export const RateAppRow: React.FC = () => {
   const handleRatePress = async () => {
-    Haptics.selectionAsync().catch(() => {});
 
     const iosStoreUrl = 'https://apps.apple.com/app/id6440000000?action=write-review';
     const androidStoreUrl = 'market://details?id=pk.tasklync.customer';

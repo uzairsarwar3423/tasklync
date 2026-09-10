@@ -10,12 +10,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors } from '@design/colors';
 import { typography } from '@design/typography';
 import { useCategoryById } from '@hooks/useCategories';
-import { TabToggle } from '@components/ui/Toggle';
-import { CategoryFilterBar, CategoryServicesList, CategoryWorkersList } from '@components/category';
+import { CategoryFilterBar, CategoryWorkersList } from '@components/category';
 import { BottomSheet, BottomSheetRef } from '@components/layout/BottomSheet';
 import { FilterSheetContent } from '@components/search/FilterSheetContent';
 import { FilterState, SortOption, DEFAULT_FILTERS } from '../../src/types/search.types';
@@ -27,11 +25,10 @@ export default function CategoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const categoryId = Array.isArray(id) ? id[0] : id;
 
-  // Fetch Category info & services
-  const { category, isLoading: isCategoryLoading } = useCategoryById(categoryId || '');
+  // Fetch Category info (for formatted display title)
+  const { category } = useCategoryById(categoryId || '');
 
   // Screen States
-  const [selectedTab, setSelectedTab] = useState<'services' | 'workers'>('services');
   const [sortBy, setSortBy] = useState<SortOption>('distance');
   const [filters, setFilters] = useState<FilterState>({
     ...DEFAULT_FILTERS,
@@ -41,18 +38,11 @@ export default function CategoryScreen() {
   const sheetRef = useRef<BottomSheetRef>(null);
 
   const handleBack = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.selectionAsync().catch(() => {});
-    }
     if (router.canGoBack()) {
       router.back();
     } else {
       router.replace('/(tabs)/' as any);
     }
-  };
-
-  const handleTabChange = (value: string) => {
-    setSelectedTab(value as 'services' | 'workers');
   };
 
   const handleSortChange = (newSort: SortOption) => {
@@ -61,9 +51,6 @@ export default function CategoryScreen() {
   };
 
   const handleRemoveFilter = (key: keyof FilterState) => {
-    if (Platform.OS !== 'web') {
-      Haptics.selectionAsync().catch(() => {});
-    }
     setFilters((prev) => {
       const updated = { ...prev };
       if (key === 'minRating') updated.minRating = 0;
@@ -74,9 +61,6 @@ export default function CategoryScreen() {
   };
 
   const handleOpenFilters = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.selectionAsync().catch(() => {});
-    }
     sheetRef.current?.open();
   };
 
@@ -127,47 +111,25 @@ export default function CategoryScreen() {
         <View style={styles.headerRightPlaceholder} />
       </View>
 
-      {/* Tabs Switcher Section */}
-      <View style={styles.tabsContainer}>
-        <TabToggle
-          options={[
-            { label: 'Services', value: 'services' },
-            { label: 'Workers', value: 'workers' },
-          ]}
-          activeValue={selectedTab}
-          onChange={handleTabChange}
-        />
-      </View>
+      {/* Filter Bar */}
+      <CategoryFilterBar
+        sortBy={sortBy}
+        onSortChange={handleSortChange}
+        activeFilters={filters}
+        onRemoveFilter={handleRemoveFilter}
+        onOpenFilters={handleOpenFilters}
+      />
 
-      {/* Filter Bar (Only shown for workers list) */}
-      {selectedTab === 'workers' && (
-        <CategoryFilterBar
+      {/* Content Area - Category Workers List */}
+      <View style={styles.content}>
+        <CategoryWorkersList
+          categoryId={categoryId || ''}
           sortBy={sortBy}
           onSortChange={handleSortChange}
-          activeFilters={filters}
-          onRemoveFilter={handleRemoveFilter}
-          onOpenFilters={handleOpenFilters}
+          maxRate={filters.maxRate}
+          minRating={filters.minRating}
+          available={filters.available}
         />
-      )}
-
-      {/* Content Area */}
-      <View style={styles.content}>
-        {selectedTab === 'services' ? (
-          <CategoryServicesList
-            categoryId={id || ''}
-            services={category?.services || []}
-            isLoading={isCategoryLoading}
-          />
-        ) : (
-          <CategoryWorkersList
-            categoryId={id || ''}
-            sortBy={sortBy}
-            onSortChange={handleSortChange}
-            maxRate={filters.maxRate}
-            minRating={filters.minRating}
-            available={filters.available}
-          />
-        )}
       </View>
 
       {/* Filters Bottom Sheet */}
@@ -219,11 +181,6 @@ const styles = StyleSheet.create({
   },
   headerRightPlaceholder: {
     width: 40,
-  },
-  tabsContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.bgApp,
   },
   content: {
     flex: 1,

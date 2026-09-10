@@ -18,7 +18,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Paperclip, ArrowUp, Camera, Image as ImageIcon, X } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { compressImage } from '../../utils/imageCompression';
 
@@ -148,9 +147,6 @@ export const ChatInput = React.memo(function ChatInput({
   };
 
   const handleAttachPress = () => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch {}
     setIsMediaModalVisible(true);
   };
 

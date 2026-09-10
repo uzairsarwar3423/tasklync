@@ -8,7 +8,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { CheckCircle2 } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors, palette, fontFamily, fontSize, radius, spacing } from '../../design';
 
 export interface ReviewSuccessStateProps {
@@ -34,9 +33,6 @@ export const ReviewSuccessState: React.FC<ReviewSuccessStateProps> = ({
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    } catch {}
 
     // Entrance Animation
     opacity.value = withTiming(1, { duration: 180 });
@@ -63,9 +59,6 @@ export const ReviewSuccessState: React.FC<ReviewSuccessStateProps> = ({
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    } catch {}
     onDismiss();
   };
 

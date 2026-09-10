@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import { BookingsHeader } from '../../src/components/booking/BookingsHeader';
@@ -6,10 +6,11 @@ import { BookingsTabBar } from '../../src/components/booking/BookingsTabBar';
 import { BookingList } from '../../src/components/booking/BookingList';
 import { useBookingsList, TabType } from '../../src/hooks/useBookingsList';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
+import { colors } from '../../src/design/colors';
 
 export default function BookingsScreen() {
   const [activeTab, setActiveTab] = useState<TabType>('ACTIVE');
-  const { bookings, isLoading, refetch } = useBookingsList(activeTab);
+  const { bookings, isLoading, isError, refetch } = useBookingsList(activeTab);
 
   // Automatically refresh bookings whenever user navigates to Bookings tab
   useFocusEffect(
@@ -32,6 +33,7 @@ export default function BookingsScreen() {
         <BookingList 
           bookings={bookings} 
           isLoading={isLoading} 
+          isError={isError}
           activeTab={activeTab}
           onRefresh={refetch}
         />
@@ -43,7 +45,7 @@ export default function BookingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.bgApp,
   },
   listContainer: {
     flex: 1,

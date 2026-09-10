@@ -1,7 +1,6 @@
 import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { NotificationItem as NotificationItemType } from '../../types/notification.types';
 import { NotificationIcon } from './NotificationIcon';
 import { formatRelativeTime } from '../../utils/groupByDate';
@@ -24,9 +23,6 @@ export interface NotificationItemProps {
 export const NotificationItem: React.FC<NotificationItemProps> = React.memo(
   function NotificationItem({ item, onPress }) {
     const handlePress = useCallback(() => {
-      try {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      } catch {}
       onPress(item);
     }, [item, onPress]);
 

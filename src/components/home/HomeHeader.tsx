@@ -1,82 +1,135 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { View, StyleSheet, Pressable } from 'react-native';
 import { MapPin, ChevronDown } from 'lucide-react-native';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+import { Image } from 'expo-image';
+import { useRouter } from 'expo-router';
 import { Text } from '../ui/Text/Text';
 import { NotificationBell } from './NotificationBell';
+import { LocationSelectSheet, LocationSelectSheetRef } from './LocationSelectSheet';
 import { useAuthStore } from '../../store/auth.store';
+import { useCurrentUser } from '../../hooks/useProfile';
 import { useLocation } from '../../hooks/useLocation';
+import { useLocationStore } from '../../store/location.store';
+import { useAddresses } from '../../hooks/useAddresses';
 import { SkeletonHomeHeader } from '../ui/Skeleton';
-import { colors } from '../../design/colors';
-import { radius } from '../../design/radius';
+import { colors, palette } from '../../design/colors';
 import { fontFamily } from '../../design/typography';
 
 export const HomeHeader = () => {
-  const user = useAuthStore((state) => state.user);
+  const router = useRouter();
+  const authUser = useAuthStore((state) => state.user);
+  const { user: profileUser } = useCurrentUser();
+  const user = profileUser || authUser;
+  const avatarUrl = user?.avatar_url || (user as any)?.avatarUrl;
+
   const { cityName, isLocating } = useLocation();
-  const pillScale = useSharedValue(1);
+  const currentStoreCity = useLocationStore((state) => state.currentCity);
+  const { addresses } = useAddresses();
 
-  // Time-based greeting logic
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour >= 6 && hour < 12) return 'Good morning, ';
-    if (hour >= 12 && hour < 18) return 'Good afternoon, ';
-    if (hour >= 18 && hour < 23) return 'Good evening, ';
-    return 'Good night, ';
+  const sheetRef = useRef<LocationSelectSheetRef>(null);
+  const [imageError, setImageError] = useState(false);
+
+  // Dynamic real address resolution — purely data-driven, zero hardcoded strings
+  const defaultAddress = addresses?.find((a) => a.is_default) || addresses?.[0];
+  const savedAddressLine = defaultAddress?.address_line || defaultAddress?.city;
+
+  const displayLocation =
+    (cityName && cityName !== 'Your area' && cityName !== 'Current Area' ? cityName : null) ||
+    (currentStoreCity && currentStoreCity !== 'Your area' && currentStoreCity !== 'Current Area' ? currentStoreCity : null) ||
+    savedAddressLine ||
+    (isLocating ? 'Locating...' : 'Select location');
+
+  const handleLocationPress = () => {
+    sheetRef.current?.open();
   };
 
-  const handlePillPressIn = () => {
-    pillScale.value = withSpring(0.97, { stiffness: 400, damping: 20 });
+  const handleProfilePress = () => {
+    router.push('/(tabs)/profile' as any);
   };
 
-  const handlePillPressOut = () => {
-    pillScale.value = withSpring(1);
+  const getInitials = (name?: string | null) => {
+    if (!name) return 'U';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
   };
 
-  const pillAnimatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: pillScale.value }],
-  }));
-
-  if (isLocating) {
+  if (isLocating && !cityName && !currentStoreCity && !savedAddressLine) {
     return <SkeletonHomeHeader />;
   }
 
   return (
     <View style={styles.container}>
+      {/* LEFT: Location Pin + Dynamic Real Address + Downward Chevron */}
       <View style={styles.leftSide}>
-        <Animated.View style={pillAnimatedStyle}>
-          <Pressable 
-            style={styles.locationPill}
-            onPressIn={handlePillPressIn}
-            onPressOut={handlePillPressOut}
-          >
-            <MapPin size={14} color={colors.primary} />
-            <Text style={styles.cityText}>{cityName}</Text>
-            <ChevronDown size={12} color={colors.textMuted} />
-          </Pressable>
-        </Animated.View>
-        
-        <View style={styles.greetingRow}>
-          <Text style={styles.greetingText}>
-            {getGreeting()}
-            <Text style={styles.nameText}>{user?.name?.split(' ')[0] || 'User'}</Text>
+        <Pressable
+          onPress={handleLocationPress}
+          style={({ pressed }) => [
+            styles.locationButton,
+            pressed && styles.locationButtonPressed,
+          ]}
+          hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+          accessibilityRole="button"
+          accessibilityLabel={`Location: ${displayLocation}. Tap to change location`}
+          accessibilityHint="Opens location selector"
+        >
+          <MapPin size={20} color="#16A05D" strokeWidth={2.2} />
+          <Text style={styles.locationText} numberOfLines={1} ellipsizeMode="tail">
+            {displayLocation}
           </Text>
-        </View>
+          <ChevronDown size={14} color={palette.gray400} strokeWidth={2.2} style={styles.chevron} />
+        </Pressable>
       </View>
 
+      {/* RIGHT: Notification Bell (with red dot) + User Avatar */}
       <View style={styles.rightSide}>
-        <NotificationBell />
+        <NotificationBell
+          variant="dot"
+          size={36}
+          iconSize={22}
+          showDot={true}
+        />
+
+        <Pressable
+          onPress={handleProfilePress}
+          style={({ pressed }) => [
+            styles.avatarButton,
+            pressed && styles.avatarButtonPressed,
+          ]}
+          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+          accessibilityRole="button"
+          accessibilityLabel="Open profile"
+        >
+          {avatarUrl && !imageError ? (
+            <Image
+              source={{ uri: avatarUrl }}
+              style={styles.avatarImage}
+              contentFit="cover"
+              transition={150}
+              onError={() => setImageError(true)}
+            />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <Text style={styles.avatarFallbackText}>
+                {getInitials(user?.name)}
+              </Text>
+            </View>
+          )}
+        </Pressable>
       </View>
+
+      <LocationSelectSheet ref={sheetRef} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    height: 72,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: colors.bgCard,
+    paddingHorizontal: 20,
+    paddingVertical: 6,
+    backgroundColor: 'transparent',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -84,38 +137,63 @@ const styles = StyleSheet.create({
   },
   leftSide: {
     flex: 1,
+    marginRight: 10,
+    justifyContent: 'center',
   },
-  locationPill: {
-    backgroundColor: colors.bgInput,
-    borderRadius: radius.pill,
-    height: 28,
-    paddingHorizontal: 10,
-    alignSelf: 'flex-start',
+  locationButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
   },
-  cityText: {
-    fontFamily: fontFamily.jakarta.medium,
-    fontSize: 13,
+  locationButtonPressed: {
+    opacity: 0.75,
+  },
+  locationText: {
+    fontFamily: fontFamily.jakarta.semiBold,
+    fontSize: 15,
     color: colors.textPrimary,
+    marginLeft: 6,
+    marginRight: 4,
+    letterSpacing: -0.2,
+    flexShrink: 1,
   },
-  greetingRow: {
-    marginTop: 8,
-  },
-  greetingText: {
-    fontFamily: fontFamily.jakarta.regular,
-    fontSize: 14,
-    color: colors.textMuted,
-  },
-  nameText: {
-    fontFamily: fontFamily.poppins.semiBold,
-    fontSize: 14,
-    color: colors.primary,
+  chevron: {
+    flexShrink: 0,
   },
   rightSide: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  avatarButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    overflow: 'hidden',
     justifyContent: 'center',
-    alignItems: 'flex-end',
-    width: 50,
+    alignItems: 'center',
+  },
+  avatarButtonPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.96 }],
+  },
+  avatarImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+  },
+  avatarFallback: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: palette.green100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarFallbackText: {
+    fontFamily: fontFamily.jakarta.bold,
+    fontSize: 13,
+    color: colors.primaryDark,
   },
 });

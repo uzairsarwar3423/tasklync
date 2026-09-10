@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { Text, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
 import { colors, fontFamily, spacing } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface AppVersionRowProps {
   version?: string;
@@ -20,7 +19,6 @@ export const AppVersionRow: React.FC<AppVersionRowProps> = ({
 
     if (nextCount >= 5) {
       setTapCount(0);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       Alert.alert(
         'Developer Diagnostics',
         `Tasklync Customer App\nVersion: ${version}\nBuild: ${buildNumber}\nPlatform: ${Platform.OS} (${Platform.Version})\nAPI Target: production (https://api.tasklync.pk/api/v1)\nEnvironment: Production Release`,

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, View, Text, Pressable, Platform, useWindowDimensions } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -85,15 +85,15 @@ export default function WorkerPortfolioScreen() {
 
       {/* FlashList Full Screen Grid */}
       <View style={styles.listContainer}>
-        <FlashList
-          data={images}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          numColumns={3}
-          estimatedItemSize={cellSize}
-          contentContainerStyle={styles.listContent}
-          ListEmptyComponent={renderEmpty}
-        />
+        {(FlashList as any)({
+          data: images,
+          renderItem: renderItem,
+          keyExtractor: (item: any) => item.id,
+          numColumns: 3,
+          estimatedItemSize: cellSize,
+          contentContainerStyle: styles.listContent,
+          ListEmptyComponent: renderEmpty,
+        })}
       </View>
 
       <ImageViewer
@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     width: '100%',
-    backgroundColor: '#FAFAFA', // colors.bgApp
+    backgroundColor: colors.bgApp,
     overflow: 'hidden',
   },
   header: {

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, LayoutChangeEvent } from 'react-native';
 import { TabType } from '../../hooks/useBookingsList';
 import { BookingsTabIndicator } from './BookingsTabIndicator';

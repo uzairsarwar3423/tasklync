@@ -201,17 +201,14 @@ export const useWorkerSkills = (workerId: string) => {
   const query = useQuery<WorkerSkill[], Error>({
     queryKey: ['worker', workerId, 'skills'],
     queryFn: async () => {
-      if (workerId.startsWith('w')) {
-        const mockProfile = MOCK_PROFILES[workerId];
-        if (mockProfile) return mockProfile.skills;
-        return [];
-      }
       try {
-        return await workerApi.getWorkerSkills(workerId);
+        const res = await workerApi.getWorkerSkills(workerId);
+        if (Array.isArray(res)) return res;
+        return [];
       } catch (err) {
         const mockProfile = MOCK_PROFILES[workerId];
         if (mockProfile) return mockProfile.skills;
-        throw err;
+        return [];
       }
     },
     enabled: !!workerId,
@@ -231,17 +228,14 @@ export const useWorkerServiceOfferings = (workerId: string) => {
   const query = useQuery<WorkerServiceOffering[], Error>({
     queryKey: ['worker', workerId, 'services'],
     queryFn: async () => {
-      if (workerId.startsWith('w')) {
-        const mockProfile = MOCK_PROFILES[workerId];
-        if (mockProfile) return mockProfile.serviceOfferings;
-        return [];
-      }
       try {
-        return await workerApi.getWorkerServices(workerId);
+        const res = await workerApi.getWorkerServices(workerId);
+        if (Array.isArray(res)) return res;
+        return [];
       } catch (err) {
         const mockProfile = MOCK_PROFILES[workerId];
         if (mockProfile) return mockProfile.serviceOfferings;
-        throw err;
+        return [];
       }
     },
     enabled: !!workerId,
@@ -261,20 +255,12 @@ export const useWorkerProfile = (workerId: string) => {
   const profileQuery = useQuery<WorkerPublicProfile, Error>({
     queryKey: ['worker', workerId],
     queryFn: async () => {
-      if (workerId.startsWith('w')) {
-        const mockProfile = MOCK_PROFILES[workerId];
-        if (mockProfile) {
-          localStorage.cacheWorkerProfile(workerId, mockProfile);
-          return mockProfile;
-        }
-        throw new Error('Worker profile not found');
-      }
       try {
         const result = await workerApi.getWorkerProfile(workerId);
         if (result) {
           localStorage.cacheWorkerProfile(workerId, result);
+          return result;
         }
-        return result;
       } catch (err) {
         const cached = localStorage.getCachedWorkerProfile<WorkerPublicProfile>(workerId);
         if (cached?.data) return cached.data;
@@ -282,6 +268,7 @@ export const useWorkerProfile = (workerId: string) => {
         if (mockProfile) return mockProfile;
         throw err;
       }
+      throw new Error('Worker profile not found');
     },
     initialData: () => {
       const cached = localStorage.getCachedWorkerProfile<WorkerPublicProfile>(workerId);
@@ -326,20 +313,6 @@ export const useWorkerReviews = (workerId: string, page: number = 1) => {
   const query = useQuery<PaginatedResponse<WorkerReview>, Error>({
     queryKey: ['worker', workerId, 'reviews', page],
     queryFn: async () => {
-      if (workerId.startsWith('w')) {
-        const reviews = MOCK_REVIEWS[workerId] || [];
-        return {
-          items: reviews,
-          meta: {
-            pagination: {
-              total: reviews.length,
-              page,
-              limit: 20,
-              hasMore: false,
-            },
-          },
-        } as any;
-      }
       try {
         return await workerApi.getWorkerReviews(workerId, { page });
       } catch (err) {

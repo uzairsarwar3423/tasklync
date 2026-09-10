@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { DisputeReason, DisputeReasonOption } from '../../types/booking.types';
 import { colors, palette, fontFamily, fontSize, radius, spacing } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export const DISPUTE_REASONS: DisputeReasonOption[] = [
   {
@@ -53,9 +52,6 @@ export const DisputeReasonRadioGroup: React.FC<DisputeReasonRadioGroupProps> = (
 }) => {
   const handleSelect = (key: DisputeReason) => {
     if (disabled || selectedReason === key) return;
-    try {
-      Haptics.selectionAsync().catch(() => {});
-    } catch {}
     onSelectReason(key);
   };
 

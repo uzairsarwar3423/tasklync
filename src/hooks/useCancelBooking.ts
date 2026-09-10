@@ -3,7 +3,6 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { bookingApi } from '../services/api/booking.api';
 import { BookingDetails, CancelBookingData } from '../types/booking.types';
 import { computeRefundPolicy } from '../utils/refundPolicy';
-import * as Haptics from 'expo-haptics';
 
 export function useCancelBooking(booking?: Partial<BookingDetails> | null) {
   const queryClient = useQueryClient();
@@ -17,9 +16,6 @@ export function useCancelBooking(booking?: Partial<BookingDetails> | null) {
       return await bookingApi.cancelBooking(bookingId, reason);
     },
     onSuccess: (_, variables) => {
-      try {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      } catch {}
 
       queryClient.invalidateQueries({ queryKey: ['bookings-list'] });
       queryClient.invalidateQueries({ queryKey: ['bookings'] });

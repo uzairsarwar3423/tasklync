@@ -8,7 +8,6 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { ArrowDown } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 
 interface NewMessagesBannerProps {
   count: number;
@@ -53,9 +52,6 @@ export const NewMessagesBanner = React.memo(function NewMessagesBanner({
   }));
 
   const handlePress = () => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch {}
     onPress();
   };
 

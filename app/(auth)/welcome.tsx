@@ -10,7 +10,6 @@ import Animated, {
   withSpring,
   withTiming
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 
 import { Screen } from '@components/layout/Screen';
@@ -59,17 +58,14 @@ export default function WelcomeScreen() {
   });
 
   const handleSkip = () => {
-    Haptics.selectionAsync();
     flatListRef.current?.scrollToIndex({ index: 2, animated: true });
   };
 
   const handleGetStarted = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push('/(auth)/phone');
   };
 
   const handleLogin = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push('/(auth)/phone');
   };
 

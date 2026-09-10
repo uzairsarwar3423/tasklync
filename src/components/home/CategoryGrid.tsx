@@ -1,19 +1,14 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import React, { useEffect, useCallback } from 'react';
+import { View, StyleSheet, FlatList } from 'react-native';
 import { useQueryClient } from '@tanstack/react-query';
-import { Text } from '../ui/Text/Text';
 import { SkeletonCategoryGrid } from '../ui/Skeleton';
 import { ServiceCategoryCard } from '../service/ServiceCategoryCard';
 import { useCategories } from '../../hooks/useCategories';
-import { colors } from '../../design/colors';
-import { layout } from '../../design/spacing';
-import { fontFamily } from '../../design/typography';
+import { Category } from '../../types/category.types';
 
 export const CategoryGrid = () => {
-  const router = useRouter();
   const queryClient = useQueryClient();
-  const { categories, isLoading, error, refetch } = useCategories();
+  const { categories, isLoading, error } = useCategories();
 
   const visibleCategories = categories?.slice(0, 6) || [];
 
@@ -26,99 +21,63 @@ export const CategoryGrid = () => {
     });
   }, [visibleCategories, queryClient]);
 
-  const handleSeeAll = () => {
-    router.push('/explore' as any);
-  };
+  const renderItem = useCallback(
+    ({ item, index }: { item: Category; index: number }) => (
+      <ServiceCategoryCard category={item} index={index} />
+    ),
+    []
+  );
+
+  const renderSeparator = useCallback(() => (
+    <View style={styles.separator} />
+  ), []);
+
+  const keyExtractor = useCallback((item: Category) => item.id, []);
 
   if (isLoading) {
     return (
       <View style={styles.container}>
-        <SectionHeader onSeeAll={handleSeeAll} />
         <SkeletonCategoryGrid />
       </View>
     );
   }
 
   if (error || visibleCategories.length === 0) {
-    // Show error state or empty state as skeleton to prevent layout jump
-    return (
-      <View style={styles.container}>
-        <SectionHeader onSeeAll={handleSeeAll} />
-        {error ? (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>Services unavailable. </Text>
-            <Pressable onPress={() => refetch()} hitSlop={8}>
-              <Text style={styles.retryText}>Retry</Text>
-            </Pressable>
-          </View>
-        ) : (
-          <SkeletonCategoryGrid />
-        )}
-      </View>
-    );
+    return null;
   }
 
   return (
     <View style={styles.container}>
-      <SectionHeader onSeeAll={handleSeeAll} />
-      <View style={styles.grid}>
-        {visibleCategories.map((category, index) => (
-          <ServiceCategoryCard
-            key={category.id}
-            category={category}
-            index={index}
-          />
-        ))}
-      </View>
+      <FlatList
+        data={visibleCategories}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+        decelerationRate="normal"
+        directionalLockEnabled={true}
+        alwaysBounceVertical={false}
+        nestedScrollEnabled={true}
+        ItemSeparatorComponent={renderSeparator}
+        contentContainerStyle={styles.listContent}
+      />
     </View>
   );
 };
 
-const SectionHeader = ({ onSeeAll }: { onSeeAll: () => void }) => (
-  <View style={styles.headerRow}>
-    <Text variant="h4" style={styles.title}>Services</Text>
-    <Pressable onPress={onSeeAll} hitSlop={8}>
-      <Text style={styles.seeAll}>See all →</Text>
-    </Pressable>
-  </View>
-);
-
 const styles = StyleSheet.create({
   container: {
-    marginTop: 24,
+    width: '100%',
+    paddingVertical: 4,
   },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: layout.screenPaddingH,
+  listContent: {
+    paddingLeft: 34,
+    paddingRight: 38, // Generous trailing padding so the last item can scroll fully into view
+    alignItems: 'flex-start',
   },
-  title: {
-    fontFamily: fontFamily.poppins.semiBold,
-    color: colors.textPrimary,
-  },
-  seeAll: {
-    fontFamily: fontFamily.jakarta.medium,
-    fontSize: 13,
-    color: colors.primary,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-    paddingHorizontal: layout.screenPaddingH,
-    paddingTop: 12,
-  },
-  errorContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: layout.screenPaddingH,
-    paddingTop: 12,
-  },
-  errorText: {
-    color: colors.textMuted,
-  },
-  retryText: {
-    color: colors.primary,
-    textDecorationLine: 'underline',
+  separator: {
+    width: 22, // Category gap: ~18–26px
   },
 });

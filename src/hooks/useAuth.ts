@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import { authApi } from '../services/api/auth.api';
 import { userApi } from '../services/api/user.api';
 import { phoneSchema, nameSchema } from '../utils/validation';
@@ -28,7 +27,6 @@ export const useSendOtp = () => {
       
       await authApi.sendOtp(formattedPhone);
       
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.push({ pathname: '/(auth)/otp', params: { phone: formattedPhone } });
     } catch (err: any) {
       const msg = err.response?.status === 429 
@@ -66,7 +64,6 @@ export const useVerifyOtp = () => {
       setUser(response.user);
       setIsNewUser(response.isNewUser);
       
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       
       // Delay to let the success cascade animation play
       setTimeout(() => {
@@ -87,7 +84,6 @@ export const useVerifyOtp = () => {
       if (status === 401) {
         setOtpError(true);
         msg = "Wrong code. Please check your SMS.";
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         setTimeout(() => setOtpError(false), 600); // reset after shake
       } else if (status === 410) {
         msg = "Code expired. Please request a new one.";
@@ -133,7 +129,6 @@ export const useUpdateName = () => {
       // Crucial fix: Clear isNewUser flag so AuthProvider doesn't force a redirect back to name screen
       setIsNewUser(false);
       
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       router.replace('/(auth)/location-permission');
     } catch (err) {
       showToast({ type: 'error', title: "Something went wrong. Your name wasn't saved." });

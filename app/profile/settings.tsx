@@ -22,7 +22,6 @@ import {
   AppVersionRow,
 } from '../../src/components/settings';
 import { colors, palette, fontFamily, fontSize, spacing } from '../../src/design';
-import * as Haptics from 'expo-haptics';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -32,12 +31,10 @@ export default function SettingsScreen() {
   const { preferences, togglePreference } = useNotificationPreferences();
 
   const handleBack = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     router.back();
   };
 
   const handleOpenLegal = async (url: string) => {
-    Haptics.selectionAsync().catch(() => {});
     try {
       await Linking.openURL(url);
     } catch (_e) {}

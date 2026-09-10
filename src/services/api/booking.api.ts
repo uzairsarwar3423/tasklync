@@ -28,23 +28,58 @@ const bookingsStorage = createMMKV({ id: 'tasklync_bookings_storage' });
 const BOOKINGS_KEY = 'user_bookings_list';
 
 /**
- * Reads all stored bookings from MMKV persistent storage
+ * Purges any fake / locally generated phantom bookings from MMKV persistent storage
+ */
+export function purgeFakeBookings(): void {
+  try {
+    const raw = bookingsStorage.getString(BOOKINGS_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) {
+      bookingsStorage.remove(BOOKINGS_KEY);
+      return;
+    }
+    const realOnly = parsed.filter((b: any) => {
+      if (!b || !b.id) return false;
+      if (typeof b.id === 'string' && (b.id.startsWith('b-') || b.id.startsWith('TL-'))) {
+        return false;
+      }
+      return true;
+    });
+    bookingsStorage.set(BOOKINGS_KEY, JSON.stringify(realOnly));
+  } catch (_e) {
+    bookingsStorage.remove(BOOKINGS_KEY);
+  }
+}
+
+// Automatically clean any legacy fake bookings on module load
+purgeFakeBookings();
+
+/**
+ * Reads all stored bookings from MMKV persistent storage (real bookings only)
  */
 export function getPersistedBookings(): BookingDetails[] {
   try {
     const raw = bookingsStorage.getString(BOOKINGS_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    if (!Array.isArray(parsed)) return [];
+    // Strict guard: Never return fake bookings with local generator IDs
+    return parsed.filter((b) => b && b.id && !b.id.startsWith('b-') && !b.id.startsWith('TL-'));
   } catch (_e) {
     return [];
   }
 }
 
 /**
- * Saves/upserts a single booking in MMKV persistent storage
+ * Saves/upserts a single confirmed server booking in MMKV persistent storage
  */
 export function savePersistedBooking(booking: BookingDetails): void {
+  if (!booking || !booking.id) return;
+  // Guard: Never save fake / unconfirmed bookings to persistent storage
+  if (booking.id.startsWith('b-') || booking.id.startsWith('TL-')) {
+    return;
+  }
   try {
     const existing = getPersistedBookings();
     const index = existing.findIndex((b) => b.id === booking.id);
@@ -60,31 +95,17 @@ export function savePersistedBooking(booking: BookingDetails): void {
 }
 
 /**
- * Syncs and saves an array of bookings into MMKV persistent storage
+ * Syncs and saves an array of real remote bookings into MMKV persistent storage.
+ * The server is the authoritative source of truth.
  */
 export function syncPersistedBookings(remoteBookings: BookingDetails[]): BookingDetails[] {
   try {
-    const local = getPersistedBookings();
-    const map = new Map<string, BookingDetails>();
-
-    // Add remote first
-    remoteBookings.forEach((b) => {
-      if (b && b.id) map.set(b.id, b);
-    });
-
-    // Merge local (preserving any optimistic or offline bookings)
-    local.forEach((b) => {
-      if (b && b.id && !map.has(b.id)) {
-        map.set(b.id, b);
-      }
-    });
-
-    const merged = Array.from(map.values()).sort(
-      (a, b) => new Date(b.created_at || b.scheduled_at).getTime() - new Date(a.created_at || a.scheduled_at).getTime()
+    // Retain only valid remote bookings returned from the server
+    const validRemote = remoteBookings.filter(
+      (b) => b && b.id && !b.id.startsWith('b-') && !b.id.startsWith('TL-')
     );
-
-    bookingsStorage.set(BOOKINGS_KEY, JSON.stringify(merged));
-    return merged;
+    bookingsStorage.set(BOOKINGS_KEY, JSON.stringify(validRemote));
+    return validRemote;
   } catch (_e) {
     return remoteBookings;
   }
@@ -182,8 +203,11 @@ export const bookingApi = {
    */
   createBooking: async (payload: CreateBookingPayload): Promise<BookingDetails> => {
     const token = useAuthStore.getState().accessToken;
+    if (!token) {
+      throw new Error('Authentication required: Please sign in to create and confirm your booking.');
+    }
+
     const cartWorker = useCartStore.getState().worker;
-    const user = useAuthStore.getState().user;
 
     const sanitizedPayload: CreateBookingPayload = {
       ...payload,
@@ -192,87 +216,30 @@ export const bookingApi = {
       address_id: isValidUUID(payload.address_id) ? payload.address_id : CANONICAL_FALLBACK_UUIDS.ADDRESS_HOME,
     };
 
-    const baseEstimate = calculateLocalEstimate({
-      worker_id: sanitizedPayload.worker_id,
-      category_id: sanitizedPayload.category_id,
-      service_id: sanitizedPayload.service_id,
-      scheduled_at: sanitizedPayload.scheduled_at,
-      duration_hours: sanitizedPayload.duration_hours,
-      latitude: sanitizedPayload.latitude,
-      longitude: sanitizedPayload.longitude,
-      is_urgent: sanitizedPayload.is_urgent,
-      custom_base_price: sanitizedPayload.custom_base_price,
-    });
-
     const fallbackWorkerName = cartWorker?.name || 'Assigned Professional';
     const fallbackCategoryName = cartWorker?.category
       ? formatCategoryName(cartWorker.category, 'Service', 'title')
       : formatCategoryName(sanitizedPayload.category_id, 'Service', 'title');
     const fallbackWorkerAvatar = (cartWorker as any)?.avatarUrl || (cartWorker as any)?.avatar || undefined;
 
-    const newBooking: BookingDetails = {
-      id: `b-${Date.now().toString(16)}-${Math.random().toString(36).substring(2, 7)}`,
-      user_id: user?.id || 'u-guest-user',
-      worker_id: sanitizedPayload.worker_id,
-      category_id: sanitizedPayload.category_id,
-      service_id: sanitizedPayload.service_id,
-      service_type: sanitizedPayload.service_type || 'ONE_TIME',
-      status: 'PENDING',
-      scheduled_at: sanitizedPayload.scheduled_at,
-      duration_hours: sanitizedPayload.duration_hours,
-      expires_at: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-      address_id: sanitizedPayload.address_id,
-      address_text: sanitizedPayload.address_text,
-      job_site_location: {
-        lat: sanitizedPayload.latitude,
-        lng: sanitizedPayload.longitude,
-      },
-      base_price: baseEstimate.base_price,
-      urgency_multiplier: baseEstimate.urgency_multiplier,
-      demand_multiplier: baseEstimate.demand_multiplier,
-      time_of_day_multiplier: baseEstimate.time_of_day_multiplier,
-      estimated_total: baseEstimate.estimated_total,
-      platform_fee: baseEstimate.platform_fee,
-      worker_amount: baseEstimate.worker_amount,
-      currency: 'PKR',
-      price_type: 'hourly',
-      is_urgent: sanitizedPayload.is_urgent,
-      is_payment_confirmed: false,
-      description: sanitizedPayload.description,
-      created_at: new Date().toISOString(),
-      worker_name: fallbackWorkerName,
-      category_name: fallbackCategoryName,
-      worker_avatar_url: fallbackWorkerAvatar,
+    // Direct backend server creation - the server database is the authoritative source of truth.
+    // Errors will not be swallowed into fake offline bookings.
+    const response = await apiClient.post<ApiEnvelope<BookingDetails>>('/bookings', sanitizedPayload);
+    const serverBooking = response.data?.data || (response.data as any);
+
+    if (!serverBooking || !serverBooking.id || typeof serverBooking.id !== 'string' || serverBooking.id.startsWith('b-') || serverBooking.id.startsWith('TL-')) {
+      throw new Error('The server did not return a valid confirmed booking.');
+    }
+
+    const confirmedBooking: BookingDetails = {
+      ...serverBooking,
+      worker_name: serverBooking.worker_name || fallbackWorkerName,
+      category_name: serverBooking.category_name || fallbackCategoryName,
+      worker_avatar_url: serverBooking.worker_avatar_url || fallbackWorkerAvatar,
     };
 
-    if (!token) {
-      savePersistedBooking(newBooking);
-      return newBooking;
-    }
-
-    try {
-      const response = await apiClient.post<ApiEnvelope<BookingDetails>>('/bookings', sanitizedPayload);
-      const serverBooking = response.data?.data || (response.data as any);
-      
-      const mergedBooking: BookingDetails = {
-        ...newBooking,
-        ...serverBooking,
-        worker_name: serverBooking?.worker_name || fallbackWorkerName,
-        category_name: serverBooking?.category_name || fallbackCategoryName,
-        worker_avatar_url: serverBooking?.worker_avatar_url || fallbackWorkerAvatar,
-      };
-
-      savePersistedBooking(mergedBooking);
-      return mergedBooking;
-    } catch (error: any) {
-      // If validation error from server (400 / 422), rethrow with details for user transparency
-      if (error?.status === 400 || error?.status === 422 || error?.code === 'VALIDATION_ERROR') {
-        throw error;
-      }
-      // Save locally for offline resilience so user never loses work on network failure
-      savePersistedBooking(newBooking);
-      return newBooking;
-    }
+    savePersistedBooking(confirmedBooking);
+    return confirmedBooking;
   },
 
   /**
@@ -282,7 +249,18 @@ export const bookingApi = {
   listBookings: async (params?: ListBookingsParams): Promise<ListBookingsResponse> => {
     const token = useAuthStore.getState().accessToken;
     if (!token) {
-      return getLocalList(params);
+      return {
+        status: 'success',
+        data: [],
+        meta: {
+          total: 0,
+          page: params?.page || 1,
+          limit: params?.limit || 20,
+          total_pages: 0,
+          has_next: false,
+          has_prev: false,
+        },
+      };
     }
 
     try {
@@ -302,61 +280,66 @@ export const bookingApi = {
         rawList = body;
       }
 
-      if (rawList.length > 0) {
-        const normalizedList: BookingDetails[] = rawList.map((b: any) => ({
-          id: b.id || `b-${Date.now()}`,
-          user_id: b.user_id || b.customerId || '',
-          worker_id: b.worker_id || b.workerId || '',
-          category_id: b.category_id || b.categoryId || 'service',
-          service_id: b.service_id || b.serviceId || '',
-          service_type: b.service_type || 'ONE_TIME',
-          status: ((b.status || 'PENDING') as string).toUpperCase() as BookingStatus,
-          scheduled_at: b.scheduled_at || b.scheduledAt || new Date().toISOString(),
-          duration_hours: Number(b.duration_hours || b.durationHours || 2),
-          expires_at: b.expires_at || b.expiresAt || new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-          address_id: b.address_id || b.addressId || '',
-          address_text: b.address_text || b.addressText || b.address || '',
-          job_site_location: b.job_site_location || {
-            lat: Number(b.latitude || b.lat || 31.5204),
-            lng: Number(b.longitude || b.lng || 74.3587),
-          },
-          base_price: Number(b.base_price || b.basePrice || b.estimated_total || 500),
-          urgency_multiplier: Number(b.urgency_multiplier || 1),
-          demand_multiplier: Number(b.demand_multiplier || 1),
-          time_of_day_multiplier: Number(b.time_of_day_multiplier || 1),
-          estimated_total: Number(b.estimated_total || b.total_amount || b.totalAmount || b.price || b.base_price || 500),
-          platform_fee: Number(b.platform_fee || b.platformFee || 0),
-          worker_amount: Number(b.worker_amount || b.workerAmount || 0),
-          currency: b.currency || 'PKR',
-          price_type: b.price_type || 'fixed',
-          is_urgent: Boolean(b.is_urgent ?? b.isUrgent),
-          is_payment_confirmed: Boolean(b.is_payment_confirmed ?? b.isPaymentConfirmed),
-          description: b.description || b.notes || '',
-          created_at: b.created_at || b.createdAt || new Date().toISOString(),
-          worker_name: b.worker_name || b.worker?.name || b.workerName,
-          category_name: b.category_name || (b.category_id ? formatCategoryName(b.category_id, 'Service', 'title') : undefined),
-          worker_avatar_url: b.worker_avatar_url || b.worker?.avatar_url || b.workerAvatarUrl,
-        }));
+      // Filter strictly for valid, non-fake bookings returned from server
+      const validItems = rawList.filter(
+        (b) => b && b.id && typeof b.id === 'string' && !b.id.startsWith('b-') && !b.id.startsWith('TL-')
+      );
 
-        const synced = syncPersistedBookings(normalizedList);
-        return {
-          status: 'success',
-          data: params?.status && params.status !== 'ALL'
-            ? synced.filter((b) => b.status === params.status)
-            : synced,
-          meta: {
-            total: synced.length,
-            page: params?.page || 1,
-            limit: params?.limit || 50,
-            total_pages: 1,
-            has_next: false,
-            has_prev: false,
-          },
-        };
-      }
+      const normalizedList: BookingDetails[] = validItems.map((b: any) => ({
+        id: b.id,
+        user_id: b.user_id || b.customerId || '',
+        worker_id: b.worker_id || b.workerId || '',
+        category_id: b.category_id || b.categoryId || 'service',
+        service_id: b.service_id || b.serviceId || '',
+        service_type: b.service_type || 'ONE_TIME',
+        status: ((b.status || 'PENDING') as string).toUpperCase() as BookingStatus,
+        scheduled_at: b.scheduled_at || b.scheduledAt || new Date().toISOString(),
+        duration_hours: Number(b.duration_hours || b.durationHours || 2),
+        expires_at: b.expires_at || b.expiresAt || new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+        address_id: b.address_id || b.addressId || '',
+        address_text: b.address_text || b.addressText || b.address || '',
+        job_site_location: b.job_site_location || {
+          lat: Number(b.latitude || b.lat || 31.5204),
+          lng: Number(b.longitude || b.lng || 74.3587),
+        },
+        base_price: Number(b.base_price || b.basePrice || b.estimated_total || 500),
+        urgency_multiplier: Number(b.urgency_multiplier || 1),
+        demand_multiplier: Number(b.demand_multiplier || 1),
+        time_of_day_multiplier: Number(b.time_of_day_multiplier || 1),
+        estimated_total: Number(b.estimated_total || b.total_amount || b.totalAmount || b.price || b.base_price || 500),
+        platform_fee: Number(b.platform_fee || b.platformFee || 0),
+        worker_amount: Number(b.worker_amount || b.workerAmount || 0),
+        currency: b.currency || 'PKR',
+        price_type: b.price_type || 'fixed',
+        is_urgent: Boolean(b.is_urgent ?? b.isUrgent),
+        is_payment_confirmed: Boolean(b.is_payment_confirmed ?? b.isPaymentConfirmed),
+        description: b.description || b.notes || '',
+        created_at: b.created_at || b.createdAt || new Date().toISOString(),
+        worker_name: b.worker_name || b.worker?.name || b.workerName,
+        category_name: b.category_name || (b.category_id ? formatCategoryName(b.category_id, 'Service', 'title') : undefined),
+        worker_avatar_url: b.worker_avatar_url || b.worker?.avatar_url || b.workerAvatarUrl,
+      }));
 
-      return getLocalList(params);
+      // Remote server list is the authoritative truth: overwrite cache with valid items
+      const synced = syncPersistedBookings(normalizedList);
+      const filtered = params?.status && params.status !== 'ALL'
+        ? synced.filter((b) => b.status === params.status)
+        : synced;
+
+      return {
+        status: 'success',
+        data: filtered,
+        meta: {
+          total: filtered.length,
+          page: params?.page || 1,
+          limit: params?.limit || 50,
+          total_pages: Math.ceil(filtered.length / (params?.limit || 50)) || 1,
+          has_next: false,
+          has_prev: false,
+        },
+      };
     } catch (_error) {
+      // Offline fallback: Return only confirmed real bookings previously stored in MMKV
       return getLocalList(params);
     }
   },
@@ -366,6 +349,11 @@ export const bookingApi = {
    * GET /api/v1/bookings/:id
    */
   getBookingDetails: async (id: string): Promise<BookingDetails> => {
+    // Strictly reject fake locally generated IDs
+    if (!id || id.startsWith('b-') || id.startsWith('TL-')) {
+      throw new Error('Booking not found');
+    }
+
     const local = getPersistedBookings().find((b) => b.id === id);
 
     const token = useAuthStore.getState().accessToken;
@@ -453,6 +441,20 @@ export const bookingApi = {
    * PATCH /api/v1/bookings/:id/cancel
    */
   cancelBooking: async (id: string, reason: string): Promise<CancelBookingData> => {
+    if (!id || id.startsWith('b-') || id.startsWith('TL-')) {
+      throw new Error('Invalid booking ID');
+    }
+
+    const token = useAuthStore.getState().accessToken;
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const response = await apiClient.patch<ApiEnvelope<CancelBookingData>>(`/bookings/${id}/cancel`, {
+      reason,
+    });
+    const data = response.data?.data || response.data;
+
     const local = getPersistedBookings().find((b) => b.id === id);
     if (local) {
       local.status = 'CANCELLED';
@@ -461,31 +463,13 @@ export const bookingApi = {
       savePersistedBooking(local);
     }
 
-    const token = useAuthStore.getState().accessToken;
-    if (!token) {
-      return {
-        id,
-        status: 'CANCELLED',
-        cancellation_reason: reason,
-        cancelled_by: 'user',
-        updated_at: new Date().toISOString(),
-      };
-    }
-
-    try {
-      const response = await apiClient.patch<ApiEnvelope<CancelBookingData>>(`/bookings/${id}/cancel`, {
-        reason,
-      });
-      return response.data?.data || response.data;
-    } catch (_error) {
-      return {
-        id,
-        status: 'CANCELLED',
-        cancellation_reason: reason,
-        cancelled_by: 'user',
-        updated_at: new Date().toISOString(),
-      };
-    }
+    return data || {
+      id,
+      status: 'CANCELLED',
+      cancellation_reason: reason,
+      cancelled_by: 'user',
+      updated_at: new Date().toISOString(),
+    };
   },
 
   /**
@@ -493,6 +477,18 @@ export const bookingApi = {
    * PATCH /api/v1/bookings/:id/confirm
    */
   confirmCompletion: async (id: string): Promise<ConfirmCompletionData> => {
+    if (!id || id.startsWith('b-') || id.startsWith('TL-')) {
+      throw new Error('Invalid booking ID');
+    }
+
+    const token = useAuthStore.getState().accessToken;
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    const response = await apiClient.patch<ApiEnvelope<ConfirmCompletionData>>(`/bookings/${id}/confirm`);
+    const data = response.data?.data || response.data;
+
     const local = getPersistedBookings().find((b) => b.id === id);
     if (local) {
       local.status = 'COMPLETED';
@@ -500,25 +496,11 @@ export const bookingApi = {
       savePersistedBooking(local);
     }
 
-    const token = useAuthStore.getState().accessToken;
-    if (!token) {
-      return {
-        id,
-        status: 'COMPLETED',
-        completed_at: new Date().toISOString(),
-      };
-    }
-
-    try {
-      const response = await apiClient.patch<ApiEnvelope<ConfirmCompletionData>>(`/bookings/${id}/confirm`);
-      return response.data?.data || response.data;
-    } catch (_error) {
-      return {
-        id,
-        status: 'COMPLETED',
-        completed_at: new Date().toISOString(),
-      };
-    }
+    return data || {
+      id,
+      status: 'COMPLETED',
+      completed_at: new Date().toISOString(),
+    };
   },
 
   /**

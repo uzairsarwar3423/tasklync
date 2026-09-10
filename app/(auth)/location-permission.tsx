@@ -3,7 +3,6 @@ import { View, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MapPin, CheckCircle2 } from 'lucide-react-native';
 import * as Location from 'expo-location';
-import * as Haptics from 'expo-haptics';
 
 import { Screen } from '@components/layout/Screen';
 import { StickyFooter } from '@components/layout/StickyFooter';
@@ -26,14 +25,12 @@ export default function LocationPermissionScreen() {
   const user = useAuthStore(state => state.user);
 
   const handleAllow = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       setPermissionStatus(status === 'granted' ? 'granted' : 'denied');
       
       if (status === 'granted') {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         
         // Fetch current position & trigger backend DB location persistence
         const location = await Location.getCurrentPositionAsync({
@@ -80,7 +77,6 @@ export default function LocationPermissionScreen() {
   };
 
   const handleNotNow = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setPermissionStatus('denied');
     router.replace('/(tabs)/' as any);
   };

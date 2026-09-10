@@ -6,7 +6,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import { useBookingDraftStore } from '../../../store/bookingDraft.store';
 import { colors, palette, fontFamily } from '../../../design';
 
@@ -36,12 +35,14 @@ export const SuccessCTAGroup: React.FC<SuccessCTAGroupProps> = ({ bookingId }) =
   };
 
   const handleTrackBooking = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push(`/booking/${bookingId}` as any);
+    if (bookingId && !bookingId.startsWith('TL-') && !bookingId.startsWith('b-')) {
+      router.push(`/booking/${bookingId}` as any);
+    } else {
+      router.replace('/(tabs)/bookings' as any);
+    }
   };
 
   const handleBackToHome = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     resetDraft();
     router.replace('/(tabs)' as any);
   };

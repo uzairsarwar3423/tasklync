@@ -1,9 +1,8 @@
 import React from 'react';
-import { StyleSheet, View, ViewStyle } from 'react-native';
-import { MessageCircle } from 'lucide-react-native';
-import { Button } from '../ui/Button/Button';
+import { StyleSheet, View, Text, Pressable, ViewStyle } from 'react-native';
+import { MessageCircle, Calendar, ArrowRight } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { colors } from '../../design/colors';
+import { fontFamily } from '../../design/typography';
 
 interface WorkerProfileStickyFooterProps {
   workerId: string;
@@ -22,6 +21,14 @@ export const WorkerProfileStickyFooter: React.FC<WorkerProfileStickyFooterProps>
 }) => {
   const insets = useSafeAreaInsets();
 
+  const handleChatPress = () => {
+    onChat();
+  };
+
+  const handleBookPress = () => {
+    onBookNow();
+  };
+
   return (
     <View
       style={[
@@ -32,26 +39,36 @@ export const WorkerProfileStickyFooter: React.FC<WorkerProfileStickyFooterProps>
         style,
       ]}
     >
-      <Button
-        variant="secondary"
-        size="lg"
-        label="Chat"
-        icon={MessageCircle}
-        onPress={onChat}
-        fullWidth={false}
-        haptic="light"
-        style={styles.chatButton}
-      />
-      <Button
-        variant="primary"
-        size="lg"
-        label="Book Now"
-        onPress={onBookNow}
+      {/* Chat Pill Button */}
+      <Pressable
+        onPress={handleChatPress}
+        style={({ pressed }) => [
+          styles.chatButton,
+          pressed && styles.buttonPressed,
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel="Chat with worker"
+      >
+        <MessageCircle size={18} color="#16A34A" strokeWidth={2.2} />
+        <Text style={styles.chatText}>Chat</Text>
+      </Pressable>
+
+      {/* Book Now Pill Button */}
+      <Pressable
+        onPress={handleBookPress}
         disabled={!isWorkerAvailable}
-        fullWidth={false}
-        haptic="medium"
-        style={styles.bookButton}
-      />
+        style={({ pressed }) => [
+          styles.bookButton,
+          !isWorkerAvailable && styles.bookButtonDisabled,
+          pressed && styles.buttonPressed,
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel="Book Now"
+      >
+        <Calendar size={18} color="#FFFFFF" strokeWidth={2.2} />
+        <Text style={styles.bookText}>Book Now</Text>
+        <ArrowRight size={16} color="#FFFFFF" strokeWidth={2.4} style={styles.arrowIcon} />
+      </Pressable>
     </View>
   );
 };
@@ -62,24 +79,67 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: colors.bgCard || '#FFFFFF',
-    borderTopWidth: 1.5,
-    borderColor: colors.border || '#F3F4F6',
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderColor: '#F1F5F9',
     flexDirection: 'row',
-    paddingHorizontal: 16,
+    alignItems: 'center',
+    paddingHorizontal: 20,
     paddingTop: 12,
     gap: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 10,
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 8,
     zIndex: 100,
   },
   chatButton: {
     flex: 1,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#16A34A',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  chatText: {
+    fontFamily: fontFamily.jakarta.semiBold,
+    fontSize: 15,
+    color: '#16A34A',
   },
   bookButton: {
-    flex: 1.5,
+    flex: 1.8,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#16A34A',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    shadowColor: '#16A34A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  bookButtonDisabled: {
+    backgroundColor: '#94A3B8',
+    shadowOpacity: 0,
+  },
+  bookText: {
+    fontFamily: fontFamily.jakarta.bold,
+    fontSize: 15,
+    color: '#FFFFFF',
+  },
+  arrowIcon: {
+    marginLeft: 2,
+  },
+  buttonPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
   },
 });

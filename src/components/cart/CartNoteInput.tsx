@@ -6,7 +6,6 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { FileText, ChevronDown, ChevronUp } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../design/colors';
 import { typography } from '../../design/typography';
 import { springConfig } from '../../design/animations';
@@ -24,9 +23,6 @@ export const CartNoteInput: FC<CartNoteInputProps> = ({
   const opacity = useSharedValue(isExpanded ? 1 : 0);
 
   const toggleExpand = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     const nextState = !isExpanded;
     setIsExpanded(nextState);
     opacity.value = withSpring(nextState ? 1 : 0, springConfig.default);

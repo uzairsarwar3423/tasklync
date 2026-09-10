@@ -106,6 +106,7 @@ export const ServiceBadge: React.FC<ServiceBadgeProps> = ({
       {Icon && (
         <Icon
           size={iconSize}
+          strokeWidth={1.5}
           color={colors.textOnGreen}
         />
       )}

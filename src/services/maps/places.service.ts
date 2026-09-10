@@ -117,6 +117,36 @@ export async function autocompletePlaces(
 
   // If live Google API Key is valid and configured
   if (apiKey && apiKey !== 'your_key_here') {
+    // 1. Try Places API (New) - required for modern Google Cloud projects
+    try {
+      const newPlacesRes = await fetch('https://places.googleapis.com/v1/places:autocomplete', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Goog-Api-Key': apiKey,
+        },
+        body: JSON.stringify({
+          input: cleanQuery,
+          includedRegionCodes: ['PK'],
+        }),
+      });
+      const newPlacesJson = await newPlacesRes.json();
+      if (Array.isArray(newPlacesJson.suggestions) && newPlacesJson.suggestions.length > 0) {
+        return newPlacesJson.suggestions.slice(0, 5).map((s: any) => {
+          const placePred = s.placePrediction;
+          return {
+            place_id: placePred.placeId,
+            description: placePred.text?.text || '',
+            primary_text: placePred.structuredFormat?.mainText?.text || placePred.text?.text || '',
+            secondary_text: placePred.structuredFormat?.secondaryText?.text || '',
+          };
+        });
+      }
+    } catch (_e) {
+      // Fall through to legacy
+    }
+
+    // 2. Try Places API (Legacy)
     try {
       const url = `https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(
         cleanQuery
@@ -219,6 +249,38 @@ export async function getPlaceDetails(
 
   // Live Google Places Details API
   if (apiKey && apiKey !== 'your_key_here') {
+    // 1. Try Places API (New) details
+    try {
+      const newDetailsRes = await fetch(
+        `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}?fields=id,displayName,formattedAddress,location,addressComponents`,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': apiKey,
+          },
+        }
+      );
+      const newJson = await newDetailsRes.json();
+      if (newJson.location && typeof newJson.location.latitude === 'number') {
+        let city = 'Lahore';
+        let country = 'Pakistan';
+        for (const comp of newJson.addressComponents || []) {
+          if (comp.types?.includes('locality')) city = comp.longText || comp.shortText;
+          if (comp.types?.includes('country')) country = comp.longText || comp.shortText;
+        }
+        return {
+          place_id: placeId,
+          description: newJson.displayName?.text || newJson.formattedAddress || '',
+          formatted_address: newJson.formattedAddress || newJson.displayName?.text || '',
+          lat: newJson.location.latitude,
+          lng: newJson.location.longitude,
+          city,
+          country,
+        };
+      }
+    } catch (_e) {}
+
+    // 2. Try Legacy Place Details
     try {
       const url = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(
         placeId

@@ -6,7 +6,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Check } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors, palette } from '../../../design';
 
 export const SuccessCelebration: React.FC = () => {
@@ -14,7 +13,6 @@ export const SuccessCelebration: React.FC = () => {
   const opacity = useSharedValue(0);
 
   useEffect(() => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     scale.value = withTiming(1.0, { duration: 120 });
     opacity.value = withTiming(1.0, { duration: 120 });
   }, [scale, opacity]);

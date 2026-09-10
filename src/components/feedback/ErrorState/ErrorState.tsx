@@ -1,9 +1,9 @@
 import React from 'react';
 import { StyleSheet, Text, View, StyleProp, ViewStyle, Pressable } from 'react-native';
 import { WifiOff, AlertTriangle, RefreshCw } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { fontFamily } from '../../../design/typography';
 import { palette } from '../../../design/colors';
+import { radius } from '../../../design/radius';
 
 export interface ErrorStateProps {
   type?: 'offline' | 'error' | 'notFound';
@@ -49,9 +49,6 @@ export const ErrorState: React.FC<ErrorStateProps> = React.memo(({
       : 'An unexpected error occurred while loading this page.');
 
   const handleRetry = () => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch {}
     onRetry?.();
   };
 
@@ -87,13 +84,18 @@ export const ErrorState: React.FC<ErrorStateProps> = React.memo(({
           ]}
           onPress={handleRetry}
           disabled={isRetrying}
+          hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={retryButtonText}
         >
-          {isRetrying ? (
-            <RefreshCw size={16} color={palette.white} style={styles.btnIcon} />
-          ) : null}
-          <Text style={styles.retryButtonText}>
+          {isRetrying && (
+            <RefreshCw size={15} color={palette.white} />
+          )}
+          <Text 
+            style={styles.retryButtonText}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
             {isRetrying ? 'Retrying…' : retryButtonText}
           </Text>
         </Pressable>
@@ -148,15 +150,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
     backgroundColor: palette.green500,
-    paddingVertical: 13,
-    paddingHorizontal: 24,
-    borderRadius: 10,
-    minWidth: 160,
-    minHeight: 48,
+    height: 44,
+    paddingHorizontal: 22,
+    borderRadius: radius.pill,
+    minWidth: 108,
+    gap: 8,
   },
   retryButtonPressed: {
-    transform: [{ scale: 0.98 }],
+    transform: [{ scale: 0.97 }],
     backgroundColor: palette.green600,
   },
   retryButtonDisabled: {
@@ -164,10 +167,12 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     fontFamily: fontFamily.jakarta.semiBold,
-    fontSize: 15,
+    fontSize: 14,
+    lineHeight: 20,
     color: palette.white,
-  },
-  btnIcon: {
-    marginRight: 8,
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    includeFontPadding: false,
+    alignSelf: 'center',
   },
 });

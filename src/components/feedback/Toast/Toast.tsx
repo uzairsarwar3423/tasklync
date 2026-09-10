@@ -9,7 +9,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { fontFamily } from '../../../design/typography';
 import { palette } from '../../../design/colors';
 import { NETWORK_CONFIG } from '../../../config/networkConfig';
@@ -78,9 +77,6 @@ export const Toast: React.FC<ToastProps> = React.memo(({ toast, onDismiss }) => 
   };
 
   const handleActionPress = () => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch {}
     toast.action?.onPress();
     handleDismiss();
   };

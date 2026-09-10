@@ -17,7 +17,6 @@ import { PhoneInput } from '@components/ui/Input/PhoneInput';
 import { IconButton } from '@components/ui/Button/IconButton';
 import { colors, fontFamily } from '@design/index';
 import { useSendOtp } from '@hooks/useAuth';
-import * as Haptics from 'expo-haptics';
 
 export default function PhoneScreen() {
   const router = useRouter();
@@ -32,7 +31,6 @@ export default function PhoneScreen() {
 
   useEffect(() => {
     if (isValid) {
-      Haptics.selectionAsync();
       buttonScale.value = withSpring(1.03, { damping: 10, stiffness: 400 }, (finished) => {
         if (finished) {
           buttonScale.value = withSpring(1);

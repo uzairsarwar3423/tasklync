@@ -3,7 +3,6 @@ import { createMMKV } from 'react-native-mmkv';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { userApi, getCachedUserProfile, setCachedUserProfile } from '../services/api/user.api';
 import { LanguageCode, CurrencyCode } from '../types/settings.types';
-import * as Haptics from 'expo-haptics';
 
 const storage = createMMKV({ id: 'tasklync_app_preferences_storage' });
 const LANGUAGE_KEY = 'app_language_pref';
@@ -34,7 +33,6 @@ export function useAppPreferences() {
 
   const setLanguage = useCallback(
     (newLang: LanguageCode) => {
-      Haptics.selectionAsync().catch(() => {});
       storage.set(LANGUAGE_KEY, newLang);
       setLanguageState(newLang);
 
@@ -52,7 +50,6 @@ export function useAppPreferences() {
 
   const setCurrency = useCallback(
     (newCurrency: CurrencyCode) => {
-      Haptics.selectionAsync().catch(() => {});
       storage.set(CURRENCY_KEY, newCurrency);
       setCurrencyState(newCurrency);
 

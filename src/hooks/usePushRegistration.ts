@@ -11,6 +11,7 @@ export function usePushRegistration() {
   const setTokenRegisteredForUser = useNotificationStore((s) => s.setTokenRegisteredForUser);
   const setLastRegistrationError = useNotificationStore((s) => s.setLastRegistrationError);
   const setPermissionStatus = useNotificationStore((s) => s.setPermissionStatus);
+  const setCanAskAgain = useNotificationStore((s) => s.setCanAskAgain);
 
   const isRegisteringRef = useRef<boolean>(false);
 
@@ -30,8 +31,18 @@ export function usePushRegistration() {
     isRegisteringRef.current = true;
 
     try {
-      // 2. Check and ensure permissions
-      const permStatus = await pushService.getPermissionStatus();
+      // 2. Check and ensure permissions safely
+      const detail = await pushService.getDetailedPermissionStatus();
+      let permStatus = detail.status;
+
+      if (permStatus === 'undetermined') {
+        permStatus = await pushService.requestPermission();
+        const updatedDetail = await pushService.getDetailedPermissionStatus();
+        setCanAskAgain(updatedDetail.canAskAgain);
+      } else {
+        setCanAskAgain(detail.canAskAgain);
+      }
+
       setPermissionStatus(permStatus);
 
       if (permStatus !== 'granted') {
@@ -73,6 +84,7 @@ export function usePushRegistration() {
     setTokenRegisteredForUser,
     setLastRegistrationError,
     setPermissionStatus,
+    setCanAskAgain,
   ]);
 
   /**

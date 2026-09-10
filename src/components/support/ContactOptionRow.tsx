@@ -2,7 +2,6 @@ import { View, Text, TouchableOpacity, StyleSheet, Linking, Alert } from 'react-
 import { MessageCircle, Mail, Phone, ChevronRight } from 'lucide-react-native';
 import { colors, palette, fontFamily, spacing } from '../../design';
 import { useAuthStore } from '../../store/auth.store';
-import * as Haptics from 'expo-haptics';
 
 export type ContactChannel = 'whatsapp' | 'email' | 'call';
 
@@ -24,7 +23,6 @@ export const ContactOptionRow: React.FC<ContactOptionRowProps> = ({
   const user = useAuthStore((s) => s.user);
 
   const handlePress = async () => {
-    Haptics.selectionAsync().catch(() => {});
 
     try {
       if (channel === 'whatsapp') {

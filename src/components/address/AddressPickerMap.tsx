@@ -19,6 +19,7 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
+import * as Location from 'expo-location';
 import { MapPin } from 'lucide-react-native';
 import { MapRegion } from '../../types/address.types';
 import { colors, palette } from '../../design';
@@ -44,8 +45,9 @@ const DEFAULT_REGION: MapRegion = {
 export const AddressPickerMap = forwardRef<AddressPickerMapRef, AddressPickerMapProps>(
   ({ initialRegion = DEFAULT_REGION, onRegionChange, onRegionChangeComplete }, ref) => {
     const mapRef = useRef<MapView | null>(null);
-    const [isDragging, setIsDragging] = useState(false);
+    const isDraggingRef = useRef<boolean>(false);
     const [reduceMotion, setReduceMotion] = useState(false);
+    const [hasLocationPermission, setHasLocationPermission] = useState(false);
 
     // Reanimated values for pin lift & drop bounce
     const pinTranslateY = useSharedValue(0);
@@ -54,15 +56,39 @@ export const AddressPickerMap = forwardRef<AddressPickerMapRef, AddressPickerMap
     const shadowOpacity = useSharedValue(0.25);
 
     useEffect(() => {
+      let isMounted = true;
       AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-        setReduceMotion(enabled);
+        if (isMounted) setReduceMotion(enabled);
       });
+
+      // Verify native OS permissions to prevent SecurityException on Android
+      Location.getForegroundPermissionsAsync()
+        .then(({ status }) => {
+          if (isMounted) setHasLocationPermission(status === 'granted');
+        })
+        .catch(() => {
+          if (isMounted) setHasLocationPermission(false);
+        });
+
+      return () => {
+        isMounted = false;
+      };
     }, []);
 
     useImperativeHandle(ref, () => ({
       animateToRegion: (region: MapRegion, duration = 400) => {
-        if (mapRef.current) {
-          mapRef.current.animateToRegion(region, duration);
+        if (
+          mapRef.current &&
+          typeof region?.latitude === 'number' &&
+          !isNaN(region.latitude) &&
+          typeof region?.longitude === 'number' &&
+          !isNaN(region.longitude)
+        ) {
+          try {
+            mapRef.current.animateToRegion(region, duration);
+          } catch (_e) {
+            // Guard against native view detach races
+          }
         }
       },
       getMapRef: () => mapRef.current,
@@ -70,8 +96,8 @@ export const AddressPickerMap = forwardRef<AddressPickerMapRef, AddressPickerMap
 
     const handleRegionChange = useCallback(
       (region: MapRegion) => {
-        if (!isDragging) {
-          setIsDragging(true);
+        if (!isDraggingRef.current) {
+          isDraggingRef.current = true;
           if (reduceMotion) {
             pinTranslateY.value = -8;
             pinScale.value = 1.04;
@@ -88,12 +114,12 @@ export const AddressPickerMap = forwardRef<AddressPickerMapRef, AddressPickerMap
           onRegionChange(region);
         }
       },
-      [isDragging, onRegionChange, pinScale, pinTranslateY, reduceMotion, shadowOpacity, shadowScale]
+      [onRegionChange, pinScale, pinTranslateY, reduceMotion, shadowOpacity, shadowScale]
     );
 
     const handleRegionChangeComplete = useCallback(
       (region: MapRegion) => {
-        setIsDragging(false);
+        isDraggingRef.current = false;
         if (reduceMotion) {
           pinTranslateY.value = 0;
           pinScale.value = 1.0;
@@ -133,11 +159,12 @@ export const AddressPickerMap = forwardRef<AddressPickerMapRef, AddressPickerMap
           initialRegion={initialRegion}
           onRegionChange={handleRegionChange}
           onRegionChangeComplete={handleRegionChangeComplete}
-          showsUserLocation
+          showsUserLocation={hasLocationPermission}
           showsMyLocationButton={false}
           showsCompass={false}
           rotateEnabled={false}
           pitchEnabled={false}
+          loadingEnabled={true}
         />
 
         {/* Fixed Absolutely-Positioned Center Pin Overlay */}
@@ -167,7 +194,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   map: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   centerPinContainer: {
     position: 'absolute',

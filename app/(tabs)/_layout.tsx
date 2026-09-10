@@ -1,4 +1,3 @@
-import React from 'react';
 import { Tabs } from 'expo-router';
 import { TabBar } from '../../src/components/layout/TabBar';
 
@@ -27,6 +26,12 @@ export default function TabsLayout() {
         name="bookings"
         options={{
           title: 'Bookings',
+        }}
+      />
+      <Tabs.Screen
+        name="messages"
+        options={{
+          title: 'Messages',
         }}
       />
       <Tabs.Screen

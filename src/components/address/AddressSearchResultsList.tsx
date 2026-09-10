@@ -7,7 +7,6 @@ import {
   Keyboard,
 } from 'react-native';
 import { MapPin, History, Trash2 } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { PlacePrediction } from '../../types/address.types';
 import { colors, palette, fontFamily, radius, fontSize, shadows } from '../../design';
 
@@ -34,7 +33,6 @@ export const AddressSearchResultsList: React.FC<AddressSearchResultsListProps> =
   }
 
   const handleSelect = (item: PlacePrediction) => {
-    Haptics.selectionAsync();
     Keyboard.dismiss();
     onSelectPrediction(item);
   };
@@ -52,7 +50,6 @@ export const AddressSearchResultsList: React.FC<AddressSearchResultsListProps> =
           {onClearRecentSearches && (
             <Pressable
               onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 onClearRecentSearches();
               }}
               style={styles.clearBtn}

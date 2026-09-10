@@ -31,6 +31,7 @@ import {
   MessageContextMenu,
   MessageContextMenuRef,
 } from '../../../src/components/chat';
+import { colors } from '../../../src/design/colors';
 
 export default function BookingChatScreen() {
   const params = useLocalSearchParams<{
@@ -326,7 +327,7 @@ export default function BookingChatScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.bgApp,
   },
   flex: {
     flex: 1,

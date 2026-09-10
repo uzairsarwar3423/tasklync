@@ -15,7 +15,6 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { ChevronDown } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../../design/colors';
 import { radius } from '../../../design/radius';
 import { shadows } from '../../../design/shadows';
@@ -64,9 +63,6 @@ export const AccordionItem: React.FC<AccordionItemProps> = ({
 
   const handleToggle = () => {
     if (disabled) return;
-    if (Platform.OS !== 'web') {
-      Haptics.selectionAsync().catch(() => {});
-    }
     const nextState = !isOpen;
     setIsOpen(nextState);
     if (onToggle) onToggle(nextState);

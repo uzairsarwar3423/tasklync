@@ -32,7 +32,6 @@ import {
   User,
 } from 'lucide-react-native';
 import { Image } from 'expo-image';
-import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@design/colors';
 import { typography } from '@design/typography';
@@ -40,6 +39,8 @@ import { radius } from '@design/radius';
 import { shadows } from '@design/shadows';
 import { useServiceById } from '@hooks/useServiceById';
 import { useNearbyWorkers } from '@hooks/useNearbyWorkers';
+import { useNetworkStatus } from '@hooks/useNetworkStatus';
+import { ErrorState } from '@components/feedback/ErrorState';
 import { ServicePriceTag } from '@components/service/ServicePriceTag';
 import { AddToCartButton } from '@components/cart/AddToCartButton';
 import { Chip } from '@components/ui/Chip/Chip';
@@ -65,8 +66,9 @@ export default function ServiceDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id, workerId } = useLocalSearchParams<{ id: string; workerId?: string }>();
 
+  const { isOffline } = useNetworkStatus();
   // Fetch data
-  const { service, isLoading: isServiceLoading } = useServiceById(id || '');
+  const { service, isLoading: isServiceLoading, isError, refetch } = useServiceById(id || '');
   const { workers, isLoading: isWorkersLoading } = useNearbyWorkers(
     service?.categoryId ? { category: service.categoryId } : {}
   );
@@ -86,9 +88,6 @@ export default function ServiceDetailScreen() {
   }, [workerId, workers]);
 
   const handleBack = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.selectionAsync().catch(() => {});
-    }
     if (router.canGoBack()) {
       router.back();
     } else {
@@ -97,16 +96,10 @@ export default function ServiceDetailScreen() {
   };
 
   const handleSelectWorker = (worker: WorkerNearby) => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     setSelectedWorker(worker);
   };
 
   const handleScrollToWorkers = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    }
     // Simple scrolling to the workers section (approx 460px down)
     scrollRef.current?.scrollTo({ y: 460, animated: true });
   };
@@ -148,11 +141,53 @@ export default function ServiceDetailScreen() {
     };
   });
 
-  if (isServiceLoading || !service) {
+  if (isServiceLoading) {
     return (
       <View style={styles.loadingContainer}>
         <StatusBar barStyle="dark-content" />
         <Text style={styles.loadingText}>Loading details...</Text>
+      </View>
+    );
+  }
+
+  if (isError || !service) {
+    return (
+      <View style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        <View
+          style={[
+            styles.header,
+            {
+              paddingTop: insets.top,
+              backgroundColor: colors.bgApp,
+              borderBottomWidth: 1,
+              borderBottomColor: colors.border,
+            },
+          ]}
+        >
+          <Pressable
+            onPress={handleBack}
+            style={styles.backButton}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <ChevronLeft size={24} color={colors.primary} />
+          </Pressable>
+          <Text style={[styles.headerTitle, { opacity: 1 }]}>Service Details</Text>
+          <View style={styles.headerRightPlaceholder} />
+        </View>
+        <ErrorState
+          type={isOffline ? 'offline' : 'error'}
+          title={isOffline ? 'No internet connection' : 'Service unavailable'}
+          subtitle={
+            isOffline
+              ? 'Please check your connection or Wi-Fi settings and try again.'
+              : "We couldn't load details for this service. Please try again."
+          }
+          onRetry={() => refetch()}
+          retryButtonText="Retry"
+        />
       </View>
     );
   }
@@ -413,7 +448,7 @@ export default function ServiceDetailScreen() {
               workerName={selectedWorker.name}
               workerAvatar={selectedWorker.avatarUrl}
               workerRating={selectedWorker.avgRating}
-              workerCategory={selectedWorker.category || service.categoryId}
+              workerCategory={(selectedWorker as any).category || selectedWorker.categories?.[0] || service.categoryId}
               size="md"
             />
           </View>

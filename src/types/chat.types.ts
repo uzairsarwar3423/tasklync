@@ -81,3 +81,21 @@ export interface ChatMediaUploadResponse {
   media_url: string;
   media_thumbnail_url?: string | undefined;
 }
+
+export type ConversationFilterTab = 'all' | 'active' | 'unread';
+
+export interface ConversationItem {
+  id: string;
+  bookingId: string;
+  workerId?: string | undefined;
+  workerName: string;
+  workerAvatarUrl?: string | undefined;
+  workerPhone?: string | undefined;
+  categoryName: string;
+  lastMessage: string;
+  lastMessageAt: string;
+  lastMessageSenderType?: SenderType | undefined;
+  unreadCount: number;
+  isOnline: boolean;
+  bookingStatus?: string | undefined;
+}

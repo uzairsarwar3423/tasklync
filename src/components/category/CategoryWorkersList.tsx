@@ -9,10 +9,12 @@ import { FlashList } from '@shopify/flash-list';
 import { WorkerNearby } from '../../types/worker.types';
 import { SortOption } from '../../types/search.types';
 import { useInfiniteWorkers } from '../../hooks/useInfiniteWorkers';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { useLocationStore } from '../../store/location.store';
 import { WorkerSearchCard } from '../worker/WorkerSearchCard';
 import { SkeletonWorkerSearchCard } from '../ui/Skeleton/SkeletonWorkerSearchCard';
 import { EmptyState } from '../feedback/EmptyState/EmptyState';
+import { ErrorState } from '../feedback/ErrorState/ErrorState';
 import { StickyListHeader } from '../ui/List/StickyListHeader';
 import { SortDropdown } from '../ui/SortDropdown/SortDropdown';
 import { colors } from '../../design/colors';
@@ -36,6 +38,7 @@ export const CategoryWorkersList: React.FC<CategoryWorkersListProps> = ({
   maxRate = 0,
   minRating = 0,
 }) => {
+  const { isOffline } = useNetworkStatus();
   const { currentLocation } = useLocationStore();
 
   // Location fallback (Karachi)
@@ -47,6 +50,7 @@ export const CategoryWorkersList: React.FC<CategoryWorkersListProps> = ({
     total,
     isLoading,
     isLoadingMore,
+    isError,
     isEmpty,
     hasNextPage,
     loadMore,
@@ -107,6 +111,34 @@ export const CategoryWorkersList: React.FC<CategoryWorkersListProps> = ({
           <SkeletonWorkerSearchCard />
         </View>
       </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Animated.View style={styles.emptyContainer} entering={FadeIn.duration(200)}>
+        <StickyListHeader
+          title="Workers"
+          count={0}
+          rightContent={
+            <SortDropdown
+              currentSort={sortBy}
+              onSortChange={onSortChange}
+            />
+          }
+        />
+        <ErrorState
+          type={isOffline ? 'offline' : 'error'}
+          title={isOffline ? 'No internet connection' : "Couldn't load workers"}
+          subtitle={
+            isOffline
+              ? 'Please check your connection or Wi-Fi settings and try again.'
+              : 'An unexpected error occurred while loading workers for this category.'
+          }
+          onRetry={refetch}
+          retryButtonText="Retry"
+        />
+      </Animated.View>
     );
   }
 

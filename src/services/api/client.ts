@@ -139,9 +139,42 @@ apiClient.interceptors.response.use(
       useAuthStore.getState().logout();
     }
 
-    // Normalize backend API error structure
+    // Normalize network, timeout, and backend API error structure
     const rawError = error.response?.data?.error || error.response?.data;
+    const isNetworkError =
+      !error.response &&
+      (error.code === 'ERR_NETWORK' ||
+        error.message === 'Network Error' ||
+        (typeof error.message === 'string' && error.message.toLowerCase().includes('network')));
+    const isTimeout =
+      !error.response &&
+      (error.code === 'ECONNABORTED' ||
+        (typeof error.message === 'string' && error.message.toLowerCase().includes('timeout')));
+
+    let errorCode: string | number = 'SERVER_ERROR';
     let errorMessage = rawError?.message || error.message || 'An unexpected error occurred';
+
+    if (isNetworkError) {
+      errorCode = 'NETWORK_ERROR';
+      errorMessage = 'No internet connection. Please check your network and try again.';
+    } else if (isTimeout) {
+      errorCode = 'TIMEOUT';
+      errorMessage = 'Request timed out. Please check your connection and retry.';
+    } else if (error.response) {
+      const status = error.response.status;
+      if (status >= 500) {
+        errorCode = 'SERVER_ERROR';
+        errorMessage = rawError?.message || 'Server error. Our team is looking into it. Please try again shortly.';
+      } else if (status === 404) {
+        errorCode = 'NOT_FOUND';
+        errorMessage = rawError?.message || 'The requested item was not found.';
+      } else if (status === 403) {
+        errorCode = 'FORBIDDEN';
+        errorMessage = rawError?.message || 'You do not have permission to perform this action.';
+      } else if (status === 400) {
+        errorCode = 'BAD_REQUEST';
+      }
+    }
 
     if (Array.isArray(rawError?.details) && rawError.details.length > 0) {
       const detailMessages = rawError.details
@@ -153,10 +186,12 @@ apiClient.interceptors.response.use(
     }
 
     const apiError = {
-      code: rawError?.code || error.response?.status || 'SERVER_ERROR',
+      code: rawError?.code || errorCode,
       message: errorMessage,
       details: rawError?.details,
       status: error.response?.status,
+      isNetworkError,
+      isTimeout,
     };
 
     return Promise.reject(apiError);

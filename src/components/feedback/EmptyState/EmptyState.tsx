@@ -8,6 +8,7 @@ interface EmptyStateProps {
   subtitle: string;
   actionLabel?: string;
   onAction?: () => void;
+  fullWidthAction?: boolean;
 }
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
@@ -15,14 +16,21 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   subtitle,
   actionLabel,
   onAction,
+  fullWidthAction = false,
 }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.subtitle}>{subtitle}</Text>
       {actionLabel && onAction && (
-        <View style={styles.actionContainer}>
-          <Button label={actionLabel} onPress={onAction} variant="secondary" size="md" />
+        <View style={[styles.actionContainer, fullWidthAction ? { width: '100%' } : { alignSelf: 'center' }]}>
+          <Button 
+            label={actionLabel} 
+            onPress={onAction} 
+            variant="secondary" 
+            size="md" 
+            fullWidth={fullWidthAction}
+          />
         </View>
       )}
     </View>
@@ -35,6 +43,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
+    width: '100%',
   },
   title: {
     fontFamily: 'Poppins-SemiBold',
@@ -49,8 +58,11 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     textAlign: 'center',
     marginBottom: 16,
+    maxWidth: 280,
   },
   actionContainer: {
     marginTop: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

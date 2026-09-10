@@ -17,7 +17,6 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, Lock, Camera, Image as ImageIcon, X } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
-import * as Haptics from 'expo-haptics';
 
 import { useCurrentUser, useUpdateProfile, useUploadAvatar, useUpdatePreferences } from '../../src/hooks/useProfile';
 import { useEditProfileForm } from '../../src/hooks/useEditProfileForm';
@@ -82,7 +81,6 @@ export default function EditProfileScreen() {
     if (!canSave || isUpdating) return;
 
     try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
       await updateProfile({
         name: name.trim(),
         email: email.trim() || undefined,

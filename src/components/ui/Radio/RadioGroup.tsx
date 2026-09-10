@@ -5,7 +5,6 @@ import Animated, {
   withSpring,
   useDerivedValue,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../../design/colors';
 import { typography } from '../../../design/typography';
 import { springConfig } from '../../../design/animations';
@@ -45,9 +44,6 @@ export const RadioGroup: React.FC<RadioGroupProps> = ({
             isLast={isLast}
             onSelect={() => {
               if (!isSelected) {
-                if (Platform.OS !== 'web') {
-                  Haptics.selectionAsync().catch(() => {});
-                }
                 onChange(option.value);
               }
             }}

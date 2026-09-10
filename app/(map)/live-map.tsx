@@ -17,6 +17,7 @@ import { MapControls } from '../../src/components/map/MapControls';
 import { MapBottomPanel } from '../../src/components/map/MapBottomPanel';
 import { MapPanelHeader } from '../../src/components/map/MapPanelHeader';
 import { MapWorkerList } from '../../src/components/map/MapWorkerList';
+import { colors } from '../../src/design/colors';
 
 export default function LiveMapScreen() {
   const router = useRouter();
@@ -48,8 +49,8 @@ export default function LiveMapScreen() {
   const handleSelectMarker = useCallback(
     (worker: WorkerNearby) => {
       selectWorker(worker.id);
-      const lat = (worker as any).lat || (worker as any).latitude;
-      const lng = (worker as any).lng || (worker as any).longitude;
+      const lat = worker.lat ?? (worker as any).latitude;
+      const lng = worker.lng ?? (worker as any).longitude;
       if (lat && lng) {
         flyTo({ lat, lng }, true);
       }
@@ -61,8 +62,8 @@ export default function LiveMapScreen() {
   const handlePressCard = useCallback(
     (worker: WorkerNearby) => {
       selectWorker(worker.id);
-      const lat = (worker as any).lat || (worker as any).latitude;
-      const lng = (worker as any).lng || (worker as any).longitude;
+      const lat = worker.lat ?? (worker as any).latitude;
+      const lng = worker.lng ?? (worker as any).longitude;
       if (lat && lng) {
         flyTo({ lat, lng }, true);
       }
@@ -145,7 +146,7 @@ export default function LiveMapScreen() {
 const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: colors.bgApp,
   },
   mapControlsPosition: {
     position: 'absolute',

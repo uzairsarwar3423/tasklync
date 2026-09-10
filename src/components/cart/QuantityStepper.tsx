@@ -7,7 +7,6 @@ import Animated, {
   withSequence,
 } from 'react-native-reanimated';
 import { Plus, Minus } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../design/colors';
 import { typography } from '../../design/typography';
 import { springConfig } from '../../design/animations';
@@ -46,9 +45,6 @@ export const QuantityStepper: FC<QuantityStepperProps> = ({
       withSpring(1.0, springConfig.stiff)
     );
 
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     onDecrement();
   };
 
@@ -58,9 +54,6 @@ export const QuantityStepper: FC<QuantityStepperProps> = ({
       withSpring(1.0, springConfig.stiff)
     );
 
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     onIncrement();
   };
 

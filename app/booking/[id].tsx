@@ -10,8 +10,9 @@ import {
   TextInput,
   Alert,
   Image,
+  StatusBar,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -29,10 +30,10 @@ import {
 import { palette, colors } from '../../src/design';
 import { useBookingDetails } from '../../src/hooks/useBookingDetails';
 import { useBookingTrack } from '../../src/hooks/useBookingTrack';
-import { useCancelBooking } from '../../src/hooks/useCancelBooking';
 import { useConfirmCompletion } from '../../src/hooks/useConfirmCompletion';
 import { useBookingDispute } from '../../src/hooks/useBookingDispute';
 import { BookingCancelModal } from '../../src/components/booking/BookingCancelModal';
+import { ErrorState } from '../../src/components/feedback/ErrorState';
 import { BookingStatus } from '../../src/types/booking.types';
 
 const STATUS_STEPS: BookingStatus[] = ['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED_BY_WORKER', 'COMPLETED'];
@@ -47,26 +48,25 @@ const STEP_LABELS: Record<string, string> = {
 
 export default function BookingDetailsScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   // Fetch full details and live tracking
-  const { booking, isLoading, refetch } = useBookingDetails(id);
+  const { booking, isLoading, error, refetch } = useBookingDetails(id);
   const { trackData } = useBookingTrack(id, Boolean(booking));
 
   // Mutations
-  const { cancelBooking, isLoading: isCancelling } = useCancelBooking();
   const { confirmCompletion, isLoading: isConfirming } = useConfirmCompletion();
   const { dispute, openDispute, isSubmittingDispute } = useBookingDispute(id);
 
   // Modals state
   const [cancelModalVisible, setCancelModalVisible] = useState(false);
-  const [cancelReason, setCancelReason] = useState('');
 
   const [disputeModalVisible, setDisputeModalVisible] = useState(false);
   const [disputeReason, setDisputeReason] = useState('');
   const [evidenceUrl, setEvidenceUrl] = useState('');
 
-  if (isLoading || !booking) {
+  if (isLoading) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.centerContainer}>
@@ -77,24 +77,33 @@ export default function BookingDetailsScreen() {
     );
   }
 
-  const currentStatus: BookingStatus = trackData?.status || booking.status;
+  if (!booking) {
+    return (
+      <SafeAreaView style={styles.safeArea} edges={['top']}>
+        <StatusBar barStyle="dark-content" backgroundColor={palette.zenWhite} />
+        <View style={styles.container}>
+          <View style={styles.header}>
+            <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} accessibilityLabel="Go back">
+              <ArrowLeft size={22} color={palette.gray900} />
+            </TouchableOpacity>
+            <View style={styles.headerTitleContainer}>
+              <Text style={styles.headerTitle}>Booking Details</Text>
+            </View>
+          </View>
+          <ErrorState
+            type="error"
+            title="Booking details unavailable"
+            subtitle={error?.message || "We couldn't load the details for this booking. Please check your internet connection or try again."}
+            onRetry={refetch}
+            retryButtonText="Retry"
+            style={{ flex: 1, justifyContent: 'center' }}
+          />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
-  // Handle Cancel Submission
-  const handleConfirmCancel = async () => {
-    if (!cancelReason.trim()) {
-      Alert.alert('Reason Required', 'Please enter a reason for cancelling.');
-      return;
-    }
-    try {
-      await cancelBooking({ bookingId: booking.id, reason: cancelReason });
-      setCancelModalVisible(false);
-      setCancelReason('');
-      Alert.alert('Booking Cancelled', 'Your booking has been cancelled successfully.');
-      refetch();
-    } catch (err: any) {
-      Alert.alert('Error', err?.message || 'Failed to cancel booking.');
-    }
-  };
+  const currentStatus: BookingStatus = trackData?.status || booking.status;
 
   // Handle Completion Confirmation
   const handleConfirmJob = async () => {
@@ -147,6 +156,7 @@ export default function BookingDetailsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <StatusBar barStyle="dark-content" backgroundColor={palette.zenWhite} />
       <View style={styles.container}>
         {/* Header Bar */}
         <View style={styles.header}>
@@ -159,7 +169,14 @@ export default function BookingDetailsScreen() {
           </View>
         </View>
 
-        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: Math.max(insets.bottom, 16) + 32 },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
           {/* Status Timeline / Banner */}
           <View style={styles.card}>
             <Text style={styles.cardTitle}>Live Job Progress</Text>
@@ -362,7 +379,6 @@ export default function BookingDetailsScreen() {
               <TouchableOpacity
                 style={styles.cancelBtn}
                 onPress={() => setCancelModalVisible(true)}
-                disabled={isCancelling}
               >
                 <XCircle size={20} color="#DC2626" />
                 <Text style={styles.cancelBtnText}>Cancel Booking</Text>
@@ -457,7 +473,7 @@ export default function BookingDetailsScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: palette.white,
+    backgroundColor: palette.zenWhite,
   },
   container: {
     flex: 1,

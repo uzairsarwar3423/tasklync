@@ -27,7 +27,6 @@ import {
   Sparkles,
   Info,
 } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 
 export interface InAppBannerData {
   id: string;
@@ -70,9 +69,6 @@ export const InAppBanner = React.memo(function InAppBanner({
     translateY.value = withSpring(0, { damping: 18, stiffness: 220, mass: 0.8 });
     opacity.value = withTiming(1, { duration: 180 });
 
-    try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {}
 
     // Auto-dismiss timer
     const timer = setTimeout(() => {
@@ -92,9 +88,6 @@ export const InAppBanner = React.memo(function InAppBanner({
   };
 
   const handlePress = () => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch {}
     handleExit();
     onPress(data);
   };

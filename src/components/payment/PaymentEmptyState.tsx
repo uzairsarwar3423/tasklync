@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { WalletCards, Plus } from 'lucide-react-native';
 import { colors, palette, fontFamily, fontSize, radius, spacing } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface PaymentEmptyStateProps {
   onAddPress: () => void;
@@ -10,7 +9,6 @@ export interface PaymentEmptyStateProps {
 
 export const PaymentEmptyState: React.FC<PaymentEmptyStateProps> = ({ onAddPress }) => {
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     onAddPress();
   };
 

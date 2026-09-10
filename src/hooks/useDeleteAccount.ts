@@ -9,7 +9,6 @@ import { usePushRegistration } from './usePushRegistration';
 import { socketService } from '../services/socket/socket.service';
 import { createMMKV } from 'react-native-mmkv';
 import { DeleteAccountReason } from '../types/moderation.types';
-import * as Haptics from 'expo-haptics';
 
 const userStorage = createMMKV({ id: 'tasklync_user_profile_storage' });
 const bookingsStorage = createMMKV({ id: 'tasklync_bookings_storage' });
@@ -44,7 +43,6 @@ export function useDeleteAccount() {
         }
 
         // Single success haptic (Peak-End Rule)
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
 
         // 2. Full Multi-system Session Teardown Cascade
         // Step 2a: Disconnect WebSockets and unregister push notifications

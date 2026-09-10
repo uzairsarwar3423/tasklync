@@ -7,7 +7,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../design/colors';
 import { springConfig } from '../../design/animations';
 
@@ -49,14 +48,8 @@ export const MapBottomPanel: FC<MapBottomPanelProps> = ({ children }) => {
 
       if (velocity < -400 || translateY.value < midPoint) {
         translateY.value = withSpring(minTranslateY, springConfig.gentle);
-        if (Platform.OS !== 'web') {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-        }
       } else {
         translateY.value = withSpring(maxTranslateY, springConfig.gentle);
-        if (Platform.OS !== 'web') {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-        }
       }
     });
 

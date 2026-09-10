@@ -243,6 +243,28 @@ export const mapRawWorkerNearby = (raw: any): WorkerNearby => {
       ? raw.base_price
       : 500;
 
+  const lat =
+    typeof raw.lat === 'number'
+      ? raw.lat
+      : typeof raw.latitude === 'number'
+      ? raw.latitude
+      : typeof raw.location?.latitude === 'number'
+      ? raw.location.latitude
+      : typeof raw.location?.lat === 'number'
+      ? raw.location.lat
+      : null;
+
+  const lng =
+    typeof raw.lng === 'number'
+      ? raw.lng
+      : typeof raw.longitude === 'number'
+      ? raw.longitude
+      : typeof raw.location?.longitude === 'number'
+      ? raw.location.longitude
+      : typeof raw.location?.lng === 'number'
+      ? raw.location.lng
+      : null;
+
   return {
     id,
     name,
@@ -258,6 +280,8 @@ export const mapRawWorkerNearby = (raw: any): WorkerNearby => {
     isOnJob: raw.is_on_job ?? raw.isOnJob ?? false,
     responseTimeMins: raw.response_time_mins || raw.responseTimeMins || 15,
     startingPrice,
+    lat,
+    lng,
   };
 };
 
@@ -278,11 +302,11 @@ export const mapRawWorkerProfile = (raw: any): WorkerPublicProfile => {
   return {
     ...baseNearby,
     bio: raw.bio || null,
-    yearsExperience: raw.experience_years || raw.yearsExperience || 1,
-    totalBookings: raw.total_jobs_completed || raw.totalBookings || 0,
+    yearsExperience: raw.experience_years ?? raw.years_experience ?? raw.yearsExperience ?? 0,
+    totalBookings: raw.total_jobs_completed ?? raw.total_bookings ?? raw.totalBookings ?? 0,
     city: raw.city || null,
-    verificationStatus: raw.is_verified ? 'VERIFIED' : 'UNVERIFIED',
-    isVerified: Boolean(raw.is_verified ?? raw.isVerified ?? true),
+    verificationStatus: raw.verification_status || raw.verificationStatus || (raw.is_verified ? 'VERIFIED' : 'UNVERIFIED'),
+    isVerified: Boolean(raw.is_verified ?? raw.isVerified ?? false),
     skills: Array.isArray(raw.skills_list) ? raw.skills_list.map(mapRawWorkerSkill) : (raw.skills || []),
     serviceOfferings,
   };
@@ -360,9 +384,18 @@ export const mapRawWorkerReview = (raw: any): WorkerReview => {
 };
 
 export const mapRawReviewSummary = (raw: any): ReviewSummaryData => {
+  const total = typeof raw?.total_reviews === 'number' ? raw.total_reviews : (raw?.totalReviews || 0);
+  const avg = typeof raw?.average_rating === 'number'
+    ? raw.average_rating
+    : typeof raw?.avgRating === 'number'
+    ? raw.avgRating
+    : total > 0
+    ? 5.0
+    : 0;
+
   return {
-    avgRating: typeof raw?.average_rating === 'number' ? raw.average_rating : (raw?.avgRating || 5.0),
-    totalReviews: typeof raw?.total_reviews === 'number' ? raw.total_reviews : (raw?.totalReviews || 0),
+    avgRating: avg,
+    totalReviews: total,
     ratingBreakdown: {
       5: raw?.["5_star_count"] ?? raw?.ratingBreakdown?.[5] ?? 0,
       4: raw?.["4_star_count"] ?? raw?.ratingBreakdown?.[4] ?? 0,
@@ -370,9 +403,9 @@ export const mapRawReviewSummary = (raw: any): ReviewSummaryData => {
       2: raw?.["2_star_count"] ?? raw?.ratingBreakdown?.[2] ?? 0,
       1: raw?.["1_star_count"] ?? raw?.ratingBreakdown?.[1] ?? 0,
     },
-    avgPunctuality: 4.8,
-    avgQuality: 4.9,
-    avgCommunication: 4.9,
-    avgValue: 4.8,
+    avgPunctuality: typeof raw?.punctuality === 'number' ? raw.punctuality : typeof raw?.avg_punctuality === 'number' ? raw.avg_punctuality : null,
+    avgQuality: typeof raw?.quality === 'number' ? raw.quality : typeof raw?.avg_quality === 'number' ? raw.avg_quality : null,
+    avgCommunication: typeof raw?.communication === 'number' ? raw.communication : typeof raw?.avg_communication === 'number' ? raw.avg_communication : null,
+    avgValue: typeof raw?.value === 'number' ? raw.value : typeof raw?.avg_value === 'number' ? raw.avg_value : null,
   };
 };

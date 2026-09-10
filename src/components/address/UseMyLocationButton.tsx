@@ -17,7 +17,6 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { Crosshair, MapPinOff, X } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors, palette, fontFamily, radius, shadows, fontSize } from '../../design';
 
 export interface UseMyLocationButtonProps {
@@ -40,7 +39,6 @@ export const UseMyLocationButton: React.FC<UseMyLocationButtonProps> = ({
   }));
 
   const triggerShake = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
     shakeOffset.value = withSequence(
       withTiming(-6, { duration: 35 }),
       withTiming(6, { duration: 35 }),
@@ -51,7 +49,6 @@ export const UseMyLocationButton: React.FC<UseMyLocationButtonProps> = ({
   };
 
   const handlePress = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     scale.value = withSequence(
       withTiming(0.92, { duration: 80 }),
       withSpring(1.0, { damping: 12, stiffness: 300 })

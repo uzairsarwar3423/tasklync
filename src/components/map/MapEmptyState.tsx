@@ -1,7 +1,6 @@
 import { FC } from 'react';
 import { StyleSheet, View, Text, Pressable, Platform } from 'react-native';
 import { SearchX, RotateCcw } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../design/colors';
 import { typography } from '../../design/typography';
 
@@ -13,9 +12,6 @@ export const MapEmptyState: FC<MapEmptyStateProps> = ({
   onResetFilters,
 }) => {
   const handleReset = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     onResetFilters();
   };
 

@@ -8,7 +8,6 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { palette, fontFamily, fontSize, radius, spacing, shadows } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface ToastUndoProps {
   visible: boolean;
@@ -62,7 +61,6 @@ export const ToastUndo: React.FC<ToastUndoProps> = ({
   }));
 
   const handleUndoPress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     onUndo();
   };
 

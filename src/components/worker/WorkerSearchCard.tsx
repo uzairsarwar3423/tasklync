@@ -7,7 +7,6 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { WorkerNearby } from '../../types/worker.types';
 import { colors } from '../../design/colors';
 import { typography } from '../../design/typography';
@@ -30,7 +29,6 @@ export const WorkerSearchCard: React.FC<WorkerSearchCardProps> = ({ worker }) =>
   const shadowOpacity = useSharedValue(0.05); // Initial sm shadow
 
   const handlePressIn = () => {
-    Haptics.selectionAsync();
     scale.value = withSpring(0.97, springConfig.stiff);
     shadowOpacity.value = withSpring(0, springConfig.stiff);
 

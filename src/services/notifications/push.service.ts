@@ -2,8 +2,15 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
-import { NotificationPermissionStatus } from '../../types/notification.types';
+import { createMMKV } from 'react-native-mmkv';
+import {
+  NotificationPermissionStatus,
+  DetailedNotificationPermission,
+} from '../../types/notification.types';
 import { setupNotificationChannelsAndCategories } from './notification-categories';
+
+const storage = createMMKV();
+const HAS_REQUESTED_NOTIFICATIONS_KEY = 'has_requested_notification_permission';
 
 /**
  * Configure foreground notification presentation handler safely.
@@ -31,41 +38,115 @@ try {
   }
 }
 
+// Concurrency mutex lock for in-flight permission requests
+let inFlightPermissionRequest: Promise<NotificationPermissionStatus> | null = null;
+
 export const pushService = {
   /**
-   * Reads the current OS notification permission status without prompting.
+   * Retrieves comprehensive permission details normalized across Android 13+ (POST_NOTIFICATIONS) and iOS APNs.
+   * Resolves the Android 13+ quirk where getPermissionsAsync() returns status='denied' with canAskAgain=true
+   * before the system prompt has ever been presented.
    */
-  getPermissionStatus: async (): Promise<NotificationPermissionStatus> => {
+  getDetailedPermissionStatus: async (): Promise<DetailedNotificationPermission> => {
     try {
-      if (Platform.OS === 'web') return 'granted';
-      const { status } = await Notifications.getPermissionsAsync();
-      if (status === 'granted') return 'granted';
-      if (status === 'denied') return 'denied';
-      return 'undetermined';
-    } catch {
-      return 'undetermined';
+      if (Platform.OS === 'web') {
+        return {
+          status: 'granted',
+          granted: true,
+          canAskAgain: false,
+          expires: 'never',
+        };
+      }
+
+      const settings = await Notifications.getPermissionsAsync();
+      const isGranted = Boolean(settings.granted || settings.status === 'granted');
+      const canAskAgain = Boolean(settings.canAskAgain);
+      const hasAskedBefore = Boolean(storage.getBoolean(HAS_REQUESTED_NOTIFICATIONS_KEY));
+
+      let status: NotificationPermissionStatus = 'denied';
+
+      if (isGranted) {
+        status = 'granted';
+      } else if (settings.status === 'undetermined' || (!hasAskedBefore && canAskAgain)) {
+        // On Android 13+, getPermissionsAsync() maps ungranted runtime permissions to DENIED
+        // because areNotificationsEnabled() is false. If the app has never requested permission
+        // and canAskAgain is true, we normalize status to 'undetermined' so the first-launch prompt triggers.
+        status = 'undetermined';
+      } else {
+        status = 'denied';
+      }
+
+      return {
+        status,
+        granted: isGranted,
+        canAskAgain,
+        expires: settings.expires || 'never',
+      };
+    } catch (err) {
+      if (__DEV__) {
+        console.warn('[pushService] getDetailedPermissionStatus error:', err);
+      }
+      return {
+        status: 'undetermined',
+        granted: false,
+        canAskAgain: true,
+        expires: 'never',
+      };
     }
   },
 
   /**
+   * Reads the current OS notification permission status without prompting.
+   */
+  getPermissionStatus: async (): Promise<NotificationPermissionStatus> => {
+    const details = await pushService.getDetailedPermissionStatus();
+    return details.status;
+  },
+
+  /**
    * Prompts the user with the native OS notification permission dialog (Android 13+ POST_NOTIFICATIONS & iOS APNs).
+   * Thread-safe, idempotent, and protected against concurrent race conditions.
    */
   requestPermission: async (): Promise<NotificationPermissionStatus> => {
-    try {
-      if (Platform.OS === 'web') return 'granted';
-      const { status } = await Notifications.requestPermissionsAsync({
-        ios: {
-          allowAlert: true,
-          allowBadge: true,
-          allowSound: true,
-        },
-      });
-      if (status === 'granted') return 'granted';
-      if (status === 'denied') return 'denied';
-      return 'undetermined';
-    } catch {
-      return 'denied';
+    if (Platform.OS === 'web') return 'granted';
+
+    // If a permission request is already in-flight, await and return the existing promise
+    if (inFlightPermissionRequest) {
+      return inFlightPermissionRequest;
     }
+
+    inFlightPermissionRequest = (async () => {
+      try {
+        // 1. Ensure notification channels are registered on Android before requesting permission
+        if (Platform.OS === 'android') {
+          await setupNotificationChannelsAndCategories().catch(() => {});
+        }
+
+        // 2. Mark that initial permission prompt has been invoked
+        storage.set(HAS_REQUESTED_NOTIFICATIONS_KEY, true);
+
+        // 3. Request native runtime permission (POST_NOTIFICATIONS on Android 13+ / APNs on iOS)
+        const settings = await Notifications.requestPermissionsAsync({
+          ios: {
+            allowAlert: true,
+            allowBadge: true,
+            allowSound: true,
+          },
+        });
+
+        const isGranted = Boolean(settings.granted || settings.status === 'granted');
+        return isGranted ? 'granted' : 'denied';
+      } catch (err) {
+        if (__DEV__) {
+          console.warn('[pushService] requestPermission error:', err);
+        }
+        return 'denied';
+      } finally {
+        inFlightPermissionRequest = null;
+      }
+    })();
+
+    return inFlightPermissionRequest;
   },
 
   /**

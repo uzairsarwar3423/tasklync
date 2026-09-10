@@ -10,18 +10,34 @@ export interface PaymentAmountCardProps {
 export const PaymentAmountCard: React.FC<PaymentAmountCardProps> = ({ total }) => {
   return (
     <View style={styles.card}>
-      <Text style={styles.headerLabel}>AMOUNT DUE</Text>
+      {/* Header Tag Row */}
+      <View style={styles.headerRow}>
+        <Text style={styles.headerLabel}>AMOUNT DUE</Text>
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>All Taxes Included</Text>
+        </View>
+      </View>
 
+      {/* Hero Amount Display */}
       <View style={styles.amountRow}>
         <Text style={styles.currencyText}>Rs.</Text>
         <Text style={styles.amountValue}>{total.toLocaleString()}</Text>
       </View>
 
-      <View style={styles.escrowRow}>
-        <ShieldCheck size={16} color={colors.primaryDark} strokeWidth={2.2} />
-        <Text style={styles.escrowText}>
-          Payment held in escrow • Released after job completion
-        </Text>
+      {/* Subtle Divider */}
+      <View style={styles.divider} />
+
+      {/* Escrow Protection Box */}
+      <View style={styles.escrowContainer}>
+        <View style={styles.escrowIconCircle}>
+          <ShieldCheck size={18} color={colors.primaryDark} strokeWidth={2.4} />
+        </View>
+        <View style={styles.escrowTextCol}>
+          <Text style={styles.escrowTitle}>TaskLync Escrow Protection</Text>
+          <Text style={styles.escrowBody}>
+            Payment is held securely in escrow and only released to the professional after you verify and approve the completed job.
+          </Text>
+        </View>
       </View>
     </View>
   );
@@ -30,56 +46,98 @@ export const PaymentAmountCard: React.FC<PaymentAmountCardProps> = ({ total }) =
 const styles = StyleSheet.create({
   card: {
     backgroundColor: palette.white,
-    borderRadius: 16,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: palette.gray200,
-    padding: 18,
-    marginHorizontal: 20,
-    marginBottom: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 18,
+    marginBottom: 20,
     shadowColor: palette.gray900,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowRadius: 10,
     elevation: 2,
+  },
+  headerRow: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
   headerLabel: {
     fontFamily: fontFamily.jakarta.semiBold,
     fontSize: 11,
     lineHeight: 15,
     color: colors.textMuted,
-    letterSpacing: 0.8,
+    letterSpacing: 1.2,
+  },
+  badge: {
+    backgroundColor: palette.gray100,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  badgeText: {
+    fontFamily: fontFamily.jakarta.medium,
+    fontSize: 10,
+    color: palette.gray600,
   },
   amountRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
-    marginVertical: 6,
+    marginBottom: 14,
   },
   currencyText: {
     fontFamily: fontFamily.inter.bold,
-    fontSize: 18,
+    fontSize: 20,
     color: colors.primaryDark,
     marginRight: 6,
   },
   amountValue: {
     fontFamily: fontFamily.inter.extraBold,
-    fontSize: 32,
-    lineHeight: 38,
+    fontSize: 36,
+    lineHeight: 42,
     color: colors.textPrimary,
   },
-  escrowRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: palette.green50,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 10,
-    marginTop: 6,
-    gap: 6,
+  divider: {
+    height: 1,
+    backgroundColor: palette.gray100,
+    marginBottom: 14,
   },
-  escrowText: {
-    fontFamily: fontFamily.jakarta.medium,
-    fontSize: 11,
+  escrowContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: palette.green50,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: palette.green200,
+    padding: 12,
+    gap: 10,
+  },
+  escrowIconCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: palette.green100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  escrowTextCol: {
+    flex: 1,
+  },
+  escrowTitle: {
+    fontFamily: fontFamily.jakarta.bold,
+    fontSize: 12,
+    lineHeight: 16,
     color: colors.primaryDark,
+  },
+  escrowBody: {
+    fontFamily: fontFamily.jakarta.regular,
+    fontSize: 11,
+    lineHeight: 16,
+    color: palette.green900,
+    marginTop: 2,
+    opacity: 0.85,
   },
 });

@@ -33,15 +33,15 @@ export const SummarySectionCard: React.FC<SummarySectionCardProps> = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: palette.white,
-    borderRadius: 16,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: palette.gray200,
-    padding: 16,
-    marginBottom: 12,
+    borderColor: palette.gray100,
+    padding: 18,
+    marginBottom: 14,
     shadowColor: palette.gray900,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
     elevation: 2,
   },
   headerRow: {

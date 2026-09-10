@@ -1,22 +1,22 @@
 import React from 'react';
-import { StyleSheet, View, Text, Pressable } from 'react-native';
+import { StyleSheet, View, Text, Pressable, Platform, StatusBar } from 'react-native';
+import { ArrowLeft, Download, Ellipsis, Star, ShieldCheck, Check } from 'lucide-react-native';
+import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   useAnimatedStyle,
   interpolate,
   Extrapolation,
   SharedValue,
 } from 'react-native-reanimated';
-import { ChevronLeft, Share2, MoreVertical } from 'lucide-react-native';
-import { Image } from 'expo-image';
-import * as Haptics from 'expo-haptics';
-import { ProfileHeroGradient } from './ProfileHeroGradient';
-import { colors } from '../../design/colors';
-import { typography } from '../../design/typography';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { colors, palette } from '../../design/colors';
+import { fontFamily } from '../../design/typography';
 import { WorkerPublicProfile } from '../../types/worker.types';
 
 interface WorkerProfileHeaderProps {
   worker?: WorkerPublicProfile;
-  scrollY: SharedValue<number>;
+  scrollY?: SharedValue<number>;
   onBack: () => void;
   onShare: () => void;
   onMore: () => void;
@@ -29,193 +29,329 @@ export const WorkerProfileHeader: React.FC<WorkerProfileHeaderProps> = ({
   onShare,
   onMore,
 }) => {
-  const animatedHeroStyle = useAnimatedStyle(() => {
-    // Subtle parallax when scrolling up, gentle stretch when pulling down
-    const scale = interpolate(scrollY.value, [-100, 0], [1.06, 1], Extrapolation.CLAMP);
-    const translateY = interpolate(scrollY.value, [0, 200], [0, -30], Extrapolation.CLAMP);
-
-    return {
-      transform: [{ scale }, { translateY }],
-    };
-  });
-
-  const animatedContentStyle = useAnimatedStyle(() => {
-    const opacity = interpolate(scrollY.value, [40, 140], [1, 0], Extrapolation.CLAMP);
-    return {
-      opacity,
-    };
-  });
+  const insets = useSafeAreaInsets();
 
   const handleBack = () => {
-    Haptics.selectionAsync();
     onBack();
   };
 
   const handleShare = () => {
-    Haptics.selectionAsync();
     onShare();
   };
 
   const handleMore = () => {
-    Haptics.selectionAsync();
     onMore();
   };
 
+  const getPrimaryCategory = () => {
+    const firstCat = worker?.categories?.[0];
+    if (typeof firstCat === 'string' && firstCat.trim()) return firstCat;
+    if (firstCat && typeof firstCat === 'object') {
+      return (firstCat as any).categoryName || (firstCat as any).name || 'Specialist';
+    }
+    const firstSkill = worker?.skills?.[0];
+    if (firstSkill && typeof firstSkill === 'object') {
+      return firstSkill.categoryName || 'Specialist';
+    }
+    return 'Specialist';
+  };
+
+  const getInitials = (name?: string | null) => {
+    if (!name) return 'W';
+    const parts = name.trim().split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
+  const reviewCount = worker?.totalReviews ?? 0;
+  const hasRealRating = typeof worker?.avgRating === 'number' && worker.avgRating > 0 && reviewCount > 0;
+  const locationSubtitle = worker?.city
+    ? `${getPrimaryCategory()} · ${worker.city}`
+    : worker?.distanceLabel
+    ? `${getPrimaryCategory()} · ${worker.distanceLabel}`
+    : getPrimaryCategory();
+
+  const safeTop = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0
+  );
+  const safeTopPadding = Math.max(safeTop, 16) + 12;
+
+  const gradientAnimatedStyle = useAnimatedStyle(() => {
+    if (!scrollY) {
+      return { opacity: 1 };
+    }
+    // Remove gradient smoothly when scrolling: fully visible at scrollY = 0, completely gone by scrollY = 60
+    const opacity = interpolate(
+      scrollY.value,
+      [0, 60],
+      [1, 0],
+      Extrapolation.CLAMP
+    );
+    return { opacity };
+  });
+
   return (
-    <Animated.View style={[styles.container, animatedHeroStyle]}>
-      <ProfileHeroGradient height={280}>
-        {/* Layer 2: Absolute Top Header Actions */}
-        <View style={[styles.actionsContainer, { paddingTop: 12 }]}>
+    <View style={[styles.container, { paddingTop: safeTopPadding }]}>
+      {/* Top Subtle Green Ambient Glow behind photo & navigation — fades out when scrolled */}
+      <Animated.View
+        style={[StyleSheet.absoluteFill, gradientAnimatedStyle]}
+        pointerEvents="none"
+      >
+        <LinearGradient
+          colors={[
+            '#DCFCE7', // soft luminous mint green
+            '#F0FDF4', // delicate fade around photo
+            '#FFFFFF', // fades smoothly to white
+          ]}
+          locations={[0, 0.55, 1]}
+          start={{ x: 0.5, y: 0 }}
+          end={{ x: 0.5, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </Animated.View>
+
+      {/* 1. Top Floating Navigation Bar */}
+      <View style={styles.navBar}>
+        <Pressable
+          onPress={handleBack}
+          style={({ pressed }) => [styles.navButton, pressed && styles.buttonPressed]}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <ArrowLeft size={20} color={colors.textPrimary || '#0F172A'} strokeWidth={2.2} />
+        </Pressable>
+
+        <View style={styles.navRightGroup}>
           <Pressable
-            onPress={handleBack}
-            style={styles.actionIconButton}
-            hitSlop={12}
+            onPress={handleShare}
+            style={({ pressed }) => [styles.navButton, pressed && styles.buttonPressed]}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Save or download profile"
           >
-            <ChevronLeft size={24} color="#FFFFFF" style={styles.shadowIcon} />
+            <Download size={18} color={colors.textPrimary || '#0F172A'} strokeWidth={2.2} />
           </Pressable>
 
-          <View style={styles.rightActions}>
-            <Pressable
-              onPress={handleShare}
-              style={styles.actionIconButton}
-              hitSlop={12}
-            >
-              <Share2 size={20} color="#FFFFFF" style={styles.shadowIcon} />
-            </Pressable>
-            <Pressable
-              onPress={handleMore}
-              style={styles.actionIconButton}
-              hitSlop={12}
-            >
-              <MoreVertical size={20} color="#FFFFFF" style={styles.shadowIcon} />
-            </Pressable>
-          </View>
+          <Pressable
+            onPress={handleMore}
+            style={({ pressed }) => [styles.navButton, pressed && styles.buttonPressed]}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="More options"
+          >
+            <Ellipsis size={18} color={colors.textPrimary || '#0F172A'} strokeWidth={2.2} />
+          </Pressable>
+        </View>
+      </View>
+
+      {/* 2. Horizontal Worker Header: [Photo] [Information Stack] */}
+      <View style={styles.workerRow}>
+        {/* Left: Large Circular Photo */}
+        <View style={styles.avatarWrapper}>
+          {worker?.avatarUrl ? (
+            <Image
+              source={{ uri: worker.avatarUrl }}
+              style={styles.avatar}
+              contentFit="cover"
+              transition={150}
+            />
+          ) : (
+            <View style={styles.avatarFallback}>
+              <Text style={styles.avatarInitials}>
+                {getInitials(worker?.name)}
+              </Text>
+            </View>
+          )}
+
+          {/* Verification check badge overlapping bottom-right of photo */}
+          {worker?.isVerified && (
+            <View style={styles.photoVerifyBadge}>
+              <Check size={12} color="#FFFFFF" strokeWidth={3} />
+            </View>
+          )}
         </View>
 
-        {/* Layer 3: Absolute Bottom Name and Avatar */}
-        <Animated.View style={[styles.bottomInfo, animatedContentStyle]}>
-          <View style={styles.avatarWrapper}>
-            {worker?.avatarUrl ? (
-              <Image
-                source={{ uri: worker.avatarUrl }}
-                style={styles.avatar}
-                transition={200}
-              />
+        {/* Right: Worker Information Stack */}
+        <View style={styles.infoCol}>
+          {/* Trust Pill */}
+          {worker?.isVerified && (
+            <View style={styles.verifiedPill}>
+              <ShieldCheck size={12} color="#16A34A" strokeWidth={2.5} />
+              <Text style={styles.verifiedPillText}>Verified Worker</Text>
+            </View>
+          )}
+
+          {/* Worker Name */}
+          <Text style={styles.nameText} numberOfLines={1}>
+            {worker?.name || 'Worker'}
+          </Text>
+
+          {/* Profession · Location */}
+          <Text style={styles.professionText} numberOfLines={1}>
+            {locationSubtitle}
+          </Text>
+
+          {/* Rating & Reviews */}
+          <View style={styles.ratingRow}>
+            {hasRealRating ? (
+              <>
+                <Star size={14} color="#F59E0B" fill="#F59E0B" />
+                <Text style={styles.ratingText}>{worker?.avgRating?.toFixed(1)}</Text>
+                <Text style={styles.reviewCountText}>
+                  ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
+                </Text>
+              </>
             ) : (
-              <View style={[styles.avatar, styles.avatarPlaceholder]} />
+              <Text style={styles.reviewCountText}>No reviews yet</Text>
             )}
           </View>
-
-          <View style={styles.textWrapper}>
-            <Text style={styles.nameText} numberOfLines={1}>
-              {worker?.name || 'Worker'}
-            </Text>
-            <Text style={styles.cityText} numberOfLines={1}>
-              {(() => {
-                const firstCat = worker?.categories?.[0];
-                if (typeof firstCat === 'string' && firstCat.trim()) return firstCat;
-                if (firstCat && typeof firstCat === 'object') {
-                  return (firstCat as any).categoryName || (firstCat as any).name || 'Professional';
-                }
-                const firstSkill = worker?.skills?.[0];
-                if (firstSkill && typeof firstSkill === 'object') {
-                  return firstSkill.categoryName || 'Professional';
-                }
-                return 'Professional';
-              })()} · {worker?.city || 'Lahore'}
-            </Text>
-          </View>
-        </Animated.View>
-      </ProfileHeroGradient>
-    </Animated.View>
+        </View>
+      </View>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    height: 280,
-    backgroundColor: '#0F172A',
-    zIndex: 1,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    position: 'relative',
+    overflow: 'hidden',
   },
-  actionsContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
+  navBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    zIndex: 10,
+    alignItems: 'center',
+    marginBottom: 20,
   },
-  rightActions: {
+  navRightGroup: {
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    gap: 10,
   },
-  actionIconButton: {
+  navButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1.5 },
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  buttonPressed: {
+    opacity: 0.75,
+    transform: [{ scale: 0.96 }],
+  },
+  workerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarWrapper: {
+    position: 'relative',
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  avatar: {
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    borderWidth: 2.5,
+    borderColor: '#FFFFFF',
+  },
+  avatarFallback: {
+    width: 86,
+    height: 86,
+    borderRadius: 43,
+    backgroundColor: palette.green100,
+    borderWidth: 2.5,
+    borderColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  shadowIcon: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.3,
-    shadowRadius: 1,
+  avatarInitials: {
+    fontFamily: fontFamily.jakarta.bold,
+    fontSize: 26,
+    color: colors.primaryDark,
   },
-  bottomInfo: {
+  photoVerifyBadge: {
     position: 'absolute',
-    bottom: 24, // Keep offset from overlap card (24px)
-    left: 0,
+    bottom: 0,
     right: 0,
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    paddingHorizontal: 20,
-  },
-  avatarWrapper: {
-    borderRadius: 43,
-    borderWidth: 3,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#16A34A',
+    borderWidth: 2.5,
     borderColor: '#FFFFFF',
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    elevation: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.bgInput || '#F3F4F6',
-  },
-  avatarPlaceholder: {
-    borderWidth: 1,
-    borderColor: colors.border || '#E5E7EB',
-  },
-  textWrapper: {
+  infoCol: {
     flex: 1,
     marginLeft: 16,
+    justifyContent: 'center',
+  },
+  verifiedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2.5,
     marginBottom: 4,
+    gap: 4,
+  },
+  verifiedPillText: {
+    fontFamily: fontFamily.jakarta.semiBold,
+    fontSize: 11.5,
+    color: '#16A34A',
   },
   nameText: {
-    fontFamily: typography.fontFamily.poppins.bold,
+    fontFamily: fontFamily.jakarta.bold,
     fontSize: 22,
-    color: '#FFFFFF',
-    textShadowColor: 'rgba(0, 0, 0, 0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    color: '#0F172A',
+    letterSpacing: -0.3,
+    marginBottom: 2,
   },
-  cityText: {
-    fontFamily: typography.fontFamily.jakarta.regular,
+  professionText: {
+    fontFamily: fontFamily.jakarta.medium,
+    fontSize: 13.5,
+    color: '#64748B',
+    marginBottom: 4,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  ratingText: {
+    fontFamily: fontFamily.jakarta.bold,
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.85)',
-    marginTop: 2,
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    color: '#0F172A',
+  },
+  reviewCountText: {
+    fontFamily: fontFamily.jakarta.regular,
+    fontSize: 13,
+    color: '#64748B',
   },
 });

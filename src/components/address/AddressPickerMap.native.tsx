@@ -44,7 +44,9 @@ const DEFAULT_REGION: MapRegion = {
 export const AddressPickerMap = forwardRef<AddressPickerMapRef, AddressPickerMapProps>(
   ({ initialRegion = DEFAULT_REGION, onRegionChange, onRegionChangeComplete }, ref) => {
     const mapRef = useRef<MapView | null>(null);
-    const [isDragging, setIsDragging] = useState(false);
+    const isMapReadyRef = useRef<boolean>(false);
+    const pendingAnimateRegionRef = useRef<{ region: MapRegion; duration: number } | null>(null);
+    const isDraggingRef = useRef<boolean>(false);
     const [reduceMotion, setReduceMotion] = useState(false);
 
     // Reanimated values for pin lift & drop bounce
@@ -54,15 +56,50 @@ export const AddressPickerMap = forwardRef<AddressPickerMapRef, AddressPickerMap
     const shadowOpacity = useSharedValue(0.25);
 
     useEffect(() => {
-      AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
-        setReduceMotion(enabled);
-      });
+      let isMounted = true;
+      AccessibilityInfo.isReduceMotionEnabled()
+        .then((enabled) => {
+          if (isMounted) setReduceMotion(enabled);
+        })
+        .catch(() => {
+          if (isMounted) setReduceMotion(false);
+        });
+
+      return () => {
+        isMounted = false;
+      };
+    }, []);
+
+    const handleMapReady = useCallback(() => {
+      isMapReadyRef.current = true;
+      if (pendingAnimateRegionRef.current && mapRef.current) {
+        const { region, duration } = pendingAnimateRegionRef.current;
+        pendingAnimateRegionRef.current = null;
+        try {
+          mapRef.current.animateToRegion(region, duration);
+        } catch (_e) {
+          // Guard against race conditions
+        }
+      }
     }, []);
 
     useImperativeHandle(ref, () => ({
       animateToRegion: (region: MapRegion, duration = 400) => {
-        if (mapRef.current) {
-          mapRef.current.animateToRegion(region, duration);
+        if (
+          typeof region?.latitude === 'number' &&
+          !isNaN(region.latitude) &&
+          typeof region?.longitude === 'number' &&
+          !isNaN(region.longitude)
+        ) {
+          if (!isMapReadyRef.current) {
+            pendingAnimateRegionRef.current = { region, duration };
+            return;
+          }
+          try {
+            mapRef.current?.animateToRegion(region, duration);
+          } catch (_e) {
+            // Guard against native view detach races
+          }
         }
       },
       getMapRef: () => mapRef.current,
@@ -70,8 +107,8 @@ export const AddressPickerMap = forwardRef<AddressPickerMapRef, AddressPickerMap
 
     const handleRegionChange = useCallback(
       (region: MapRegion) => {
-        if (!isDragging) {
-          setIsDragging(true);
+        if (!isDraggingRef.current) {
+          isDraggingRef.current = true;
           if (reduceMotion) {
             pinTranslateY.value = -8;
             pinScale.value = 1.04;
@@ -88,12 +125,12 @@ export const AddressPickerMap = forwardRef<AddressPickerMapRef, AddressPickerMap
           onRegionChange(region);
         }
       },
-      [isDragging, onRegionChange, pinScale, pinTranslateY, reduceMotion, shadowOpacity, shadowScale]
+      [onRegionChange, pinScale, pinTranslateY, reduceMotion, shadowOpacity, shadowScale]
     );
 
     const handleRegionChangeComplete = useCallback(
       (region: MapRegion) => {
-        setIsDragging(false);
+        isDraggingRef.current = false;
         if (reduceMotion) {
           pinTranslateY.value = 0;
           pinScale.value = 1.0;
@@ -131,13 +168,18 @@ export const AddressPickerMap = forwardRef<AddressPickerMapRef, AddressPickerMap
           style={styles.map}
           provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
           initialRegion={initialRegion}
+          onMapReady={handleMapReady}
           onRegionChange={handleRegionChange}
           onRegionChangeComplete={handleRegionChangeComplete}
-          showsUserLocation
+          showsUserLocation={false}
           showsMyLocationButton={false}
           showsCompass={false}
+          showsBuildings={true}
+          showsIndoors={false}
+          toolbarEnabled={false}
           rotateEnabled={false}
           pitchEnabled={false}
+          loadingEnabled={true}
         />
 
         {/* Fixed Absolutely-Positioned Center Pin Overlay */}
@@ -167,7 +209,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   map: {
-    ...StyleSheet.absoluteFillObject,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   centerPinContainer: {
     position: 'absolute',

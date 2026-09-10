@@ -3,7 +3,6 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { DeleteAccountReason, DeleteAccountReasonOption } from '../../types/moderation.types';
 import { colors, palette, fontFamily, fontSize, radius, spacing, shadows } from '../../design';
 import { Check } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 
 export interface DeleteAccountReasonStepProps {
   onContinue: (reason?: DeleteAccountReason) => void;
@@ -25,17 +24,14 @@ export const DeleteAccountReasonStep: React.FC<DeleteAccountReasonStepProps> = (
   const [selectedReason, setSelectedReason] = useState<DeleteAccountReason | null>(null);
 
   const handleSelect = (reason: DeleteAccountReason) => {
-    Haptics.selectionAsync().catch(() => {});
     setSelectedReason((prev) => (prev === reason ? null : reason));
   };
 
   const handleContinue = () => {
-    Haptics.selectionAsync().catch(() => {});
     onContinue(selectedReason || undefined);
   };
 
   const handleSkip = () => {
-    Haptics.selectionAsync().catch(() => {});
     onSkip();
   };
 

@@ -4,7 +4,6 @@ import { Swipeable } from 'react-native-gesture-handler';
 import { Trash2 } from 'lucide-react-native';
 import { PaymentMethod } from '../../types/payment.types';
 import { palette, fontFamily, radius, spacing } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface PaymentMethodSwipeActionsProps {
   method: PaymentMethod;
@@ -25,7 +24,6 @@ export const PaymentMethodSwipeActions: React.FC<PaymentMethodSwipeActionsProps>
   }
 
   const handleDeletePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     swipeableRef.current?.close();
 
     if (method.is_default) {
@@ -39,14 +37,12 @@ export const PaymentMethodSwipeActions: React.FC<PaymentMethodSwipeActionsProps>
             text: 'Delete',
             style: 'destructive',
             onPress: () => {
-              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
               onDelete(method.id);
             },
           },
         ]
       );
     } else {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       onDelete(method.id);
     }
   };

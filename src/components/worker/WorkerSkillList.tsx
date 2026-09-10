@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { StyleSheet, View, Text, Pressable, ViewStyle } from 'react-native';
 import Animated, { useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { Chip } from '../ui/Chip/Chip';
 import { colors } from '../../design/colors';
 import { typography } from '../../design/typography';
@@ -32,7 +31,6 @@ export const WorkerSkillList: React.FC<WorkerSkillListProps> = ({
   });
 
   const handleToggle = () => {
-    Haptics.selectionAsync();
     setExpanded(!expanded);
   };
 

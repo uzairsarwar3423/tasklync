@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
 // Design system
-import { palette } from '../../src/design';
+import { palette, colors } from '../../src/design';
 
 // Hooks & Stores
 import { useCalendarMonth } from '../../src/hooks/useCalendarMonth';
@@ -78,7 +78,7 @@ export default function ScheduleScreen() {
   } = useCalendarMonth(selectedDate || undefined, resolvedWorkerId);
 
   // Time slots hook (re-queries automatically whenever selectedDate or workerId changes)
-  const { slots, isLoading } = useWorkerSlots(selectedDate, resolvedWorkerId);
+  const { slots, isLoading, isError: isSlotsError, refetch: refetchSlots } = useWorkerSlots(selectedDate, resolvedWorkerId);
 
   // Navigation action
   const handleContinue = () => {
@@ -88,6 +88,7 @@ export default function ScheduleScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor={palette.white} />
       <View style={styles.container}>
         {/* Screen Header */}
         <ScheduleHeader />
@@ -127,6 +128,8 @@ export default function ScheduleScreen() {
             <TimeSlotGrid
               slots={slots}
               isLoading={isLoading}
+              isError={isSlotsError}
+              onRetry={refetchSlots}
               selectedTimeSlot={selectedTimeSlot}
               onSelectSlot={setSelectedTimeSlot}
             />
@@ -158,26 +161,36 @@ export default function ScheduleScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: palette.white,
+    backgroundColor: colors.bgApp,
   },
   container: {
     flex: 1,
-    backgroundColor: palette.zenWhite,
+    backgroundColor: colors.bgApp,
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
+    paddingTop: 8,
     paddingBottom: 20,
   },
   calendarCard: {
-    backgroundColor: palette.white,
-    borderBottomWidth: 1,
-    borderBottomColor: palette.gray100,
-    paddingBottom: 12,
-    marginBottom: 8,
+    backgroundColor: colors.bgCard,
+    borderRadius: 20,
+    marginHorizontal: 20,
+    marginTop: 8,
+    marginBottom: 16,
+    paddingBottom: 14,
+    borderWidth: 1,
+    borderColor: palette.gray200,
+    overflow: 'hidden',
+    shadowColor: palette.gray900,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 2,
   },
   footerSpacer: {
-    height: 100,
+    height: 120,
   },
 });

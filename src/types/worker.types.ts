@@ -15,6 +15,8 @@ export interface WorkerNearby {
   isOnJob: boolean;
   responseTimeMins: number;
   startingPrice: number | null;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 export interface WorkerSkill {

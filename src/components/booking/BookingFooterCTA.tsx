@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, Pressable, ActivityIndicator, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { colors, palette, fontFamily } from '../../design';
 
 export interface BookingFooterCTAProps {
@@ -27,6 +27,7 @@ export const BookingFooterCTA: React.FC<BookingFooterCTAProps> = ({
   onPress,
   accessibilityLabel,
 }) => {
+  const insets = useSafeAreaInsets();
   const isInteractive = enabled && !loading;
   const scale = useSharedValue(1);
 
@@ -42,7 +43,6 @@ export const BookingFooterCTA: React.FC<BookingFooterCTAProps> = ({
 
   const handlePress = () => {
     if (!isInteractive) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onPress();
   };
 
@@ -50,8 +50,10 @@ export const BookingFooterCTA: React.FC<BookingFooterCTAProps> = ({
     transform: [{ scale: scale.value }],
   }));
 
+  const bottomPadding = insets.bottom > 0 ? insets.bottom + 8 : 16;
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: bottomPadding }]}>
       <View style={styles.innerContainer}>
         {/* Optional Subtext / Summary info */}
         {subtext !== undefined && (
@@ -105,15 +107,15 @@ const styles = StyleSheet.create({
     right: 0,
     backgroundColor: palette.white,
     borderTopWidth: 1,
-    borderTopColor: palette.gray200,
+    borderTopColor: palette.gray100,
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 24,
     shadowColor: palette.gray900,
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 10,
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 8,
     zIndex: 100,
   },
   innerContainer: {
@@ -140,11 +142,11 @@ const styles = StyleSheet.create({
   button: {
     paddingVertical: 14,
     paddingHorizontal: 22,
-    borderRadius: 14,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 150,
-    minHeight: 48,
+    minHeight: 50,
   },
   fullWidthButton: {
     flex: 1,

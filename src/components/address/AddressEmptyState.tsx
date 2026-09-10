@@ -8,7 +8,6 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import { MapPin, Navigation, Plus } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors, palette, fontFamily, fontSize } from '../../design';
 
 interface AddressEmptyStateProps {
@@ -54,7 +53,6 @@ export const AddressEmptyState: React.FC<AddressEmptyStateProps> = ({ onAddPress
   }));
 
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onAddPress();
   };
 

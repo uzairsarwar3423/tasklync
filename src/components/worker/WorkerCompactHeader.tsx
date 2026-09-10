@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, Text, Pressable } from 'react-native';
+import { StyleSheet, View, Text, Pressable, Platform, StatusBar } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useAnimatedReaction,
@@ -10,7 +10,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { ChevronLeft } from 'lucide-react-native';
 import { Image } from 'expo-image';
-import * as Haptics from 'expo-haptics';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '../ui/Button/Button';
 import { colors } from '../../design/colors';
@@ -56,7 +55,6 @@ export const WorkerCompactHeader: React.FC<WorkerCompactHeaderProps> = ({
   });
 
   const handleBackPress = () => {
-    Haptics.selectionAsync();
     onBack();
   };
 
@@ -65,6 +63,10 @@ export const WorkerCompactHeader: React.FC<WorkerCompactHeaderProps> = ({
   };
 
   const insets = useSafeAreaInsets();
+  const safeTop = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? (StatusBar.currentHeight || 24) : 0
+  );
 
   return (
     <Animated.View
@@ -72,8 +74,8 @@ export const WorkerCompactHeader: React.FC<WorkerCompactHeaderProps> = ({
       style={[
         styles.container,
         {
-          height: 56 + insets.top,
-          paddingTop: insets.top,
+          height: 56 + safeTop,
+          paddingTop: safeTop,
         },
         containerAnimatedStyle,
       ]}

@@ -12,7 +12,6 @@ import Animated, {
   useAnimatedStyle,
   runOnJS,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../../design/colors';
 import { typography } from '../../../design/typography';
 import { shadows } from '../../../design/shadows';
@@ -70,12 +69,6 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
     }
   };
 
-  const triggerHaptic = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
-  };
-
   const updateMinText = (val: number) => {
     setLocalMin(val);
   };
@@ -95,7 +88,6 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
     .onBegin(() => {
       minStartVal.value = minValueShared.value;
       scaleMin.value = 1.2;
-      runOnJS(triggerHaptic)();
     })
     .onChange((event) => {
       if (trackWidth.value === 0) return;
@@ -113,7 +105,6 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
 
       if (minValueShared.value !== newVal) {
         minValueShared.value = newVal;
-        runOnJS(triggerHaptic)();
         runOnJS(updateMinText)(newVal);
       }
     })
@@ -129,7 +120,6 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
     .onBegin(() => {
       maxStartVal.value = maxValueShared.value;
       scaleMax.value = 1.2;
-      runOnJS(triggerHaptic)();
     })
     .onChange((event) => {
       if (trackWidth.value === 0) return;
@@ -147,7 +137,6 @@ export const RangeSlider: React.FC<RangeSliderProps> = ({
 
       if (maxValueShared.value !== newVal) {
         maxValueShared.value = newVal;
-        runOnJS(triggerHaptic)();
         runOnJS(updateMaxText)(newVal);
       }
     })

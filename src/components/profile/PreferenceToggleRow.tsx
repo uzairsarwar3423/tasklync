@@ -1,6 +1,5 @@
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { colors, palette, fontFamily, fontSize, radius, spacing } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface PreferenceOption<T extends string = string> {
   label: string;
@@ -34,9 +33,6 @@ export function PreferenceToggleRow<T extends string = string>({
 }: PreferenceToggleRowProps<T>) {
   const handleSelect = (val: T) => {
     if (disabled || selectedValue === val) return;
-    try {
-      Haptics.selectionAsync().catch(() => {});
-    } catch {}
     onSelect(val);
   };
 

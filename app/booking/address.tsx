@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { View, ScrollView, StyleSheet } from 'react-native';
+import { View, ScrollView, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
@@ -47,6 +47,7 @@ export default function AddressScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor={palette.white} />
       <View style={styles.container}>
         {/* Screen Header */}
         <AddressHeader />
@@ -97,7 +98,7 @@ export default function AddressScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: palette.white,
+    backgroundColor: palette.zenWhite,
   },
   container: {
     flex: 1,
@@ -112,6 +113,6 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   footerSpacer: {
-    height: 100,
+    height: 120,
   },
 });

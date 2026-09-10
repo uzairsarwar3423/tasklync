@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { reviewApi } from '../services/api/review.api';
 import { ReviewSubmitPayload, WorkerReview } from '../types/review.types';
-import * as Haptics from 'expo-haptics';
 
 export function useSubmitReview() {
   const queryClient = useQueryClient();
@@ -11,9 +10,6 @@ export function useSubmitReview() {
       return reviewApi.submitReview(payload);
     },
     onSuccess: (_data, variables) => {
-      try {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      } catch {}
 
       // 1. Invalidate worker queries so avg_rating & review list re-fetch
       if (variables.targetId) {

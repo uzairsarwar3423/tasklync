@@ -14,9 +14,9 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
+  withSequence,
   Easing,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import {
   MapPin,
   ChevronUp,
@@ -96,9 +96,10 @@ export const AddressConfirmSheet: React.FC<AddressConfirmSheetProps> = ({
 
   // Smooth cross-fade on address updates
   useEffect(() => {
-    textFadeOpacity.value = withTiming(0.4, { duration: 60 }, () => {
-      textFadeOpacity.value = withTiming(1, { duration: 120, easing: Easing.out(Easing.ease) });
-    });
+    textFadeOpacity.value = withSequence(
+      withTiming(0.4, { duration: 60 }),
+      withTiming(1, { duration: 120, easing: Easing.out(Easing.ease) })
+    );
   }, [reverseGeocodeResult?.address_line, textFadeOpacity]);
 
   // Auto-expand after 1.5s of map being still (unless user manually collapsed)
@@ -116,7 +117,6 @@ export const AddressConfirmSheet: React.FC<AddressConfirmSheetProps> = ({
   }, [isExpanded, isGeocoding, reverseGeocodeResult]);
 
   const toggleExpand = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setIsExpanded((prev) => !prev);
   };
 
@@ -146,7 +146,6 @@ export const AddressConfirmSheet: React.FC<AddressConfirmSheetProps> = ({
   const handleSave = () => {
     if (!isFormValid || !reverseGeocodeResult || isSaving) return;
 
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setIsSuccessFeedback(true);
 
     const finalLabel =
@@ -166,7 +165,6 @@ export const AddressConfirmSheet: React.FC<AddressConfirmSheetProps> = ({
 
   const handleDelete = () => {
     if (!onDeleteAddress) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     Alert.alert(
       'Delete Address',
@@ -177,7 +175,6 @@ export const AddressConfirmSheet: React.FC<AddressConfirmSheetProps> = ({
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             onDeleteAddress();
           },
         },
@@ -191,7 +188,7 @@ export const AddressConfirmSheet: React.FC<AddressConfirmSheetProps> = ({
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
       style={styles.keyboardContainer}
     >

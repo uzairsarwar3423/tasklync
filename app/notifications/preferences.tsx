@@ -11,9 +11,9 @@ import {
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, Bell, CalendarCheck, CreditCard, MessageSquare, Star, Sparkles, Shield } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { notificationApi } from '../../src/services/api/notification.api';
 import { CategoryPreference, NotificationCategory } from '../../src/types/notification.types';
+import { colors } from '../../src/design/colors';
 
 const CATEGORY_METADATA: Record<
   NotificationCategory,
@@ -83,9 +83,6 @@ export default function NotificationPreferencesScreen() {
       channel: 'push_enabled' | 'sms_enabled' | 'email_enabled',
       value: boolean
     ) => {
-      try {
-        Haptics.selectionAsync();
-      } catch {}
 
       // 1. Optimistic UI update
       setPreferences((prev) =>
@@ -206,7 +203,7 @@ export default function NotificationPreferencesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.bgApp,
   },
   header: {
     flexDirection: 'row',

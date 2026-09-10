@@ -3,30 +3,34 @@ import { Skeleton } from './Skeleton';
 import { colors } from '../../../design/colors';
 import { radius } from '../../../design/radius';
 import { shadows } from '../../../design/shadows';
-import { layout } from '../../../design/spacing';
 
 export const SkeletonWorkerCardHorizontal = () => {
-  const { width: W } = useWindowDimensions();
-  // Horizontal scroll cards: ~44% of screen on small, capped at 200
-  const CARD_W = Math.min(Math.floor(W * 0.44), 200);
+  const { width: windowWidth } = useWindowDimensions();
+
+  // Reduced card width (~72% of screen width), matching WorkerCardHorizontal
+  const CARD_WIDTH = windowWidth
+    ? Math.min(Math.round(windowWidth * 0.72), 300)
+    : 280;
 
   return (
-    <View style={[styles.container, { width: CARD_W }]}>
-      <View style={styles.avatarSection}>
-        <Skeleton width={72} height={72} borderRadius={36} />
+    <View style={[styles.container, { width: CARD_WIDTH }]}>
+      {/* Top Area: Avatar Left, Heart Placeholder Right */}
+      <View style={styles.topArea}>
+        <Skeleton width={58} height={58} borderRadius={29} />
+        <Skeleton width={24} height={24} borderRadius={12} />
       </View>
 
-      <View style={styles.content}>
-        <Skeleton width={Math.floor(CARD_W * 0.60)} height={14} style={styles.name} />
-        <Skeleton width={Math.floor(CARD_W * 0.50)} height={12} style={styles.category} />
+      {/* Info Area: Name, Profession, Metadata Row */}
+      <View style={styles.infoArea}>
+        <Skeleton width={140} height={18} borderRadius={6} style={styles.nameSkeleton} />
+        <Skeleton width={100} height={14} borderRadius={5} style={styles.professionSkeleton} />
+        <Skeleton width={175} height={14} borderRadius={5} style={styles.metaSkeleton} />
+      </View>
 
-        <View style={styles.statsRow}>
-          <Skeleton width={Math.floor(CARD_W * 0.65)} height={14} borderRadius={10} />
-        </View>
-
-        <View style={styles.priceRow}>
-          <Skeleton width={Math.floor(CARD_W * 0.55)} height={14} />
-        </View>
+      {/* Bottom Action Row: Pricing Left, Mint Pill Button Right */}
+      <View style={styles.bottomRow}>
+        <Skeleton width={88} height={20} borderRadius={6} />
+        <Skeleton width={96} height={36} borderRadius={radius.pill} />
       </View>
     </View>
   );
@@ -34,34 +38,46 @@ export const SkeletonWorkerCardHorizontal = () => {
 
 const styles = StyleSheet.create({
   container: {
-    height: 216,
     backgroundColor: colors.bgCard,
-    borderRadius: radius.xl,
-    ...shadows.sm,
-    padding: 12,
-    alignItems: 'center',
+    borderRadius: radius['2xl'],
     borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.03)',
-    marginRight: layout.cardGap,
+    borderColor: 'rgba(0, 0, 0, 0.05)',
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+    height: 228,
+    justifyContent: 'space-between',
+    ...shadows.sm,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    elevation: 2,
   },
-  avatarSection: {
-    marginBottom: 12,
-    marginTop: 4,
-  },
-  content: {
-    alignItems: 'center',
+  topArea: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     width: '100%',
   },
-  name: {
-    marginBottom: 4,
+  infoArea: {
+    marginTop: 12,
+    width: '100%',
   },
-  category: {
-    marginBottom: 10,
+  nameSkeleton: {
+    marginBottom: 6,
   },
-  statsRow: {
-    marginBottom: 12,
+  professionSkeleton: {
+    marginBottom: 8,
   },
-  priceRow: {
-    marginTop: 4,
+  metaSkeleton: {
+    marginBottom: 0,
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 16,
+    paddingTop: 4,
   },
 });

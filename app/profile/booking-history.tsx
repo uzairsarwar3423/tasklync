@@ -22,7 +22,6 @@ import {
 import { BookingHistoryCardSkeleton } from '../../src/components/booking/BookingHistoryCardSkeleton';
 import { YearCategoryFilterBar } from '../../src/components/ui/YearCategoryFilterBar';
 import { colors, palette, fontFamily, fontSize, radius, spacing, shadows } from '../../src/design';
-import * as Haptics from 'expo-haptics';
 
 export default function BookingHistoryScreen() {
   const router = useRouter();
@@ -47,12 +46,10 @@ export default function BookingHistoryScreen() {
   }, [data]);
 
   const handleBack = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     router.back();
   };
 
   const handleBookNewService = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     router.push('/(tabs)/explore' as any);
   };
 

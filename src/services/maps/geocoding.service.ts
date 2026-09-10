@@ -12,8 +12,42 @@ export async function reverseGeocode(
 ): Promise<ReverseGeocodeResult> {
   const fallbackCoords = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 
+  const apiKey =
+    process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY ||
+    process.env.GOOGLE_MAPS_KEY ||
+    '';
+
+  // 1. Try Google Maps Geocoding API when key is configured
+  if (apiKey && apiKey !== 'your_key_here') {
+    try {
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${apiKey}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (json.status === 'OK' && Array.isArray(json.results) && json.results.length > 0) {
+        const first = json.results[0];
+        const formatted = first.formatted_address || fallbackCoords;
+        let city = 'Lahore';
+        let country = 'Pakistan';
+        for (const comp of first.address_components || []) {
+          if (comp.types.includes('locality')) city = comp.long_name;
+          if (comp.types.includes('country')) country = comp.long_name;
+        }
+        return {
+          formatted_address: formatted,
+          address_line: formatted.split(',')[0] || formatted,
+          city,
+          country,
+          lat,
+          lng,
+        };
+      }
+    } catch (_e) {
+      // Fall through to native geocoder
+    }
+  }
+
   try {
-    // 1. Try native platform geocoder (Apple CLGeocoder on iOS, Android Geocoder on Android)
+    // 2. Try native platform geocoder (Apple CLGeocoder on iOS, Android Geocoder on Android)
     const results = await Location.reverseGeocodeAsync({
       latitude: lat,
       longitude: lng,

@@ -11,7 +11,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import { Trash2 } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { springConfig } from '../../design/animations';
 import { colors } from '../../design/colors';
 
@@ -31,12 +30,6 @@ export const SwipeToDeleteRow: FC<SwipeToDeleteRowProps> = ({
   const translateX = useSharedValue(0);
   const measuredHeight = useSharedValue(0);
   const opacity = useSharedValue(1);
-
-  const triggerCommitHaptic = useCallback(() => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    }
-  }, []);
 
   const handleFinishDelete = useCallback(() => {
     onDelete();
@@ -66,7 +59,6 @@ export const SwipeToDeleteRow: FC<SwipeToDeleteRowProps> = ({
     .onEnd(() => {
       if (translateX.value < SWIPE_THRESHOLD) {
         // Commit delete action
-        runOnJS(triggerCommitHaptic)();
         runOnJS(setIsDeleting)(true);
         translateX.value = withTiming(-screenWidth, { duration: 200 });
         opacity.value = withTiming(0, { duration: 200 });
@@ -114,7 +106,6 @@ export const SwipeToDeleteRow: FC<SwipeToDeleteRowProps> = ({
         <Pressable
           style={styles.deleteButton}
           onPress={() => {
-            triggerCommitHaptic();
             onDelete();
           }}
           accessibilityRole="button"

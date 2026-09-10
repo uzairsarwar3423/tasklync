@@ -6,10 +6,9 @@ import Animated, {
   withSpring,
   interpolateColor
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
-
 import { colors } from '@design/colors';
 import { springConfig } from '@design/animations';
+import { getOpticalStrokeWidth } from '@design/iconography';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -18,6 +17,8 @@ export interface IconButtonProps {
   onPress: () => void;
   size?: number;
   iconSize?: number;
+  strokeWidth?: number;
+  strokePreset?: 'hairline' | 'refined' | 'balanced' | 'strong';
   color?: string;
   bg?: string;
   bgPressed?: string;
@@ -31,6 +32,8 @@ export const IconButton = ({
   onPress,
   size = 40,
   iconSize = 20,
+  strokeWidth,
+  strokePreset = 'refined',
   color = colors.textSecondary,
   bg = colors.bgInput,
   bgPressed = '#E9EAEC',
@@ -38,6 +41,8 @@ export const IconButton = ({
   accessibilityLabel,
   disabled = false,
 }: IconButtonProps) => {
+  const resolvedStrokeWidth =
+    strokeWidth ?? getOpticalStrokeWidth(iconSize, strokePreset);
   const scale = useSharedValue(1.0);
   const isPressed = useSharedValue(0); // 0 = idle, 1 = pressed
 
@@ -55,7 +60,6 @@ export const IconButton = ({
 
   const handlePress = useCallback(() => {
     if (disabled) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onPress();
   }, [disabled, onPress]);
 
@@ -98,7 +102,7 @@ export const IconButton = ({
         style,
       ]}
     >
-      <Icon size={iconSize} color={color} />
+      <Icon size={iconSize} color={color} strokeWidth={resolvedStrokeWidth} />
     </AnimatedPressable>
   );
 };

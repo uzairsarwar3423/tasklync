@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { Trash2, X, AlertTriangle } from 'lucide-react-native';
 import { colors, palette, fontFamily, fontSize, radius, spacing, shadows } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface DeleteAccountModalProps {
   visible: boolean;
@@ -43,9 +42,6 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
 
   const handleConfirm = () => {
     if (!isConfirmed || isLoading) return;
-    try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning).catch(() => {});
-    } catch {}
     onConfirmDelete();
   };
 
@@ -64,7 +60,7 @@ export const DeleteAccountModal: React.FC<DeleteAccountModalProps> = ({
     >
       <KeyboardAvoidingView
         style={styles.backdrop}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.sheet}>
           {/* Header */}

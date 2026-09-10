@@ -43,11 +43,11 @@ export const EmptyNotifications: React.FC<EmptyNotificationsProps> = ({
       <View style={styles.iconContainer}>
         <View style={styles.outerGlow}>
           <View style={styles.innerCircle}>
-            <BellRing size={36} color="#16A34A" strokeWidth={2} />
+            <BellRing size={36} color="#16A34A" strokeWidth={1.6} />
           </View>
         </View>
         <View style={styles.sparkleBadge}>
-          <Sparkles size={14} color="#EAB308" strokeWidth={2.4} />
+          <Sparkles size={14} color="#EAB308" strokeWidth={1.6} />
         </View>
       </View>
 

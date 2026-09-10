@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 16,
     paddingVertical: 4,
-    backgroundColor: palette.white,
+    backgroundColor: 'transparent',
     overflow: 'hidden',
   },
   gridContainer: {

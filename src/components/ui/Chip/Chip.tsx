@@ -17,7 +17,6 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { Check } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../../design/colors';
 import { typography } from '../../../design/typography';
 import { springConfig } from '../../../design/animations';
@@ -79,9 +78,6 @@ export const Chip: React.FC<ChipProps> = ({
 
   const handlePress = () => {
     if (!isInteractive) return;
-    if (Platform.OS !== 'web') {
-      Haptics.selectionAsync().catch(() => {});
-    }
     onPress();
   };
 
@@ -237,9 +233,6 @@ export const Chip: React.FC<ChipProps> = ({
           onPress={(e) => {
             if (onTrailingPress) {
               e.stopPropagation();
-              if (Platform.OS !== 'web') {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-              }
               onTrailingPress();
             }
           }}

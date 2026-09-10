@@ -9,7 +9,6 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated';
 import { Star } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../../design/colors';
 import { typography } from '../../../design/typography';
 import { springConfig } from '../../../design/animations';
@@ -91,9 +90,6 @@ const StarItem: React.FC<{
       progress.value = withDelay(delay, withSpring(1, springConfig.snappy));
       // Haptic for each star in cascade
       const timer = setTimeout(() => {
-        if (Platform.OS !== 'web') {
-          Haptics.selectionAsync().catch(() => {});
-        }
       }, delay);
       return () => clearTimeout(timer);
     } else {

@@ -17,7 +17,7 @@ export function EmptyBookingsCancelled() {
   return (
     <Animated.View style={[styles.container, animatedStyle]}>
       <View style={styles.iconContainer}>
-        <XCircle size={48} color="#9CA3AF" />
+        <XCircle size={48} strokeWidth={1.35} color="#9CA3AF" />
       </View>
       <Text style={styles.title}>No cancelled bookings</Text>
       <Text style={styles.description}>Bookings that were cancelled or rejected will be listed here.</Text>

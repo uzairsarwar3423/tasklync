@@ -13,7 +13,6 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import { ArrowLeft, CheckCheck, BellOff, ChevronRight } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 
 import { useNotifications } from '../../src/hooks/useNotifications';
 import { useNotificationPermission } from '../../src/hooks/useNotificationPermission';
@@ -26,7 +25,10 @@ import { NotificationItem } from '../../src/components/notification/Notification
 import { NotificationSwipeRow } from '../../src/components/notification/NotificationSwipeRow';
 import { NotificationGroupHeader } from '../../src/components/notification/NotificationGroupHeader';
 import { EmptyNotifications } from '../../src/components/feedback/EmptyState/EmptyNotifications';
+import { ErrorState } from '../../src/components/feedback/ErrorState';
+import { useNetworkStatus } from '../../src/hooks/useNetworkStatus';
 import { resolveNotificationRoute } from '../../src/utils/deepLink';
+import { colors } from '../../src/design/colors';
 
 /**
  * NotificationsScreen (Day 32 Notification Center)
@@ -41,7 +43,8 @@ import { resolveNotificationRoute } from '../../src/utils/deepLink';
 export default function NotificationsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { isGranted, isUndetermined, request } = useNotificationPermission();
+  const { isOffline } = useNetworkStatus();
+  const { isGranted, isUndetermined, canAskAgain, request } = useNotificationPermission();
   const { register } = usePushRegistration();
 
   const {
@@ -52,6 +55,7 @@ export default function NotificationsScreen() {
     setActiveFilter,
     isLoading,
     isFetchingNextPage,
+    isError,
     isRefreshing,
     hasNextPage,
     fetchNextPage,
@@ -62,10 +66,7 @@ export default function NotificationsScreen() {
   } = useNotifications();
 
   const handleEnablePush = useCallback(async () => {
-    try {
-      Haptics.selectionAsync();
-    } catch {}
-    if (isUndetermined) {
+    if (isUndetermined || canAskAgain) {
       const res = await request();
       if (res === 'granted') {
         await register();
@@ -73,14 +74,11 @@ export default function NotificationsScreen() {
     } else {
       Linking.openSettings().catch(() => {});
     }
-  }, [isUndetermined, request, register]);
+  }, [isUndetermined, canAskAgain, request, register]);
 
   // Navigation & Deep Linking Handler
   const handleItemPress = useCallback(
     (item: NotificationItemType) => {
-      try {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      } catch {}
 
       // 1. Optimistic read mark
       if (!item.is_read) {
@@ -108,9 +106,6 @@ export default function NotificationsScreen() {
 
   const handleFilterChange = useCallback(
     (filter: 'all' | 'unread') => {
-      try {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      } catch {}
       setActiveFilter(filter);
     },
     [setActiveFilter]
@@ -247,6 +242,18 @@ export default function NotificationsScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#16A34A" />
         </View>
+      ) : isError && groupedList.length === 0 ? (
+        <ErrorState
+          type={isOffline ? 'offline' : 'error'}
+          title={isOffline ? 'No internet connection' : "Couldn't load notifications"}
+          subtitle={
+            isOffline
+              ? 'Please check your connection and pull to refresh.'
+              : 'An unexpected error occurred while fetching your notifications.'
+          }
+          onRetry={refetch}
+          retryButtonText="Retry"
+        />
       ) : (
         <FlashList
           data={groupedList}
@@ -290,7 +297,7 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.bgApp,
   },
   header: {
     flexDirection: 'row',

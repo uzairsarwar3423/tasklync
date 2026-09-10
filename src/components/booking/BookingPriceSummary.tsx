@@ -45,16 +45,16 @@ export const BookingPriceSummary: React.FC<BookingPriceSummaryProps> = ({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: palette.white,
-    borderRadius: 16,
+    borderRadius: 18,
     marginHorizontal: 20,
     marginBottom: 16,
-    padding: 16,
+    padding: 18,
     borderWidth: 1,
-    borderColor: palette.gray200,
+    borderColor: palette.gray100,
     shadowColor: palette.gray900,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
     elevation: 2,
   },
 });

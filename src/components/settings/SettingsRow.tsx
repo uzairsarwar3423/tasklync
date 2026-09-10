@@ -1,7 +1,6 @@
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { ChevronRight } from 'lucide-react-native';
 import { colors, palette, fontFamily, spacing } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface SettingsRowProps {
   label: string;
@@ -26,7 +25,6 @@ export const SettingsRow: React.FC<SettingsRowProps> = ({
 
   const handlePress = () => {
     if (onPress) {
-      Haptics.selectionAsync().catch(() => {});
       onPress();
     }
   };

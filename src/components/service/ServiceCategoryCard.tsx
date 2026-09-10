@@ -1,138 +1,143 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
+import React from 'react';
+import { StyleSheet, Pressable, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withDelay,
-  withSequence,
 } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { Text } from '../ui/Text/Text';
 import { Category } from '../../types/category.types';
 import { colors } from '../../design/colors';
-import { radius } from '../../design/radius';
-import { shadows } from '../../design/shadows';
 import { fontFamily } from '../../design/typography';
-import { layout } from '../../design/spacing';
 
 interface ServiceCategoryCardProps {
   category: Category;
-  index: number;
+  index?: number;
 }
 
-const CATEGORY_STYLES: Record<string, { bg: string; iconSource: any }> = {
-  electrician: { bg: '#FEF3C7', iconSource: require('../../../assets/icons/categories/electrician.svg') },
-  plumber: { bg: '#EFF6FF', iconSource: require('../../../assets/icons/categories/plumber.svg') },
-  ac_repair: { bg: '#F0F9FF', iconSource: require('../../../assets/icons/categories/air-conditioner.svg') },
-  cleaning: { bg: '#F0FDF4', iconSource: require('../../../assets/icons/categories/cleaning.svg') },
-  carpenter: { bg: '#FFF7ED', iconSource: require('../../../assets/icons/categories/carpenter.svg') },
-  painter: { bg: '#FDF4FF', iconSource: require('../../../assets/icons/categories/painter.svg') },
+interface CategoryStyleConfig {
+  bg: string;
+  iconSource: any;
+  displayName?: string;
+}
+
+const CATEGORY_STYLES: Record<string, CategoryStyleConfig> = {
+  electrician: {
+    bg: '#FFF1C9',
+    iconSource: require('../../../assets/icons/categories/electrician.svg'),
+    displayName: 'Electrician',
+  },
+  plumber: {
+    bg: '#E6F0FF',
+    iconSource: require('../../../assets/icons/categories/plumber.svg'),
+    displayName: 'Plumber',
+  },
+  carpenter: {
+    bg: '#FFE7E3',
+    iconSource: require('../../../assets/icons/categories/carpenter.svg'),
+    displayName: 'Carpenter',
+  },
+  painter: {
+    bg: '#EEE7FF',
+    iconSource: require('../../../assets/icons/categories/painter.svg'),
+    displayName: 'Painter',
+  },
+  cleaning: {
+    bg: '#DFF4EC',
+    iconSource: require('../../../assets/icons/categories/cleaning.svg'),
+    displayName: 'Cleaner',
+  },
+  cleaner: {
+    bg: '#DFF4EC',
+    iconSource: require('../../../assets/icons/categories/cleaning.svg'),
+    displayName: 'Cleaner',
+  },
+  ac_repair: {
+    bg: '#E6F7FA',
+    iconSource: require('../../../assets/icons/categories/air-conditioner.svg'),
+    displayName: 'AC Repair',
+  },
 };
 
-const DEFAULT_STYLE = { bg: colors.bgInput, iconSource: require('../../../assets/icons/categories/cleaning.svg') };
+const DEFAULT_STYLE: CategoryStyleConfig = {
+  bg: '#F1F5F9',
+  iconSource: require('../../../assets/icons/categories/cleaning.svg'),
+};
 
-export const ServiceCategoryCard: React.FC<ServiceCategoryCardProps> = ({ category, index }) => {
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
+export const ServiceCategoryCard: React.FC<ServiceCategoryCardProps> = ({ category }) => {
   const router = useRouter();
-  const { width: SCREEN_WIDTH } = useWindowDimensions();
-  const numColumns = SCREEN_WIDTH > 700 ? 6 : 3;
-  const CARD_WIDTH = Math.floor((SCREEN_WIDTH - (layout.screenPaddingH * 2) - (layout.categoryGap * (numColumns - 1))) / numColumns);
-  const scale = useSharedValue(0.93);
-  const opacity = useSharedValue(0);
-  const translateY = useSharedValue(12);
-  const shadowOpacity = useSharedValue(0.05); // Match shadows.sm
-
-  useEffect(() => {
-    // Entrance stagger animation
-    const delay = index * 50;
-    
-    scale.value = withDelay(delay, withSpring(1));
-    opacity.value = withDelay(delay, withSpring(1));
-    translateY.value = withDelay(delay, withSpring(0));
-  }, [index]);
+  const scale = useSharedValue(1);
 
   const handlePressIn = () => {
     scale.value = withSpring(0.95, { stiffness: 400, damping: 20 });
-    shadowOpacity.value = withSpring(0);
   };
 
   const handlePressOut = () => {
-    scale.value = withSequence(
-      withSpring(1.02, { stiffness: 200, damping: 10 }),
-      withSpring(1)
-    );
-    shadowOpacity.value = withSpring(0.05);
+    scale.value = withSpring(1, { stiffness: 300, damping: 15 });
   };
 
   const handlePress = () => {
-    Haptics.selectionAsync();
     router.push(('/category/' + category.id) as any);
   };
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { scale: scale.value },
-      { translateY: translateY.value },
-    ],
-    opacity: opacity.value,
-    shadowOpacity: shadowOpacity.value,
+    transform: [{ scale: scale.value }],
   }));
 
   const styleConfig = CATEGORY_STYLES[category.id] || DEFAULT_STYLE;
+  const labelText = styleConfig.displayName || category.name;
 
   return (
-    <Animated.View style={[styles.container, animatedStyle, { width: CARD_WIDTH }]}>
-      <Pressable
-        style={styles.pressable}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        onPress={handlePress}
-        accessibilityRole="button"
-        accessibilityLabel={`${category.name} services`}
-        accessibilityHint={`Tap to browse ${category.name} workers`}
-      >
-        <View style={[styles.iconArea, { backgroundColor: styleConfig.bg }]}>
-          <Image 
-            source={styleConfig.iconSource} 
-            style={{ width: 28, height: 28 }} 
-            contentFit="contain" 
-          />
-        </View>
-        <Text style={styles.label} numberOfLines={1}>
-          {category.name}
-        </Text>
-      </Pressable>
-    </Animated.View>
+    <AnimatedPressable
+      style={[styles.container, animatedStyle]}
+      onPressIn={handlePressIn}
+      onPressOut={handlePressOut}
+      onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel={`${labelText} services`}
+      accessibilityHint={`Tap to browse ${labelText} services and workers`}
+    >
+      <View style={[styles.iconContainer, { backgroundColor: styleConfig.bg }]}>
+        <Image
+          source={styleConfig.iconSource}
+          style={styles.icon}
+          contentFit="contain"
+          priority="high"
+        />
+      </View>
+      <Text style={styles.label} numberOfLines={1}>
+        {labelText}
+      </Text>
+    </AnimatedPressable>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    height: 100,
-    backgroundColor: colors.bgCard,
-    borderRadius: radius.xl,
-    ...shadows.sm,
+    alignItems: 'center',
+    width: 76,
+    backgroundColor: 'transparent',
   },
-  pressable: {
-    flex: 1,
-    padding: 12,
+  iconContainer: {
+    width: 68,
+    height: 68,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconArea: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+  icon: {
+    width: 32,
+    height: 32,
   },
   label: {
-    fontFamily: fontFamily.poppins.semiBold,
-    fontSize: 12,
+    fontFamily: fontFamily.jakarta.semiBold,
+    fontSize: 14.5,
     color: colors.textPrimary,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: 10,
   },
 });

@@ -14,7 +14,6 @@ import Animated, {
   withSpring,
   withSequence,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import {
   Zap,
   Droplet,
@@ -79,9 +78,6 @@ export const ServiceCard: React.FC<ServiceCardProps> = ({
   };
 
   const handlePress = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.selectionAsync().catch(() => {});
-    }
     router.push(`/service/${service.id}` as any);
   };
 

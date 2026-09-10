@@ -14,7 +14,6 @@ import Animated, {
   withTiming,
   withSpring,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { Copy } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -62,9 +61,6 @@ export const MessageContextMenu = forwardRef<MessageContextMenuRef, MessageConte
       toastOpacity.value = withTiming(1, { duration: 160 });
       toastTranslateY.value = withSpring(0, { damping: 16, stiffness: 260 });
 
-      try {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      } catch {}
 
       setTimeout(() => {
         toastOpacity.value = withTiming(0, { duration: 180 });
@@ -94,9 +90,6 @@ export const MessageContextMenu = forwardRef<MessageContextMenuRef, MessageConte
       (content: string) => {
         if (!content || !content.trim()) return;
 
-        try {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        } catch {}
 
         if (Platform.OS === 'ios') {
           ActionSheetIOS.showActionSheetWithOptions(

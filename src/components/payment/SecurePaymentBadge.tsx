@@ -1,32 +1,49 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { Lock } from 'lucide-react-native';
-import { colors, fontFamily } from '../../design';
+import { Lock, ShieldCheck } from 'lucide-react-native';
+import { colors, palette, fontFamily } from '../../design';
 
 export const SecurePaymentBadge: React.FC = () => {
   return (
-    <View style={styles.badgeContainer}>
-      <Lock size={13} color={colors.textMuted} strokeWidth={2} />
-      <Text style={styles.badgeText}>
-        256-Bit Encrypted & Secure Payment by Stripe
+    <View style={styles.container}>
+      <View style={styles.badgeRow}>
+        <Lock size={12} color={colors.primaryDark} strokeWidth={2.4} />
+        <Text style={styles.badgeText}>
+          256-Bit Bank-Grade Encryption • Escrow Protected
+        </Text>
+      </View>
+      <Text style={styles.subtext}>
+        Your payment details are never stored unencrypted. Cancel anytime before job start.
       </Text>
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  badgeContainer: {
-    flexDirection: 'row',
+  container: {
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    marginBottom: 8,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
-    paddingVertical: 10,
-    marginBottom: 16,
   },
   badgeText: {
+    fontFamily: fontFamily.jakarta.semiBold,
+    fontSize: 11,
+    lineHeight: 16,
+    color: colors.primaryDark,
+  },
+  subtext: {
     fontFamily: fontFamily.jakarta.regular,
     fontSize: 11,
     lineHeight: 15,
     color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: 4,
   },
 });

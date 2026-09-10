@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { MapPin, Navigation } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { BookingAddress } from '../../store/bookingDraft.store';
 import { colors, palette, fontFamily } from '../../design';
 
@@ -14,8 +13,17 @@ export const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({ selectedAddress 
   const router = useRouter();
 
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/(map)/location-picker' as any);
+    if (selectedAddress?.id) {
+      router.push({
+        pathname: '/profile/addresses/add',
+        params: { mode: 'edit', addressId: selectedAddress.id, returnToBooking: 'true' },
+      });
+    } else {
+      router.push({
+        pathname: '/profile/addresses/add',
+        params: { mode: 'add', returnToBooking: 'true' },
+      });
+    }
   };
 
   return (
@@ -59,12 +67,17 @@ export const MiniMapPreview: React.FC<MiniMapPreviewProps> = ({ selectedAddress 
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 16,
+    borderRadius: 18,
     overflow: 'hidden',
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: palette.gray200,
+    borderColor: palette.gray100,
     backgroundColor: palette.white,
+    shadowColor: palette.gray900,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
   },
   mapContainer: {
     height: 120,

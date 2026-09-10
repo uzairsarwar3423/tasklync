@@ -9,7 +9,6 @@ import {
 } from '../types/user.types';
 import { invalidateProfileEverywhere } from '../utils/profileCacheSync';
 import { compressImage } from '../utils/imageCompression';
-import * as Haptics from 'expo-haptics';
 
 /**
  * useCurrentUser Hook (Day 35 Profile Hub)
@@ -44,9 +43,6 @@ export function useUpdateProfile() {
       return await userApi.updateProfile(payload);
     },
     onSuccess: (updated) => {
-      try {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-      } catch {}
       invalidateProfileEverywhere(queryClient, updated);
     },
   });
@@ -90,9 +86,6 @@ export function useUploadAvatar() {
 
         setUploadProgress(1.0);
 
-        try {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-        } catch {}
 
         invalidateProfileEverywhere(queryClient, { avatar_url: result.avatarUrl });
 
@@ -108,9 +101,6 @@ export function useUploadAvatar() {
         setUploadProgress(null);
         const errMsg = err?.message || 'Avatar upload failed. Please try again.';
         setError(errMsg);
-        try {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
-        } catch {}
         throw new Error(errMsg);
       }
     },
@@ -153,9 +143,6 @@ export function useUpdatePreferences() {
       return await userApi.updatePreferences(payload);
     },
     onSuccess: (updated) => {
-      try {
-        Haptics.selectionAsync().catch(() => {});
-      } catch {}
       queryClient.invalidateQueries({ queryKey: ['user-preferences'] });
       queryClient.invalidateQueries({ queryKey: ['user', 'me'] });
     },

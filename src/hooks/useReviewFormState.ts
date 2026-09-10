@@ -1,6 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
 import { ReviewCategoryKey, ReviewFormState } from '../types/review.types';
-import * as Haptics from 'expo-haptics';
 
 const INITIAL_CATEGORY_RATINGS: Record<ReviewCategoryKey, number> = {
   punctuality: 0,
@@ -32,16 +31,10 @@ export function useReviewFormState(): UseReviewFormStateReturn {
   const [comment, setComment] = useState<string>('');
 
   const setOverallRating = useCallback((rating: number) => {
-    try {
-      Haptics.selectionAsync().catch(() => {});
-    } catch {}
     setOverallRatingInternal(rating);
   }, []);
 
   const setCategoryRating = useCallback((category: ReviewCategoryKey, rating: number) => {
-    try {
-      Haptics.selectionAsync().catch(() => {});
-    } catch {}
     setCategoryRatings((prev) => ({
       ...prev,
       [category]: rating,

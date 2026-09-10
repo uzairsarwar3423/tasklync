@@ -4,24 +4,25 @@ import { useLocationStore } from '../store/location.store';
 import { workerApi } from '../services/api/worker.api';
 import { searchApi } from '../services/api/search.api';
 
-// Target location default fallback (Pakistan coords from working API spec)
-const DEFAULT_LAT = 30.8815899;
-const DEFAULT_LNG = 72.6281327;
 const MAX_ALLOWED_RADIUS = 20000; // Backend constraint: Radius cannot exceed 20,000 meters
 
 export const useNearbyWorkers = (params?: Partial<NearbyWorkersParams>) => {
   const { currentLocation } = useLocationStore();
 
-  const lat = params?.lat ?? currentLocation?.lat ?? DEFAULT_LAT;
-  const lng = params?.lng ?? currentLocation?.lng ?? DEFAULT_LNG;
-  const radius = Math.min(params?.radius || MAX_ALLOWED_RADIUS, MAX_ALLOWED_RADIUS);
+  const lat = params?.lat ?? currentLocation?.lat;
+  const lng = params?.lng ?? currentLocation?.lng;
+  const radius = params?.radius ? Math.min(params.radius, MAX_ALLOWED_RADIUS) : 5000;
 
-  const queryParams: NearbyWorkersParams = {
+  const hasCoordinates = typeof lat === 'number' && typeof lng === 'number';
+
+  const queryParams = {
     lat,
     lng,
     radius,
     limit: params?.limit || 8,
-    ...(params?.category ? { category: params.category } : {}),
+    category: params?.category,
+    serviceId: params?.serviceId,
+    minRating: params?.minRating,
   };
 
   const query = useQuery({
@@ -31,68 +32,67 @@ export const useNearbyWorkers = (params?: Partial<NearbyWorkersParams>) => {
         console.log('[DEBUG nearby-workers] 1. Requesting nearby workers with params:', queryParams);
       }
 
-      // Stage 1: Geofenced Search API (/search/workers) with exact coordinates & radius
-      try {
-        const searchRes = await searchApi.searchWorkers({
-          q: queryParams.category || '',
-          lat: queryParams.lat,
-          lng: queryParams.lng,
-          radius: queryParams.radius,
-          limit: queryParams.limit,
-        });
-
-        if (__DEV__) {
-          console.log('[DEBUG nearby-workers] 2. Stage 1 (Geofenced Search) returned worker count:', searchRes?.workers?.length || 0);
-        }
-
-        if (searchRes && Array.isArray(searchRes.workers) && searchRes.workers.length > 0) {
+      // Stage 1: Dedicated Geofenced Proximity API (/workers/nearby) - only when real GPS coords are available
+      if (hasCoordinates) {
+        try {
+          const res = await workerApi.getNearbyWorkers({
+            lat: lat!,
+            lng: lng!,
+            radius,
+            limit: queryParams.limit,
+            category: queryParams.category,
+            serviceId: queryParams.serviceId,
+            minRating: queryParams.minRating,
+          });
           if (__DEV__) {
-            console.log('[DEBUG nearby-workers] 3. Stage 1 SUCCESS. Final data passed to UI component count:', searchRes.workers.length);
+            console.log('[DEBUG nearby-workers] 1. Proximity API returned worker count:', res?.workers?.length || 0);
           }
-          return { workers: searchRes.workers, total: searchRes.total, page: 1, hasMore: searchRes.hasMore };
+          if (res && Array.isArray(res.workers) && res.workers.length > 0) {
+            return res;
+          }
+        } catch (error) {
+          console.warn('[useNearbyWorkers] Proximity API error:', error);
         }
-      } catch (error) {
-        console.warn('[useNearbyWorkers] Stage 1 error:', error);
       }
 
-      // Stage 2: Proximity API (/workers/nearby)
-      try {
-        const res = await workerApi.getNearbyWorkers(queryParams);
-        if (__DEV__) {
-          console.log('[DEBUG nearby-workers] 4. Stage 2 (Proximity API) returned worker count:', res?.workers?.length || 0);
-        }
-        if (res && Array.isArray(res.workers) && res.workers.length > 0) {
-          if (__DEV__) {
-            console.log('[DEBUG nearby-workers] 5. Stage 2 SUCCESS. Final data passed to UI component count:', res.workers.length);
+      // Stage 2: Fallback to Search API (/search/workers) with coordinates if proximity had no matches
+      if (hasCoordinates) {
+        try {
+          const searchRes = await searchApi.searchWorkers({
+            q: queryParams.category || '',
+            lat: queryParams.lat,
+            lng: queryParams.lng,
+            radius: queryParams.radius,
+            limit: queryParams.limit,
+          });
+
+          if (searchRes && Array.isArray(searchRes.workers) && searchRes.workers.length > 0) {
+            if (__DEV__) {
+              console.log('[DEBUG nearby-workers] 2. Geofenced Search returned worker count:', searchRes.workers.length);
+            }
+            return { workers: searchRes.workers, total: searchRes.total, page: 1, hasMore: searchRes.hasMore };
           }
-          return res;
+        } catch (error) {
+          console.warn('[useNearbyWorkers] Geofenced Search fallback error:', error);
         }
-      } catch (error) {
-        console.warn('[useNearbyWorkers] Stage 2 error:', error);
       }
 
-      // Stage 3: Unbounded Real API Query (Platform-wide Real Worker Discovery)
-      // If no worker is registered in strict 20km radius of user's current GPS location,
-      // fetch real registered workers from backend database without strict geofencing constraint.
+      // Stage 3: Unbounded Platform-wide Discovery (for new/unseeded test regions)
       try {
-        if (__DEV__) {
-          console.log('[DEBUG nearby-workers] 6. Stage 3: Querying platform-wide real workers from backend database...');
-        }
         const fallbackRes = await searchApi.searchWorkers({
           q: queryParams.category || '',
           limit: queryParams.limit,
           category: queryParams.category,
         });
 
-        if (__DEV__) {
-          console.log('[DEBUG nearby-workers] 7. Stage 3 (Platform-wide) returned worker count:', fallbackRes?.workers?.length || 0);
-        }
-
         if (fallbackRes && Array.isArray(fallbackRes.workers) && fallbackRes.workers.length > 0) {
+          if (__DEV__) {
+            console.log('[DEBUG nearby-workers] 3. Platform-wide discovery returned worker count:', fallbackRes.workers.length);
+          }
           return { workers: fallbackRes.workers, total: fallbackRes.total, page: 1, hasMore: fallbackRes.hasMore };
         }
       } catch (error) {
-        console.warn('[useNearbyWorkers] Stage 3 error:', error);
+        console.warn('[useNearbyWorkers] Platform-wide discovery error:', error);
       }
 
       if (__DEV__) {

@@ -3,7 +3,6 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Zap, Wind, Droplet, Sparkles, Wrench } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, interpolateColor } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 
 import { colors } from '../../design/colors';
 import { radius } from '../../design/radius';
@@ -55,7 +54,6 @@ export const ServiceListItem: React.FC<ServiceListItemProps> = ({
   };
 
   const handlePress = () => {
-    Haptics.selectionAsync();
     router.push(`/service/${id}` as any);
   };
 

@@ -7,7 +7,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { LanguageCode } from '../../types/settings.types';
 import { colors, palette, fontFamily, radius } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface LanguageToggleProps {
   value: LanguageCode;
@@ -37,7 +36,6 @@ export const LanguageToggle: React.FC<LanguageToggleProps> = ({ value, onChange 
 
   const handleSelect = (lang: LanguageCode) => {
     if (lang !== value) {
-      Haptics.selectionAsync().catch(() => {});
       onChange(lang);
     }
   };

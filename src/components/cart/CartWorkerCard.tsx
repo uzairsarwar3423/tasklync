@@ -2,7 +2,6 @@ import { FC } from 'react';
 import { StyleSheet, View, Text, Image, Pressable, Platform } from 'react-native';
 import { Star } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import { WorkerInfo } from '../../store/cart.store';
 import { VerifiedBadge } from '../worker/VerifiedBadge';
 import { colors } from '../../design/colors';
@@ -22,9 +21,6 @@ export const CartWorkerCard: FC<CartWorkerCardProps> = ({
   if (!worker) return null;
 
   const handleChangePress = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     if (onChangeWorker) {
       onChangeWorker();
     } else {

@@ -1,7 +1,6 @@
 import { FC } from 'react';
 import { StyleSheet, View, Text, Modal, Pressable, Platform } from 'react-native';
 import { AlertTriangle } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../design/colors';
 import { typography } from '../../design/typography';
 
@@ -21,16 +20,10 @@ export const WorkerConflictModal: FC<WorkerConflictModalProps> = ({
   incomingWorkerName = 'another worker',
 }) => {
   const handleCancel = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     onCancel();
   };
 
   const handleReplace = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-    }
     onReplace();
   };
 

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
@@ -42,7 +42,17 @@ export const RecentBookingBanner = () => {
           dotColor: colors.busy,
           text: 'Waiting for worker',
           sub: `${activeBooking.workerName} · Expires soon`,
-          buttons: <Button label="Cancel" onPress={() => {}} size="sm" variant="secondary" style={styles.btn} fullWidth={false} />,
+          buttons: (
+            <Button 
+              label="Cancel" 
+              onPress={() => router.push(`/booking/${activeBooking.id}` as any)} 
+              size="sm" 
+              variant="secondary" 
+              style={styles.btn} 
+              fullWidth={false}
+              numberOfLines={1}
+            />
+          ),
         };
       case 'ACCEPTED':
         return {
@@ -52,8 +62,8 @@ export const RecentBookingBanner = () => {
           sub: `${activeBooking.workerName} · ${activeBooking.scheduledTime || 'Scheduled'}`,
           buttons: (
             <>
-              <Button label="Track" onPress={() => router.push(`/booking/${activeBooking.id}/track` as any)} size="sm" variant="primary" style={styles.btn} fullWidth={false} />
-              <Button label="Chat" onPress={() => router.push(`/booking/${activeBooking.id}/chat` as any)} size="sm" variant="secondary" style={styles.btn} fullWidth={false} />
+              <Button label="Track" onPress={() => router.push(`/booking/${activeBooking.id}/track` as any)} size="sm" variant="primary" style={styles.btn} fullWidth={false} numberOfLines={1} />
+              <Button label="Chat" onPress={() => router.push(`/booking/${activeBooking.id}/chat` as any)} size="sm" variant="secondary" style={styles.btn} fullWidth={false} numberOfLines={1} />
             </>
           ),
         };
@@ -65,8 +75,8 @@ export const RecentBookingBanner = () => {
           sub: `${activeBooking.workerName} · Started recently`,
           buttons: (
             <>
-              <Button label="Track" onPress={() => router.push(`/booking/${activeBooking.id}/track` as any)} size="sm" variant="primary" style={styles.btn} fullWidth={false} />
-              <Button label="Chat" onPress={() => router.push(`/booking/${activeBooking.id}/chat` as any)} size="sm" variant="secondary" style={styles.btn} fullWidth={false} />
+              <Button label="Track" onPress={() => router.push(`/booking/${activeBooking.id}/track` as any)} size="sm" variant="primary" style={styles.btn} fullWidth={false} numberOfLines={1} />
+              <Button label="Chat" onPress={() => router.push(`/booking/${activeBooking.id}/chat` as any)} size="sm" variant="secondary" style={styles.btn} fullWidth={false} numberOfLines={1} />
             </>
           ),
         };
@@ -83,9 +93,21 @@ export const RecentBookingBanner = () => {
       <View style={styles.leftContent}>
         <View style={styles.statusRow}>
           <OnlineBadge status={config.dotStatus} size={8} />
-          <Text style={[styles.statusText, { color: config.dotColor }]}>{config.text}</Text>
+          <Text 
+            style={[styles.statusText, { color: config.dotColor }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {config.text}
+          </Text>
         </View>
-        <Text style={styles.subText}>{config.sub}</Text>
+        <Text 
+          style={styles.subText}
+          numberOfLines={1}
+          ellipsizeMode="tail"
+        >
+          {config.sub}
+        </Text>
       </View>
       <View style={styles.rightContent}>
         {config.buttons}
@@ -112,6 +134,8 @@ const styles = StyleSheet.create({
   leftContent: {
     flex: 1,
     marginRight: 12,
+    minWidth: 0,
+    justifyContent: 'center',
   },
   statusRow: {
     flexDirection: 'row',
@@ -122,6 +146,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontFamily: 'PlusJakartaSans-SemiBold',
     fontSize: 13,
+    flexShrink: 1,
   },
   subText: {
     fontFamily: 'Poppins-SemiBold',
@@ -129,9 +154,13 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   rightContent: {
+    flexShrink: 0,
+    alignItems: 'flex-end',
+    justifyContent: 'center',
     gap: 6,
   },
   btn: {
-    width: 72,
+    minWidth: 80,
+    paddingHorizontal: 14,
   },
 });

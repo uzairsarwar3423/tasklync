@@ -30,23 +30,19 @@ export function useAddresses() {
     queryKey: ADDRESSES_QUERY_KEY,
     queryFn: async (): Promise<Address[]> => {
       if (!token) return [];
-      try {
-        const raw = await userApi.getAddresses();
-        if (!raw || !Array.isArray(raw)) return [];
-        const mapped: Address[] = raw.map((addr) => ({
-          id: addr.id || generateUUID(),
-          label: addr.label || 'Home',
-          address_line: addr.address_line,
-          city: addr.city || 'Lahore',
-          country: addr.country || 'Pakistan',
-          lat: addr.lat,
-          lng: addr.lng,
-          is_default: Boolean(addr.is_default),
-        }));
-        return sortAddressesWithDefaultFirst(mapped);
-      } catch (_e) {
-        return [];
-      }
+      const raw = await userApi.getAddresses();
+      if (!raw || !Array.isArray(raw)) return [];
+      const mapped: Address[] = raw.map((addr) => ({
+        id: addr.id || generateUUID(),
+        label: addr.label || 'Home',
+        address_line: addr.address_line,
+        city: addr.city || 'Lahore',
+        country: addr.country || 'Pakistan',
+        lat: addr.lat,
+        lng: addr.lng,
+        is_default: Boolean(addr.is_default),
+      }));
+      return sortAddressesWithDefaultFirst(mapped);
     },
     staleTime: 60_000,
     retry: 1,

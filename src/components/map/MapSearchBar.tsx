@@ -2,7 +2,6 @@ import { FC } from 'react';
 import { StyleSheet, Text, Pressable, Platform } from 'react-native';
 import { Search, SlidersHorizontal } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../design/colors';
 import { typography } from '../../design/typography';
 
@@ -16,16 +15,10 @@ export const MapSearchBar: FC<MapSearchBarProps> = ({
   const router = useRouter();
 
   const handlePress = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     router.push('/search');
   };
 
   const handleFilterPress = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     router.push('/search/filters');
   };
 

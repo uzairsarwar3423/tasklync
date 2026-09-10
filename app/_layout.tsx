@@ -10,6 +10,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { fontAssets } from '../src/config/fonts';
 import { AppProviders } from '../src/providers/AppProviders';
 import { FloatingCartBar } from '../src/components/cart/FloatingCartBar';
+import { colors } from '../src/design/colors';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -32,17 +33,19 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <AppProviders>
             <StatusBar style="auto" />
-            <Stack screenOptions={{ headerShown: false }}>
+            <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bgApp } }}>
               <Stack.Screen name="(auth)" options={{ animation: 'fade' }} />
               <Stack.Screen name="(tabs)" options={{ animation: 'fade' }} />
               <Stack.Screen name="service/[id]" options={{ animation: 'slide_from_right' }} />
+              <Stack.Screen name="category/[id]" options={{ animation: 'slide_from_right', gestureEnabled: true }} />
+              <Stack.Screen name="category/index" options={{ animation: 'none' }} />
               <Stack.Screen name="cart/index" options={{ animation: 'slide_from_right' }} />
               <Stack.Screen
                 name="worker/[id]"
                 options={{
                   headerShown: false,
                   animation: 'slide_from_right',
-                  contentStyle: { backgroundColor: '#FFFFFF' },
+                  contentStyle: { backgroundColor: colors.bgApp },
                   fullScreenGestureEnabled: true,
                 }}
               />
@@ -60,6 +63,7 @@ export default function RootLayout() {
               <Stack.Screen name="notifications/preferences" options={{ animation: 'slide_from_right', gestureEnabled: true }} />
               <Stack.Screen name="profile/edit" options={{ animation: 'slide_from_right', gestureEnabled: true }} />
               <Stack.Screen name="profile/addresses" options={{ animation: 'slide_from_right', gestureEnabled: true }} />
+              <Stack.Screen name="profile/addresses/add" options={{ animation: 'slide_from_right', gestureEnabled: true }} />
               <Stack.Screen name="profile/payment-methods" options={{ animation: 'slide_from_right', gestureEnabled: true }} />
               <Stack.Screen name="profile/booking-history" options={{ animation: 'slide_from_right', gestureEnabled: true }} />
               <Stack.Screen name="profile/blocked-workers" options={{ animation: 'slide_from_right', gestureEnabled: true }} />

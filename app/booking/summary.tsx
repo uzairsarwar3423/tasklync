@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { View, ScrollView, Alert, StyleSheet } from 'react-native';
+import { View, ScrollView, Alert, StyleSheet, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 
@@ -68,6 +68,7 @@ export default function SummaryScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="dark-content" backgroundColor={palette.white} />
       <View style={styles.container}>
         {/* Screen Header */}
         <ScheduleHeader
@@ -85,28 +86,20 @@ export default function SummaryScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* 1. Worker Identity Row */}
-          <View style={styles.sectionMargin}>
-            <SummaryWorkerRow worker={cartWorker} />
-          </View>
+          <SummaryWorkerRow worker={cartWorker} />
 
           {/* 2. Services Requested Row */}
-          <View style={styles.sectionMargin}>
-            <SummaryServicesList items={cartItems} />
-          </View>
+          <SummaryServicesList items={cartItems} />
 
           {/* 3. Schedule & Arrival Row */}
-          <View style={styles.sectionMargin}>
-            <SummaryScheduleRow
-              selectedDate={selectedDate}
-              selectedTimeSlot={selectedTimeSlot}
-              isUrgent={isUrgent}
-            />
-          </View>
+          <SummaryScheduleRow
+            selectedDate={selectedDate}
+            selectedTimeSlot={selectedTimeSlot}
+            isUrgent={isUrgent}
+          />
 
           {/* 4. Delivery Address Row */}
-          <View style={styles.sectionMargin}>
-            <SummaryAddressRow address={address} />
-          </View>
+          <SummaryAddressRow address={address} />
 
           {/* 5. Collapsed Special Instructions Note */}
           <DescriptionInput value={note} onChangeText={setNote} />
@@ -144,7 +137,7 @@ export default function SummaryScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: palette.white,
+    backgroundColor: palette.zenWhite,
   },
   container: {
     flex: 1,
@@ -154,13 +147,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
+    paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 20,
   },
-  sectionMargin: {
-    paddingHorizontal: 20,
-  },
   footerSpacer: {
-    height: 100,
+    height: 120,
   },
 });

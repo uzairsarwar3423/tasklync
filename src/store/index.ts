@@ -6,3 +6,4 @@ export * from './mapFilter.store';
 export * from './socket.store';
 export * from './ui.store';
 export * from './notification.store';
+export * from './favorites.store';

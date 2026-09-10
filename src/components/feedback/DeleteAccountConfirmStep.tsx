@@ -15,7 +15,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { AlertTriangle } from 'lucide-react-native';
 import { colors, palette, fontFamily, fontSize, radius, spacing, shadows } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface DeleteAccountConfirmStepProps {
   onConfirmDelete: () => Promise<void>;
@@ -36,7 +35,6 @@ export const DeleteAccountConfirmStep: React.FC<DeleteAccountConfirmStepProps> =
   const isMatched = confirmInput.trim() === 'DELETE';
 
   const triggerShake = () => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
     shakeTranslateX.value = withSequence(
       withTiming(-10, { duration: 50 }),
       withTiming(10, { duration: 50 }),

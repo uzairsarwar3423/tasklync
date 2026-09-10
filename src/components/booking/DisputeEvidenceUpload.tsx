@@ -4,7 +4,6 @@ import { Camera, Image as ImageIcon, X } from 'lucide-react-native';
 import { EvidenceSlotState } from '../../types/booking.types';
 import { DisputeEvidenceSlot } from './DisputeEvidenceSlot';
 import { colors, palette, fontFamily, fontSize, radius, spacing } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface DisputeEvidenceUploadProps {
   slots: EvidenceSlotState[];
@@ -32,9 +31,6 @@ export const DisputeEvidenceUpload: React.FC<DisputeEvidenceUploadProps> = ({
 
   const handleOpenPicker = (slotIndex: number) => {
     if (disabled) return;
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    } catch {}
     setActiveSlotIndex(slotIndex);
   };
 

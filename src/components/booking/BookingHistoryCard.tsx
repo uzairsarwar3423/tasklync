@@ -4,7 +4,6 @@ import { Wrench, Zap, Sparkles, Paintbrush, Hammer, Shield, Clock } from 'lucide
 import { StatusDot } from '../ui/StatusDot';
 import { statusToLabel } from '../../utils/bookingStatus';
 import { colors, palette, fontFamily, radius, spacing, shadows } from '../../design';
-import * as Haptics from 'expo-haptics';
 
 export interface BookingHistoryItem {
   id: string;
@@ -57,7 +56,6 @@ export const BookingHistoryCard: React.FC<BookingHistoryCardProps> = ({ booking 
   const statusDisplay = statusToLabel(booking.status);
 
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     router.push({
       pathname: '/booking/[id]',
       params: { id: booking.id },

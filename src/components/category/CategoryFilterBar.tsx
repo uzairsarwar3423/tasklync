@@ -7,7 +7,6 @@ import {
   Platform,
 } from 'react-native';
 import { SlidersHorizontal, X } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { Chip } from '../ui/Chip/Chip';
 import { SortOption, FilterState } from '../../types/search.types';
 import { colors } from '../../design/colors';
@@ -57,9 +56,6 @@ export const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({
 
   const handleSortPress = (sort: SortOption) => {
     if (sortBy !== sort) {
-      if (Platform.OS !== 'web') {
-        Haptics.selectionAsync().catch(() => {});
-      }
       onSortChange(sort);
     }
   };

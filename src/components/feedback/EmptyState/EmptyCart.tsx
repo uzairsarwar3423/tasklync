@@ -2,7 +2,6 @@ import { FC } from 'react';
 import { StyleSheet, View, Text, Pressable, Platform } from 'react-native';
 import { ShoppingBag, ArrowRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../../design/colors';
 import { typography } from '../../../design/typography';
 
@@ -14,9 +13,6 @@ export const EmptyCart: FC<EmptyCartProps> = ({ onBrowseServices }) => {
   const router = useRouter();
 
   const handleBrowse = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     if (onBrowseServices) {
       onBrowseServices();
     } else {

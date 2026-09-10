@@ -7,7 +7,6 @@ import {
   Platform,
 } from 'react-native';
 import { ChevronDown, MapPin, Star, ArrowDownAZ } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../../design/colors';
 import { typography } from '../../../design/typography';
 import { ActionSheet, ActionItem } from '../../layout/ActionSheet/ActionSheet';
@@ -42,9 +41,6 @@ export const SortDropdown: React.FC<SortDropdownProps> = ({
   };
 
   const handlePress = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.selectionAsync().catch(() => {});
-    }
     setIsVisible(true);
   };
 

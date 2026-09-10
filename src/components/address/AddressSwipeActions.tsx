@@ -2,7 +2,6 @@ import { useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import Swipeable from 'react-native-gesture-handler/Swipeable';
 import { Pencil, Trash2 } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { Address } from '../../types/address.types';
 import { palette, fontFamily } from '../../design';
 
@@ -22,13 +21,11 @@ export const AddressSwipeActions: React.FC<AddressSwipeActionsProps> = ({
   const swipeableRef = useRef<Swipeable | null>(null);
 
   const handleEdit = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     swipeableRef.current?.close();
     onEdit(address);
   };
 
   const handleDelete = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     swipeableRef.current?.close();
     onDelete(address);
   };

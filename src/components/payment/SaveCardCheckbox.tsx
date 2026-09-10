@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Check } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors, palette, fontFamily } from '../../design';
 
 export interface SaveCardCheckboxProps {
@@ -16,7 +15,6 @@ export const SaveCardCheckbox: React.FC<SaveCardCheckboxProps> = ({
   label = 'Save this card for faster future checkout',
 }) => {
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onToggle(!checked);
   };
 

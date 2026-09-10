@@ -79,24 +79,21 @@ export const paymentApi = {
    * POST /api/v1/payments/initiate
    */
   initiatePayment: async (payload: InitiatePaymentPayload): Promise<InitiatePaymentResponse> => {
-    try {
-      const response = await apiClient.post<any>('/payments/initiate', {
-        booking_id: payload.booking_id,
-        payment_method_id: payload.payment_method_id,
-        amount: payload.amount,
-        currency: payload.currency || 'PKR',
-      });
-      return response.data?.data || response.data || { success: true, status: 'succeeded' };
-    } catch (error: any) {
-      if (error?.status === 400 || error?.code === 'VALIDATION_ERROR') {
-        throw error;
-      }
-      return {
-        success: true,
-        status: 'succeeded',
-        transaction_id: `txn_${Date.now().toString(36)}`,
-      };
+    if (!payload.booking_id || payload.booking_id.startsWith('b-') || payload.booking_id.startsWith('TL-')) {
+      throw new Error('Invalid booking reference. Payment cannot be initiated for unconfirmed or fake bookings.');
     }
+
+    const response = await apiClient.post<any>('/payments/initiate', {
+      booking_id: payload.booking_id,
+      payment_method_id: payload.payment_method_id,
+      amount: payload.amount,
+      currency: payload.currency || 'PKR',
+    });
+    const data = response.data?.data || response.data;
+    if (data && typeof data === 'object') {
+      return data;
+    }
+    return { success: true, status: 'succeeded' };
   },
 
   /**

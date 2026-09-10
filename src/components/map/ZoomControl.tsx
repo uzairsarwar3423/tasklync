@@ -1,7 +1,6 @@
 import { FC } from 'react';
 import { StyleSheet, View, Pressable, Platform } from 'react-native';
 import { Plus, Minus } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../design/colors';
 
 interface ZoomControlProps {
@@ -14,16 +13,10 @@ export const ZoomControl: FC<ZoomControlProps> = ({
   onZoomOut,
 }) => {
   const handleZoomIn = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     onZoomIn();
   };
 
   const handleZoomOut = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     onZoomOut();
   };
 

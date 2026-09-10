@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Plus, ChevronRight } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { colors, palette, fontFamily } from '../../design';
 
 export interface AddNewAddressRowProps {
@@ -11,7 +10,6 @@ export interface AddNewAddressRowProps {
 
 export const AddNewAddressRow: React.FC<AddNewAddressRowProps> = ({ onAdd, onPress }) => {
   const handlePress = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (onPress) {
       onPress();
     } else if (onAdd) {
@@ -47,7 +45,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: 16,
-    borderRadius: 16,
+    borderRadius: 18,
     backgroundColor: palette.white,
     borderWidth: 1,
     borderColor: palette.gray200,

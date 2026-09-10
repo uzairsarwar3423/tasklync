@@ -1,6 +1,6 @@
 import { memo, FC, RefObject } from 'react';
-import { StyleSheet, View } from 'react-native';
-import MapView, { Region, PROVIDER_DEFAULT } from 'react-native-maps';
+import { StyleSheet, View, Platform } from 'react-native';
+import MapView, { Region, PROVIDER_GOOGLE, PROVIDER_DEFAULT } from 'react-native-maps';
 import { Coordinates } from '../../types/location.types';
 import { WorkerNearby } from '../../types/worker.types';
 import { UserMarker } from './UserMarker';
@@ -58,7 +58,7 @@ export const MapCanvas: FC<MapCanvasProps> = memo(({
       <MapView
         ref={mapRef as any}
         style={StyleSheet.absoluteFillObject}
-        provider={PROVIDER_DEFAULT}
+        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : PROVIDER_DEFAULT}
         customMapStyle={LIGHT_MAP_STYLE}
         initialRegion={defaultRegion}
         onRegionChangeComplete={(r) => onRegionChangeComplete(r)}
@@ -73,6 +73,7 @@ export const MapCanvas: FC<MapCanvasProps> = memo(({
         rotateEnabled={true}
         zoomEnabled={true}
         scrollEnabled={true}
+        loadingEnabled={true}
       >
         {/* Search radius overlay */}
         <RadiusCircle center={userLocation} radiusMeters={radiusMeters} />
@@ -82,8 +83,8 @@ export const MapCanvas: FC<MapCanvasProps> = memo(({
 
         {/* Worker pin markers */}
         {workers.map((worker, index) => {
-          const lat = (worker as any).lat || (worker as any).latitude;
-          const lng = (worker as any).lng || (worker as any).longitude;
+          const lat = worker.lat ?? (worker as any).latitude;
+          const lng = worker.lng ?? (worker as any).longitude;
           if (!lat || !lng) return null;
 
           return (

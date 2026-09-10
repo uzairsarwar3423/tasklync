@@ -17,7 +17,6 @@ import { BlockedWorkerRow } from '../../src/components/worker/BlockedWorkerRow';
 import { ToastUndo } from '../../src/components/ui/ToastUndo';
 import { BlockedWorker } from '../../src/types/moderation.types';
 import { colors, palette, fontFamily, fontSize, spacing } from '../../src/design';
-import * as Haptics from 'expo-haptics';
 
 export default function BlockedWorkersScreen() {
   const router = useRouter();
@@ -35,7 +34,6 @@ export default function BlockedWorkersScreen() {
   } = useBlockedWorkers();
 
   const handleBack = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     router.back();
   };
 

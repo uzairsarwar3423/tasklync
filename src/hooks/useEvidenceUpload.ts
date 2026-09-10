@@ -3,7 +3,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { compressImage } from '../utils/imageCompression';
 import { chatApi } from '../services/api/chat.api';
 import { EvidenceSlotState } from '../types/booking.types';
-import * as Haptics from 'expo-haptics';
 
 const MAX_SLOTS = 3;
 
@@ -56,9 +55,6 @@ export function useEvidenceUpload(bookingId?: string | null) {
           onProgress
         );
 
-        try {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-        } catch {}
 
         setSlots((prev) => {
           const updated = [...prev];
@@ -72,9 +68,6 @@ export function useEvidenceUpload(bookingId?: string | null) {
           return updated;
         });
       } catch (err: any) {
-        try {
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error).catch(() => {});
-        } catch {}
 
         setSlots((prev) => {
           const updated = [...prev];
@@ -167,9 +160,6 @@ export function useEvidenceUpload(bookingId?: string | null) {
    * Remove photo and clear slot back to idle state
    */
   const removeSlot = useCallback((slotIndex: number) => {
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    } catch {}
 
     setSlots((prev) => {
       const updated = [...prev];

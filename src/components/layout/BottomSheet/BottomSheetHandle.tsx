@@ -5,7 +5,6 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../../design/colors';
 import { radius } from '../../../design/radius';
 import { springConfig } from '../../../design/animations';
@@ -16,7 +15,6 @@ export const BottomSheetHandle = () => {
   const scale = useSharedValue(1);
 
   const handlePressIn = () => {
-    Haptics.selectionAsync();
     scale.value = withSpring(1.2, springConfig.snappy);
   };
 

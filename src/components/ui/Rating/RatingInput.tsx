@@ -16,7 +16,6 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { Star } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 import { palette } from '../../../design';
 
 export type RatingSizeVariant = 'sm' | 'md' | 'lg';
@@ -68,17 +67,11 @@ export const RatingInput: React.FC<RatingInputProps> = ({
 
       if (allowClear && value === clamped) {
         if (prevValueRef.current !== 0) {
-          try {
-            Haptics.selectionAsync().catch(() => {});
-          } catch {}
           prevValueRef.current = 0;
         }
         onChange(0);
       } else {
         if (prevValueRef.current !== clamped) {
-          try {
-            Haptics.selectionAsync().catch(() => {});
-          } catch {}
           prevValueRef.current = clamped;
         }
         onChange(clamped);

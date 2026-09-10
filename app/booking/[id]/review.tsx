@@ -13,7 +13,6 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft } from 'lucide-react-native';
-import * as Haptics from 'expo-haptics';
 
 import { useBookingDetails } from '../../../src/hooks/useBookingDetails';
 import { useReviewFormState } from '../../../src/hooks/useReviewFormState';
@@ -82,7 +81,6 @@ export default function ReviewScreen() {
 
     try {
       setErrorMessage(null);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
 
       const targetId = booking?.worker_id || 'worker_default';
 

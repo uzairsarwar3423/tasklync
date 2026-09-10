@@ -1,7 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '../services/api/client';
 import { BlockReason } from '../types/moderation.types';
-import * as Haptics from 'expo-haptics';
 
 export interface BlockWorkerParams {
   workerId: string;
@@ -26,7 +25,6 @@ export function useBlockWorker() {
       queryClient.invalidateQueries({ queryKey: ['search-workers'] });
       queryClient.invalidateQueries({ queryKey: ['worker', variables.workerId] });
 
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
     },
   });
 }

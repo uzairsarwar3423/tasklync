@@ -22,7 +22,13 @@ export const useActiveBooking = () => {
         const response = await bookingApi.listBookings({ page: 1, limit: 10 });
         const items = response.data || [];
         const activeStatuses: BookingStatus[] = ['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED_BY_WORKER'];
-        const active = items.find((item) => activeStatuses.includes(item.status as BookingStatus));
+        const active = items.find(
+          (item) =>
+            activeStatuses.includes(item.status as BookingStatus) &&
+            item.id &&
+            !item.id.startsWith('b-') &&
+            !item.id.startsWith('TL-')
+        );
 
         if (!active) {
           return null;

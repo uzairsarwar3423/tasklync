@@ -2,7 +2,6 @@ import { FC } from 'react';
 import { StyleSheet, Text, Pressable, Platform } from 'react-native';
 import { Plus } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
-import * as Haptics from 'expo-haptics';
 import { colors } from '../../design/colors';
 import { typography } from '../../design/typography';
 
@@ -18,9 +17,6 @@ export const AddMoreServicesLink: FC<AddMoreServicesLinkProps> = ({
   const router = useRouter();
 
   const handlePress = () => {
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    }
     if (onPress) {
       onPress();
     } else if (workerId) {

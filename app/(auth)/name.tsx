@@ -6,8 +6,8 @@ import Animated, {
   withSpring,
   withTiming
 } from 'react-native-reanimated';
-import * as Haptics from 'expo-haptics';
 
+import { ArrowRight } from 'lucide-react-native';
 import { Screen } from '@components/layout/Screen';
 import { StickyFooter } from '@components/layout/StickyFooter';
 import { Text } from '@components/ui/Text';
@@ -34,7 +34,6 @@ export default function NameScreen() {
 
   useEffect(() => {
     if (isValid) {
-      Haptics.selectionAsync();
       buttonScale.value = withSpring(1.02, { damping: 10, stiffness: 400 }, (finished) => {
         if (finished) {
           buttonScale.value = withSpring(1);
@@ -58,8 +57,10 @@ export default function NameScreen() {
 
   return (
     <Screen bg={colors.bgCard} statusBarStyle="dark-content" edges={['top', 'bottom', 'left', 'right']}>
-      <View style={[styles.content, { paddingTop: 24 }]}>
-        <Text style={styles.emoji}>👋</Text>
+      <View style={[styles.content, { paddingTop: Math.max(insets.top > 0 ? 16 : 28, 20) }]}>
+        <View style={styles.emojiContainer}>
+          <Text style={styles.emoji}>👋</Text>
+        </View>
 
         <Text variant="h1" color="primary" style={styles.title}>
           What's your name?
@@ -102,7 +103,9 @@ export default function NameScreen() {
             loading={isLoading}
             onPress={handleContinue}
             style={{ backgroundColor: isValid ? colors.primary : colors.primaryLight }}
-            label="Let's go →"
+            label="Let's go"
+            icon={ArrowRight}
+            iconPosition="right"
           />
         </Animated.View>
       </StickyFooter>
@@ -115,9 +118,17 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 24,
   },
+  emojiContainer: {
+    alignSelf: 'flex-start',
+    marginBottom: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   emoji: {
     fontSize: 48,
-    marginBottom: 24,
+    lineHeight: 58,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   title: {
     marginBottom: 8,
